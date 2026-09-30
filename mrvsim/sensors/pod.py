@@ -51,6 +51,7 @@ class PODCurve:
     u_ref_m_s: float
     surface: SurfaceAdjustment
     ab_cov: tuple[tuple[float, float], tuple[float, float]] | None = None  # Laplace posterior of (a, b)
+    u_min_m_s: float = 2.0   # floor on the wind term; deviation from TDD section 4.1, see DECISION_LOG 2026-09-30 (Phase 3)
 
     def __post_init__(self) -> None:
         if self.b <= 0:
@@ -61,7 +62,9 @@ class PODCurve:
         q = np.asarray(q_kg_h, dtype=float)
         f = np.ones_like(q)
         if wind_m_s is not None and self.gamma != 0.0:
-            u = np.maximum(np.asarray(wind_m_s, dtype=float), 0.1)  # guard u -> 0 (TDD section 4.1)
+            # Deviation from TDD section 4.1: the (u_ref/u)^gamma enhancement is floored at u_min because
+            # plume retrievals do not keep improving below ~2 m/s (stagnant, poorly defined plumes).
+            u = np.maximum(np.asarray(wind_m_s, dtype=float), self.u_min_m_s)
             f = f * (self.u_ref_m_s / u) ** self.gamma
         if rho_surf is not None:
             f = f * self.surface.phi(rho_surf)
@@ -84,7 +87,7 @@ class PODCurve:
         lnq_eff = (np.log(p / (1 - p)) - self.a) / self.b
         q = float(np.exp(lnq_eff))
         if wind_m_s is not None and self.gamma != 0.0:
-            q = q / (self.u_ref_m_s / max(wind_m_s, 0.1)) ** self.gamma
+            q = q / (self.u_ref_m_s / max(wind_m_s, self.u_min_m_s)) ** self.gamma
         return q
 
     @property

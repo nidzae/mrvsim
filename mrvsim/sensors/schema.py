@@ -177,7 +177,8 @@ def load_sensor(path: str | Path) -> Sensor:
         raise SensorSchemaError(f"{w}: pod needs (a, b) or (pod50_kg_h, pod90_kg_h)")
     cov = pr.get("ab_cov")
     pod = PODCurve(a=a, b=b, gamma=float(pr.get("gamma", 1.0)), u_ref_m_s=float(pr.get("u_ref_m_s", 3.0)), surface=surface,
-                   ab_cov=tuple(map(tuple, cov)) if cov else None)  # type: ignore[arg-type]
+                   ab_cov=tuple(map(tuple, cov)) if cov else None,  # type: ignore[arg-type]
+                   u_min_m_s=float(pr.get("u_min_m_s", 2.0)))
 
     qr = raw["quantification"]
     if "beta" in qr and "sigma" in qr:

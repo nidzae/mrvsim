@@ -8,7 +8,7 @@ spatial_scope: site
 schedule: orbit
 pod:
   pod50_kg_h: 80.0               # design target 0.05-0.15 t/h [carbon-mapper]; TODO(verify)
-  pod90_kg_h: 200.0
+  pod90_kg_h: 160.0              # POD90/POD50 = 2
   gamma: 1.0
   u_ref_m_s: 3.0
   surface_adjustment: {enabled: true, rho_ref: 0.30, rho_p10: 0.12, phi_at_p10: 0.5, uncertainty_halfwidth: 0.5}
@@ -32,7 +32,7 @@ constraints:
   day_only: true
 orbit:
   tle_name: TANAGER-1
-  norad_id: null                 # TODO(verify); resolved by name at TLE fetch
+  norad_id: 60507                # confirmed from CelesTrak 2026-09-30 [celestrak]
   swath_km: 18.0
   tasked: true
   local_time_desc: "sun-synchronous, morning"

@@ -113,3 +113,16 @@ Format:
 **Alternatives rejected:** Hard-coding (a, b) without provenance (hides the gap); blocking Phase 2 until tables are transcribed (blocks Phases 3–8); dropping non-fitted sensors (leaves no sensor to simulate).
 **Docs updated:** TDD §13 change log; REFERENCES adds `celestrak` (ok) and `cost-assumptions` (verify). `configs/sensors/_README.md` states the status.
 **Status:** active
+
+## 2026-09-30 — Phase 3 observation-simulator conventions and two POD deviations
+**Decision:**
+1. **Wind floor in the POD wind term.** q_eff = q·(u_ref/max(u, u_min))^γ with u_min = 2 m/s (sensor YAML `pod.u_min_m_s`, default 2.0). Deviation from TDD §4.1, which has no floor.
+2. **Satellite POD slopes.** Satellite curves use POD90/POD50 = 2 (steep) rather than ~3; TROPOMI POD50/POD90 = 2.5/5 t/h at 3 m/s.
+3. **Pinned TLEs.** Runs propagate the TLE snapshot in `data/fitted/tle/` (CelesTrak, 2026-09-30) over the simulated year; pass times are representative, not historical. Cache key covers TLE text, facility coordinates, swath, step.
+4. **Gate conventions.** Aircraft cloud gate: blocked with probability p_cloud·(1 − max_cloud_fraction_s). CMS outage and wind-sector gates are independent Bernoulli draws per hour. Tasked satellites keep one overpass per equal slice of the year up to `frequency_per_year`. Campaign visits are stratified over the year at local daytime hours.
+5. **False-call rates.** A false positive reports a rate at the POD quantile drawn uniformly in [0.05, `reported_rate_quantile_max`].
+6. **LDAR-Sim reuse (PRD Q6, provisional).** The observation simulator is native, vectorised numpy as the TDD's conventions require; LDAR-Sim remains vendored for cross-checks and tooling. Pending Nidhi's confirmation.
+**Reason:** (1) and (2) were forced by the Phase 3 acceptance tests: without a wind floor, a 1 m/s draw triples q_eff and a shallow logistic gives a few-percent POD at 5 kg/h for Tanager-1, contradicting "never detected"; blind tests report no satellite detections well below the limit, which a steep slope reproduces. (1) is also physical: retrievals do not keep improving as wind drops toward zero. (3)–(5) are the simplest realisations of TDD §5.1–5.3 and §4.4; the "looser threshold" for aircraft cloud is not quantified in the TDD.
+**Alternatives rejected:** No wind floor with per-sensor slope tuning only (still ~1 % POD at extreme low wind); historical TLEs from Space-Track (credentials); a diurnal wind-sector model for CMS (version 2).
+**Docs updated:** TDD §4.1 (wind floor note), §5.2 (gate conventions note), §13; PRD §10 Q6 row (provisional answer).
+**Status:** active

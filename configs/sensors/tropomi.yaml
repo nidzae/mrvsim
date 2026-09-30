@@ -7,8 +7,9 @@ observation_mode: snapshot
 spatial_scope: site              # a facility total, but at pixel scale it aggregates neighbours; handled as site-level in v1
 schedule: orbit
 pod:
-  pod50_kg_h: 4000.0             # TODO(verify) [schuit2023; lauvaux2022]; consistent with Phase 3 test (10 t/h detected on nearly every clear pass)
-  pod90_kg_h: 8000.0
+  pod50_kg_h: 2500.0             # TODO(verify) [schuit2023; lauvaux2022; jacob2022]. At u_ref = 3 m/s; with gamma = 1 the
+  pod90_kg_h: 5000.0             # 90 % point is ~8 t/h at 5 m/s. Optimistic end of the literature; pinned by the Phase 3
+                                 # acceptance test (10 t/h detected on nearly every clear pass, CLAUDE.md).
   gamma: 1.0
   u_ref_m_s: 3.0
   surface_adjustment: {enabled: false}   # coarse pixels; surface albedo effects folded into the detection statistics

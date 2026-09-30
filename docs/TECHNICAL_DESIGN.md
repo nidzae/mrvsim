@@ -179,6 +179,8 @@ $$
 
 - $a_s, b_s$ are fitted by maximum likelihood to the detection/non-detection table of the sensor's blind controlled-release study.
 - $\gamma_s$ captures wind dependence: at higher wind the plume is more dilute and harder to see. Default $\gamma_s = 1$ for imaging spectrometers (enhancement scales inversely with wind), $\gamma_s = 0$ for continuous monitors, with study-specific overrides.
+
+  **Implementation note (Phase 3, DECISION_LOG 2026-09-30):** the wind term is floored, $u \to \max(u, u_{\min})$ with $u_{\min} = 2$ m/s, because retrievals do not keep improving toward zero wind.
 - $\phi_s(\rho_{\text{surf}})$ is a surface adjustment factor, equal to 1 at the reflectance of the test site and declining for darker or more heterogeneous surfaces. **This factor is the weakest-constrained element of the model.** Version 1 uses a linear decline to 0.5 at the 10th percentile of US oil-and-gas-region reflectance, with a uniform ±50% uncertainty propagated into the estimator's likelihood. Flagged in the attribution panel as an assumption, not a measured curve.
 
 Sources of POD data by sensor class:
@@ -239,6 +241,8 @@ An opportunity is usable if all of the following hold, with draws from the facil
 | Solar zenith | $\le 70°$ | — | — | — |
 | Wind | $u \le u_{\max,s}$ | $u \le u_{\max,s}$ | $u \le u_{\max,s}$ | Wind sector must intersect sensor placement |
 | Outage | — | — | — | $\text{Bernoulli}(1 - p_{\text{outage}})$ |
+
+**Implementation note (Phase 3, DECISION_LOG 2026-09-30):** the aircraft cloud gate blocks with probability $p_{\text{cloud}} (1 - c_s)$ where $c_s$ is the sensor's cloud tolerance (`max_cloud_fraction` in its YAML); CMS outage and wind-sector gates are independent per hour; tasked satellites use one overpass per equal slice of the year up to the tasking frequency.
 
 ### 5.3 Detection and reporting
 
@@ -457,4 +461,5 @@ Each limitation maps to a version-2 item in `DECISION_LOG.md`.
 |---|---|
 | 2026-09-30 | Initial draft |
 | 2026-09-30 | §3.1, §3.4: Phase 1 implementation notes (strata cell list; stationary renewal start; hourly midpoint states) |
+| 2026-09-30 | §4.1 wind floor, §5.2 gate conventions: Phase 3 implementation notes |
 | 2026-09-30 | §4: Phase 2 note — sensor YAML blocks carry `provenance.status` (fitted / summary / assumption); POD may be specified as POD50/POD90; see DECISION_LOG "Sensor library provenance scheme" |

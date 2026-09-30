@@ -327,7 +327,7 @@ DOIs marked `verify` in `REFERENCES.md` must be checked against the publisher be
 | Q3 | Which continuous-monitor products have Tier A quantification data, if any? | Analyst | No (they contribute to duty cycle regardless) |
 | Q4 | Does LDAR-Sim v4's satellite module implement orbit-based overpass timing or a fixed cadence? | Claude Code | **Resolved 2026-09-30:** neither. v4 has no satellite scheduler (the `orbital` deployment type is an unused constant; only `mobile` and `stationary` are implemented). The legacy V3 branch propagated TLEs with `orbit_predictor` at daily resolution. MRVSim computes overpasses with Skyfield per TDD §5.1. See DECISION_LOG 2026-09-30 "Q4 resolved". |
 | Q5 | What is the throughput data source for non-GHGRP facilities? | Analyst | Partially (affects denominator prior) |
-| Q6 | How much of LDAR-Sim v4 should the engine actually reuse? v4 is a daily-timestep, agent-based, per-site simulator with no satellite module and a stubbed wind-dependent METEC POD sensor, while TDD §3–5 and §10 specify hourly, vectorised, per-facility arrays. Candidate answer: vendor it as reference/cross-check and reuse its ERA5 tooling, daylight calculator, and parameter conventions; implement the MRVSim hot path natively. | Nidhi | No for Phase 0–1; decide before Phase 3 |
+| Q6 | How much of LDAR-Sim v4 should the engine actually reuse? v4 is a daily-timestep, agent-based, per-site simulator with no satellite module and a stubbed wind-dependent METEC POD sensor, while TDD §3–5 and §10 specify hourly, vectorised, per-facility arrays. Candidate answer: vendor it as reference/cross-check and reuse its ERA5 tooling, daylight calculator, and parameter conventions; implement the MRVSim hot path natively. | Nidhi | **Provisional answer (Phase 3, 2026-09-30):** MRVSim's observation simulator is native vectorised numpy; LDAR-Sim stays vendored for cross-checks and tooling. Confirm or override; see DECISION_LOG "Phase 3 observation-simulator conventions". |
 
 ---
 
@@ -337,3 +337,4 @@ DOIs marked `verify` in `REFERENCES.md` must be checked against the publisher be
 |---|---|---|
 | 2026-09-30 | Initial draft | Nidhi / Claude |
 | 2026-09-30 | §10: Q4 resolved (LDAR-Sim v4 has no satellite scheduler); Q6 added (scope of LDAR-Sim reuse) | Claude (Phase 0) |
+| 2026-09-30 | §10: Q6 provisional answer (native simulator) | Claude (Phase 3) |

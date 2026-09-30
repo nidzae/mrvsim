@@ -38,6 +38,7 @@ class PODFit:
     u_ref_m_s: float
     converged: bool
     ridge_sd: float = _RIDGE_SD
+    u_min_m_s: float = 2.0
 
     @property
     def se_a(self) -> float:
@@ -48,7 +49,8 @@ class PODFit:
         return float(np.sqrt(self.cov[1][1]))
 
     def to_curve(self, surface: SurfaceAdjustment) -> PODCurve:
-        return PODCurve(a=self.a, b=self.b, gamma=self.gamma, u_ref_m_s=self.u_ref_m_s, surface=surface, ab_cov=self.cov)
+        return PODCurve(a=self.a, b=self.b, gamma=self.gamma, u_ref_m_s=self.u_ref_m_s, surface=surface, ab_cov=self.cov,
+                        u_min_m_s=self.u_min_m_s)
 
     def record(self) -> dict[str, Any]:
         return asdict(self)
@@ -59,6 +61,7 @@ def fit_pod_logistic(
     gamma: float = 1.0,
     u_ref_m_s: float = 3.0,
     surface: SurfaceAdjustment | None = None,
+    u_min_m_s: float = 2.0,
 ) -> PODFit:
     """Maximum-likelihood logistic POD fit with Laplace posterior.
 
@@ -83,7 +86,7 @@ def fit_pod_logistic(
     q = df["rate_kg_h"].to_numpy(dtype=float)
     f = np.ones_like(q)
     if "wind_m_s" in df and gamma != 0.0:
-        u = np.maximum(df["wind_m_s"].to_numpy(dtype=float), 0.1)
+        u = np.maximum(df["wind_m_s"].to_numpy(dtype=float), u_min_m_s)
         f = f * (u_ref_m_s / u) ** gamma
     if surface is not None and "rho_surf" in df:
         f = f * surface.phi(df["rho_surf"].to_numpy(dtype=float))
@@ -122,5 +125,5 @@ def fit_pod_logistic(
     return PODFit(
         a=float(a_hat), b=float(b_hat), cov=tuple(map(tuple, cov.tolist())),  # type: ignore[arg-type]
         n_releases=int(len(df)), n_detected=int(y.sum()), log_likelihood=float(-res.fun),
-        gamma=gamma, u_ref_m_s=u_ref_m_s, converged=bool(res.success),
+        gamma=gamma, u_ref_m_s=u_ref_m_s, converged=bool(res.success), u_min_m_s=u_min_m_s,
     )

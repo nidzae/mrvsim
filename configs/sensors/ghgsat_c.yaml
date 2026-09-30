@@ -8,7 +8,7 @@ spatial_scope: site
 schedule: orbit
 pod:
   pod50_kg_h: 150.0              # TODO(verify) [sherwin2023]
-  pod90_kg_h: 500.0              # TODO(verify)
+  pod90_kg_h: 300.0              # TODO(verify); POD90/POD50 = 2: blind tests saw no detections well below the limit
   gamma: 1.0
   u_ref_m_s: 3.0
   ab_cov: [[0.25, -0.04], [-0.04, 0.01]]   # ASSUMPTION standing in for the Laplace posterior until fitted (TDD section 4.1 sample-size note)
@@ -32,8 +32,8 @@ constraints:
   max_cloud_fraction: null       # cloud gate is the Bernoulli draw on p_cloud (TDD section 5.2)
   day_only: true
 orbit:
-  tle_name: GHGSAT-C2            # Celestrak name; TODO(verify) [celestrak]
-  norad_id: 47264                # TODO(verify)
+  tle_name: GHGSAT-C2            # CelesTrak name, confirmed 2026-09-30 [celestrak]
+  norad_id: 47509                # confirmed from CelesTrak 2026-09-30 [celestrak]
   swath_km: 12.0
   tasked: true
   local_time_desc: "~10:30 descending (sun-synchronous)"

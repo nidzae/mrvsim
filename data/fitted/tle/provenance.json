@@ -1,0 +1,64 @@
+{
+  "source": "CelesTrak GP data",
+  "citation_key": "celestrak",
+  "fetched_utc": "2026-09-30T22:49:22+00:00",
+  "satellites": {
+    "sentinel2_msi": {
+      "query": "SENTINEL-2A",
+      "found": true,
+      "tle_name": "SENTINEL-2A",
+      "norad_id": 40697,
+      "epoch_yyddd": "26273.59927578",
+      "n_matches": 1
+    },
+    "landsat_oli": {
+      "query": "LANDSAT 9",
+      "found": true,
+      "tle_name": "LANDSAT 9",
+      "norad_id": 49260,
+      "epoch_yyddd": "26273.19273633",
+      "n_matches": 1
+    },
+    "prisma": {
+      "query": "CATNR=44072",
+      "found": true,
+      "tle_name": "PRISMA",
+      "norad_id": 44072,
+      "epoch_yyddd": "26273.55260672",
+      "n_matches": 1,
+      "note": "NAME=PRISMA matched 'PRISMA (MANGO)' (Swedish formation-flying mission, NORAD 36599); refetched by catalogue number"
+    },
+    "enmap": {
+      "query": "ENMAP",
+      "found": true,
+      "tle_name": "ENMAP",
+      "norad_id": 52159,
+      "epoch_yyddd": "26273.58762126",
+      "n_matches": 1
+    },
+    "ghgsat_c": {
+      "query": "GHGSAT-C2",
+      "found": true,
+      "tle_name": "GHGSAT-C2",
+      "norad_id": 47509,
+      "epoch_yyddd": "26273.39627281",
+      "n_matches": 1
+    },
+    "tanager1": {
+      "query": "TANAGER-1",
+      "found": true,
+      "tle_name": "TANAGER-1",
+      "norad_id": 60507,
+      "epoch_yyddd": "26273.53479688",
+      "n_matches": 1
+    },
+    "tropomi": {
+      "query": "SENTINEL-5P",
+      "found": true,
+      "tle_name": "SENTINEL-5P",
+      "norad_id": 42969,
+      "epoch_yyddd": "26273.57788542",
+      "n_matches": 1
+    }
+  }
+}
