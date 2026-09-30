@@ -81,3 +81,28 @@ Format:
 **Alternatives rejected:** A single global `Generator` threaded through stages (draw order becomes part of the spec; any refactor changes results); `SeedSequence.spawn()` counters (order-dependent).
 **Docs updated:** none required (implements PRD N4); recorded here for the implementation contract. Unit test `tests/unit/test_seeds.py::test_raw_bitstream_is_frozen` pins the scheme.
 **Status:** active
+
+## 2026-09-30 — Phase 1 implementation choices for the population generator
+**Decision:** Four choices made while implementing TDD §3, none changing an equation:
+1. **Stationary start of the renewal process (TDD §3.4).** Each intermittent source starts on with probability π and the residual of its current interval is U·D*, with D* drawn from the length-biased lognormal (ν + τ², τ). This is the exact stationary state of a renewal process with lognormal intervals, so no burn-in is needed and the first day of the year has no transient.
+2. **Pareto splice implementation (TDD §3.3).** Draw q from the lognormal; where q > q_tail replace it with q_tail·U^(−1/α). This preserves P(q > q_tail) from the lognormal and makes the conditional tail exactly the TDD's Pareto statement.
+3. **Hourly discretisation.** S_ij(t) is the process state at the midpoint of hour t; M_i = Σ_t Q_i(t) uses these hourly states. Sub-hour on/off structure is lost, which only matters for cycles shorter than ~2 h.
+4. **Throughput classes as quantile bands (TDD §3.1).** V_gas for class k of N is drawn from the cell's lognormal restricted to the [k/N, (k+1)/N) quantile band by inverse CDF, so classes are terciles/quintiles by construction and V4 can switch N without refitting. X_CH4 is clipped at 1.0 (mole fraction), a numerical guard on TDD §3.5.
+**Reason:** Each is the simplest exact or near-exact realisation of the written equation that vectorises over all sources.
+**Alternatives rejected:** Burn-in simulation for stationarity (slow for long cycles, approximate); mixture-density splice (changes P(q > q_tail)); per-hour Bernoulli(π) states (loses run lengths that CMS likelihoods need); fitting separate lognormals per tercile (triples the parameters to fit).
+**Docs updated:** TDD §3.4 (stationary-start note), TDD §13 change log; REFERENCES adds `renewal-theory`, `eia-heat-content`, `basin-extents` (all `verify`).
+**Status:** active
+
+## 2026-09-30 — Default strata list and placeholder weights
+**Decision:** The default sample uses 21 basin × facility-type cells × 3 throughput terciles = 63 strata (`configs/strata.yaml`), matching the TDD §10 budget of ≈60. Stratum weights are equal within a facility type and marked PLACEHOLDER; `data/scripts/fetch_ghgrp_subpart_w.py` (which succeeded, 6,738 Subpart W facility rows for reporting year 2023) plus state production data will replace them.
+**Reason:** A full 10 basins × 7 types × 3 classes grid is 210 strata, 3.5× the compute budget, and many cells are empty in reality (e.g., storage in the Bakken).
+**Alternatives rejected:** Full grid with n_h scaled down (violates the n_h ≥ 30 minimum); collapsing facility types (loses the per-type slices PRD F10 needs).
+**Docs updated:** TDD §3.1 (cell list note), TDD §13.
+**Status:** active
+
+## 2026-09-30 — Stratum weights fitted from GHGRP Subpart W RY2023
+**Decision:** `data/fitted/strata_weights.json` (provenance FITTED) supplies the cell weights; the equal placeholder weights in `configs/strata.yaml` are used only when that file is absent. Method (`data/scripts/fit_strata_weights.py`): cells are weighted within each facility type by producing wells (well pads), operator-basin reporter count (gathering), or facility count (processing, transmission, storage); type groups are then weighted by their share of reported Subpart W CH4. Throughput weights use gas sold, gas transported, or gas received where the table has them, else fall back to the count weight (flagged). AAPG basin codes are mapped to MRVSim basins (Arkla + East Texas → Haynesville; Gulf Coast → Eagle Ford as an upper bound); gas/oil/mixed well-pad assignment uses the energy share of reported sales.
+**Reason:** Real relative weights were obtainable with no credentials; the Envirofacts tables `EF_W_EMISSIONS_SOURCE_GHG`, `EF_W_FACILITY_OVERVIEW`, and `PUB_DIM_FACILITY` were confirmed live on 2026-09-30. Weighting type groups by reported CH4 is a documented proxy: raw counts across types (wells vs. plants) are not comparable.
+**Alternatives rejected:** Equal weights (uninformative); waiting for state production databases (per-state scraping, deferred to refine pad counts); weighting type groups by facility count (mixes wells and sites).
+**Docs updated:** `configs/strata.yaml` header; `data/README.md`; TDD §3.1 note already references [ghgrp]. Supersedes the "weights are PLACEHOLDER" clause of the entry "Default strata list and placeholder weights" above.
+**Status:** active

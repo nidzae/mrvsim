@@ -1,0 +1,63 @@
+# Stratification table (TDD section 3.1): basin x facility type x throughput class.
+#
+# provenance: PLACEHOLDER applies to the weights written *in this file*. When
+# data/fitted/strata_weights.json exists (written by data/scripts/fit_strata_weights.py
+# from GHGRP Subpart W RY2023 [ghgrp]), load_strata() replaces weight_count /
+# weight_throughput with the fitted values and reports provenance FITTED. Basin extents
+# are approximate geographic boxes used only to place synthetic facilities for orbit,
+# cloud, and wind lookups (QUICKSTART: "coordinates are representative, not real
+# assets") [basin-extents]. State production data [state-production-data] would refine
+# well-pad counts, which GHGRP only gives as producing-well counts per operator-basin.
+provenance: PLACEHOLDER
+intended_sources: [ghgrp, state-production-data, sherwin2024, cusworth2022]
+
+basins:
+  permian:      {name: Permian,      lat: [30.8, 33.0], lon: [-104.5, -101.5]}
+  appalachian:  {name: Appalachian,  lat: [38.5, 41.8], lon: [-81.5, -76.5]}
+  haynesville:  {name: Haynesville,  lat: [31.3, 33.2], lon: [-95.0, -92.8]}
+  eagle_ford:   {name: Eagle Ford,   lat: [27.8, 29.8], lon: [-100.0, -96.8]}
+  bakken:       {name: Bakken,       lat: [47.0, 48.9], lon: [-104.0, -101.8]}
+  dj:           {name: DJ,           lat: [39.8, 41.0], lon: [-105.0, -103.5]}
+  anadarko:     {name: Anadarko,     lat: [35.0, 37.0], lon: [-100.0, -97.0]}
+  san_juan:     {name: San Juan,     lat: [36.2, 37.4], lon: [-108.6, -107.0]}
+  uinta:        {name: Uinta,        lat: [39.7, 40.5], lon: [-110.5, -109.2]}
+  other:        {name: Other US onshore, lat: [31.0, 44.0], lon: [-110.0, -85.0]}
+
+facility_types:
+  wp_oil:       {name: "Well pad: oil-dominant",  ghgrp_reporter_share: 0.3}
+  wp_gas:       {name: "Well pad: gas-dominant",  ghgrp_reporter_share: 0.3}
+  wp_mixed:     {name: "Well pad: mixed",         ghgrp_reporter_share: 0.3}
+  gathering:    {name: "Gathering compressor station", ghgrp_reporter_share: 0.8}
+  processing:   {name: "Processing plant",        ghgrp_reporter_share: 1.0}
+  transmission: {name: "Transmission compressor station", ghgrp_reporter_share: 1.0}
+  storage:      {name: "Storage",                 ghgrp_reporter_share: 1.0}
+
+throughput_classes: [t1, t2, t3]     # terciles within basin x type (TDD section 3.1); V4 swaps in quintiles
+
+# Basin x facility-type cells that exist in the default sample. Each cell is expanded
+# into one stratum per throughput class. ~21 cells x 3 = 63 strata, matching the
+# TDD section 10 budget of ~60 strata x 100 facilities.
+# weight_count / weight_throughput: relative national shares (PLACEHOLDER, equal
+# within facility type; normalised at load time).
+cells:
+  - {basin: permian,     facility_type: wp_oil,    weight_count: 1, weight_throughput: 1}
+  - {basin: permian,     facility_type: wp_mixed,  weight_count: 1, weight_throughput: 1}
+  - {basin: permian,     facility_type: wp_gas,    weight_count: 1, weight_throughput: 1}
+  - {basin: appalachian, facility_type: wp_gas,    weight_count: 1, weight_throughput: 1}
+  - {basin: haynesville, facility_type: wp_gas,    weight_count: 1, weight_throughput: 1}
+  - {basin: eagle_ford,  facility_type: wp_oil,    weight_count: 1, weight_throughput: 1}
+  - {basin: eagle_ford,  facility_type: wp_mixed,  weight_count: 1, weight_throughput: 1}
+  - {basin: bakken,      facility_type: wp_oil,    weight_count: 1, weight_throughput: 1}
+  - {basin: dj,          facility_type: wp_mixed,  weight_count: 1, weight_throughput: 1}
+  - {basin: anadarko,    facility_type: wp_mixed,  weight_count: 1, weight_throughput: 1}
+  - {basin: anadarko,    facility_type: wp_gas,    weight_count: 1, weight_throughput: 1}
+  - {basin: san_juan,    facility_type: wp_gas,    weight_count: 1, weight_throughput: 1}
+  - {basin: uinta,       facility_type: wp_mixed,  weight_count: 1, weight_throughput: 1}
+  - {basin: other,       facility_type: wp_mixed,  weight_count: 1, weight_throughput: 1}
+  - {basin: permian,     facility_type: gathering, weight_count: 1, weight_throughput: 1}
+  - {basin: appalachian, facility_type: gathering, weight_count: 1, weight_throughput: 1}
+  - {basin: haynesville, facility_type: gathering, weight_count: 1, weight_throughput: 1}
+  - {basin: other,       facility_type: gathering, weight_count: 1, weight_throughput: 1}
+  - {basin: other,       facility_type: processing,   weight_count: 1, weight_throughput: 1}
+  - {basin: other,       facility_type: transmission, weight_count: 1, weight_throughput: 1}
+  - {basin: other,       facility_type: storage,      weight_count: 1, weight_throughput: 1}

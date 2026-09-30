@@ -1,0 +1,9 @@
+# Physical and unit constants used across MRVSim. Every entry carries a citation key.
+hours_per_year: 8760                      # T in TDD section 2
+rho_ch4_kg_per_m3: 0.678                  # methane density at 15.6 C, 1 atm [PRD section 5.1; ngsi]
+x_ch4_default: 0.88                       # median mole fraction CH4 in marketed gas, TDD section 3.5 (ln N(ln 0.88, 0.05^2))
+x_ch4_log_sd: 0.05                        # TDD section 3.5
+gas_hhv_mj_per_m3: 38.6                   # ~1,037 Btu/scf gross heat content of marketed gas; TODO(verify) [eia-heat-content]
+oil_mj_per_bbl: 6119.0                    # 5.8 MMBtu/bbl crude; TODO(verify) [eia-heat-content]
+mmbtu_per_mj: 0.000947817                 # 1 MJ = 947.817 Btu (exact unit conversion)
+completeness_threshold_kg_h: 10.0         # PRD section 5.5 [jacob2022]

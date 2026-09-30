@@ -48,3 +48,6 @@ Citation keys in square brackets are used throughout `PRD.md`, `TECHNICAL_DESIGN
 | pymc | PyMC development team. PyMC: Bayesian modeling in Python. | https://www.pymc.io | ok |
 | optuna | Akiba, T., et al. (2019). Optuna: A next-generation hyperparameter optimization framework. *KDD*. | 10.1145/3292500.3330701 | verify |
 | numpy-random | NumPy developers. Random sampling (`numpy.random`): `SeedSequence`, `PCG64`, `Generator`. NumPy reference documentation. | https://numpy.org/doc/stable/reference/random/ | ok |
+| renewal-theory | Standard renewal theory result: the stationary residual-life distribution of a renewal process has density $(1 - F(x)) / \mathbb{E}[D]$; for lognormal intervals the length-biased law is lognormal with $\nu + \tau^2$. Textbook reference to be attached (e.g., Ross, *Stochastic Processes*). | — | verify |
+| eia-heat-content | US EIA heat-content conversion factors: natural gas ≈ 1,037 Btu/scf (gross), crude oil ≈ 5.8 MMBtu/bbl. | https://www.eia.gov/energyexplained/units-and-calculators/ | verify |
+| basin-extents | Approximate latitude/longitude boxes for US onshore basins used to place synthetic facilities (Permian, Appalachian, Haynesville, Eagle Ford, Bakken, DJ, Anadarko, San Juan, Uinta). Written from general knowledge; replace with EIA basin shapefiles. | https://www.eia.gov/maps/ | verify |

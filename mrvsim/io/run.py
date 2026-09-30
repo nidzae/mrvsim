@@ -214,12 +214,15 @@ def compare_run_dirs(a: Path, b: Path) -> dict[str, bool]:
     Returns ``{filename: identical}`` for the union of files in both, ignoring
     ``manifest.json`` (which carries wall-clock timestamps).
     """
-    names = {p.name for p in a.iterdir()} | {p.name for p in b.iterdir()}
+    def _files(root: Path) -> set[str]:
+        return {str(p.relative_to(root)) for p in root.rglob("*") if p.is_file()}
+
+    names = _files(a) | _files(b)
     names.discard("manifest.json")
     result: dict[str, bool] = {}
     for n in sorted(names):
         pa, pb = a / n, b / n
-        result[n] = pa.exists() and pb.exists() and pa.read_bytes() == pb.read_bytes()
+        result[n] = pa.is_file() and pb.is_file() and pa.read_bytes() == pb.read_bytes()
     return result
 
 

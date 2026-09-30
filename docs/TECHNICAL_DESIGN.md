@@ -73,6 +73,8 @@ Facilities are grouped into strata defined by:
 
 Each stratum $h$ has a weight $W_h$ equal to its share of national facility count (for KPI-2 aggregates) and of national throughput (for KPI-1 aggregates). The tool simulates $n_h$ facilities per stratum (default $n_h = 100$, minimum 30) and scales outputs by $W_h / n_h$.
 
+**Implementation note (Phase 1):** only basin × type cells that exist in the US population are enumerated (`configs/strata.yaml`, 21 cells → 63 strata at terciles). Throughput classes are quantile bands of the cell's throughput distribution by construction, so the tercile → quintile switch for V4 needs no refit. Weights are PLACEHOLDER until fitted from [ghgrp; state-production-data]; see DECISION_LOG 2026-09-30 "Default strata list".
+
 **Stability test (V4):** results must change by less than the Monte Carlo standard error when throughput terciles are replaced by quintiles.
 
 ### 3.2 Source count
@@ -123,6 +125,8 @@ $$
 Duration parameters are fitted to (a) continuous-monitor event-duration distributions [daniels2023; cms-duration-2024] and (b) repeat-overflight persistence statistics: the mean intermittency of 0.23 in California [duren2019] and the multi-year revisit persistence in [cusworth2022]. Steady sources have $\pi = 1$.
 
 The state path $S_{ij}(t)$ is generated for every hour and stored, so that the observation simulator can read the true state at any observation time.
+
+**Implementation note (Phase 1, DECISION_LOG 2026-09-30 "Phase 1 implementation choices"):** each intermittent source starts in the stationary state of its renewal process: on with probability $\pi_{ij}$, with the residual of the current interval drawn as $U \cdot D^*$ where $D^*$ follows the length-biased lognormal $\mathcal{N}(\nu + \tau^2, \tau^2)$ in log space. $S_{ij}(t)$ is the state at the midpoint of hour $t$.
 
 **Weaknesses:**
 - Lognormal durations are lighter-tailed than some observed event distributions. If rare multi-week events are under-represented, $\pi$ is biased low. V1 checks the simulated persistence against [cusworth2022].
@@ -452,3 +456,4 @@ Each limitation maps to a version-2 item in `DECISION_LOG.md`.
 | Date | Change |
 |---|---|
 | 2026-09-30 | Initial draft |
+| 2026-09-30 | §3.1, §3.4: Phase 1 implementation notes (strata cell list; stationary renewal start; hourly midpoint states) |
