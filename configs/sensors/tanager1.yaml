@@ -1,0 +1,45 @@
+key: tanager1
+name: Tanager-1 (Carbon Mapper) hyperspectral, tasked
+class: satellite
+tier: B                          # designed limit; controlled-release results pending (TDD section 4 table) [carbon-mapper; sherwin2023]
+enabled_for_certification: false
+observation_mode: snapshot
+spatial_scope: site
+schedule: orbit
+pod:
+  pod50_kg_h: 80.0               # design target 0.05-0.15 t/h [carbon-mapper]; TODO(verify)
+  pod90_kg_h: 200.0
+  gamma: 1.0
+  u_ref_m_s: 3.0
+  surface_adjustment: {enabled: true, rho_ref: 0.30, rho_p10: 0.12, phi_at_p10: 0.5, uncertainty_halfwidth: 0.5}
+  citations: [carbon-mapper, sherwin2023]
+  provenance: {status: summary, basis: "design detection limit, not a blind test"}
+quantification:
+  ratio_95_low: 0.40
+  ratio_95_high: 1.90
+  tier: B
+  citations: [carbon-mapper]
+  provenance: {status: assumption, basis: "assumed comparable to aircraft imaging spectrometers"}
+false_positive:
+  rate_per_opportunity: 0.02
+  reported_rate_quantile_max: 0.25
+  citations: [carbon-mapper]
+  provenance: {status: assumption, basis: "2 % per scene assumed"}
+constraints:
+  max_wind_m_s: 8.0
+  max_solar_zenith_deg: 70.0
+  max_cloud_fraction: null
+  day_only: true
+orbit:
+  tle_name: TANAGER-1
+  norad_id: null                 # TODO(verify); resolved by name at TLE fetch
+  swath_km: 18.0
+  tasked: true
+  local_time_desc: "sun-synchronous, morning"
+  citations: [celestrak, carbon-mapper]
+cost:
+  per_site_visit_usd: null
+  per_tasking_usd: 1000.0
+  per_site_year_usd: null
+  citations: [cost-assumptions]
+  provenance: {status: assumption, basis: "analyst placeholder"}

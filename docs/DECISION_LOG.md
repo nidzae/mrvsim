@@ -106,3 +106,10 @@ Format:
 **Alternatives rejected:** Equal weights (uninformative); waiting for state production databases (per-state scraping, deferred to refine pad counts); weighting type groups by facility count (mixes wells and sites).
 **Docs updated:** `configs/strata.yaml` header; `data/README.md`; TDD §3.1 note already references [ghgrp]. Supersedes the "weights are PLACEHOLDER" clause of the entry "Default strata list and placeholder weights" above.
 **Status:** active
+
+## 2026-09-30 — Sensor library provenance scheme and POD parametrisation (Phase 2)
+**Decision:** Every numeric block in a sensor YAML (POD, quantification, false positive, cost) carries `citations` and a `provenance.status` of `fitted` (from a blind-release table via `mrvsim.sensors.fit`), `summary` (derived from published summary statistics), or `assumption`. POD curves may be written as `(pod50_kg_h, pod90_kg_h)` and are converted to `(a, b)` at load time; quantification may be written as a 95 % ratio interval and converted to `(β, σ)`. The loader rejects Tier B–D sensors with `enabled_for_certification: true` (PRD N2) and any block without citations (PRD N1). The POD fitter uses a weak N(0, 10²) ridge on (a, b) so tables with complete separation still fit; the ridge is recorded in the fit record. Sensors with `ab_cov` propagate POD-parameter uncertainty (TDD §4.1 satellite note); until fits exist the satellite covariances are labelled ASSUMPTION.
+**Reason:** No blind-release tables were available inside the build environment, so all 13 sensor files ship with `summary`/`assumption` blocks and `TODO(verify)` markers rather than invented fits. The provenance field makes this visible to the attribution panel and gives a mechanical path to `fitted`.
+**Alternatives rejected:** Hard-coding (a, b) without provenance (hides the gap); blocking Phase 2 until tables are transcribed (blocks Phases 3–8); dropping non-fitted sensors (leaves no sensor to simulate).
+**Docs updated:** TDD §13 change log; REFERENCES adds `celestrak` (ok) and `cost-assumptions` (verify). `configs/sensors/_README.md` states the status.
+**Status:** active

@@ -457,3 +457,4 @@ Each limitation maps to a version-2 item in `DECISION_LOG.md`.
 |---|---|
 | 2026-09-30 | Initial draft |
 | 2026-09-30 | §3.1, §3.4: Phase 1 implementation notes (strata cell list; stationary renewal start; hourly midpoint states) |
+| 2026-09-30 | §4: Phase 2 note — sensor YAML blocks carry `provenance.status` (fitted / summary / assumption); POD may be specified as POD50/POD90; see DECISION_LOG "Sensor library provenance scheme" |

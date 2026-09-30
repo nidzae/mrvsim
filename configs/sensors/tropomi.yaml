@@ -1,0 +1,45 @@
+key: tropomi
+name: Sentinel-5P TROPOMI (daily wall-to-wall, 5.5 x 7 km)
+class: satellite
+tier: B                          # detection statistics only, no blind test possible at this scale (TDD section 4 table) [schuit2023; lauvaux2022]
+enabled_for_certification: false
+observation_mode: snapshot
+spatial_scope: site              # a facility total, but at pixel scale it aggregates neighbours; handled as site-level in v1
+schedule: orbit
+pod:
+  pod50_kg_h: 4000.0             # TODO(verify) [schuit2023; lauvaux2022]; consistent with Phase 3 test (10 t/h detected on nearly every clear pass)
+  pod90_kg_h: 8000.0
+  gamma: 1.0
+  u_ref_m_s: 3.0
+  surface_adjustment: {enabled: false}   # coarse pixels; surface albedo effects folded into the detection statistics
+  citations: [schuit2023, lauvaux2022, jacob2022]
+  provenance: {status: summary, basis: "super-emitter detection statistics; no controlled release"}
+quantification:
+  ratio_95_low: 0.50
+  ratio_95_high: 2.00
+  tier: B
+  citations: [schuit2023, lauvaux2022]
+  provenance: {status: summary, basis: "mass-balance / IME uncertainty of roughly a factor of 2; TODO(verify)"}
+false_positive:
+  rate_per_opportunity: 0.005
+  reported_rate_quantile_max: 0.25
+  citations: [schuit2023]
+  provenance: {status: assumption, basis: "0.5 % per pixel-day after plume screening assumed"}
+constraints:
+  max_wind_m_s: 10.0
+  max_solar_zenith_deg: 70.0
+  max_cloud_fraction: null
+  day_only: true
+orbit:
+  tle_name: SENTINEL-5P
+  norad_id: 42969
+  swath_km: 2600.0
+  tasked: false
+  local_time_desc: "13:30 ascending"
+  citations: [celestrak]
+cost:
+  per_site_visit_usd: null
+  per_tasking_usd: null
+  per_site_year_usd: 5.0
+  citations: [cost-assumptions]
+  provenance: {status: assumption, basis: "open data; nominal processing cost"}

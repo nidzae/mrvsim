@@ -1,0 +1,38 @@
+key: bridger_gml
+name: Bridger Photonics Gas Mapping LiDAR (aircraft)
+class: aircraft
+tier: A                          # TDD section 4 table: [sherwin2021; elabbadi2024; chen2024]
+enabled_for_certification: true
+observation_mode: snapshot
+spatial_scope: site              # TDD section 4.3: aircraft resolve the facility total
+schedule: campaign
+pod:
+  pod50_kg_h: 2.0                # TODO(verify) at u_ref, wind-normalised; [sherwin2021; elabbadi2024]
+  pod90_kg_h: 8.0                # TODO(verify)
+  gamma: 1.0                     # TDD section 4.1 default for imaging sensors
+  u_ref_m_s: 3.0
+  surface_adjustment: {enabled: false}   # active LiDAR, not passive SWIR
+  citations: [sherwin2021, elabbadi2024, chen2024]
+  provenance: {status: summary, basis: "POD50/POD90 recalled from El Abbadi et al. 2024 and Sherwin et al. 2021 blind tests; replace with fit to the release table"}
+quantification:
+  ratio_95_low: 0.40             # -60 % ... +90 % at 95 % for a single aircraft snapshot
+  ratio_95_high: 1.90            # [daniels2023; sherwin2023] as quoted in PRD section 8; TODO(verify) sensor-specific values
+  tier: A
+  citations: [elabbadi2024, sherwin2021, daniels2023]
+  provenance: {status: summary, basis: "beta, sigma derived from the -60 %/+90 % 95 % range quoted for aircraft snapshots"}
+false_positive:
+  rate_per_opportunity: 0.01     # TODO(verify) [elabbadi2024]
+  reported_rate_quantile_max: 0.25
+  citations: [elabbadi2024]
+  provenance: {status: assumption, basis: "blind tests report few false positives; 1 % per site pass assumed"}
+constraints:
+  max_wind_m_s: 10.0
+  max_solar_zenith_deg: null
+  max_cloud_fraction: 0.8        # flies under cloud; only low ceilings ground it (looser than satellites, TDD section 5.2)
+  day_only: true
+cost:
+  per_site_visit_usd: 600.0      # TODO(verify) [cost-assumptions]
+  per_tasking_usd: null
+  per_site_year_usd: null
+  citations: [cost-assumptions]
+  provenance: {status: assumption, basis: "analyst placeholder per site pass in a basin-scale campaign"}

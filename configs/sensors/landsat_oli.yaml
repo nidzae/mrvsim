@@ -1,0 +1,46 @@
+key: landsat_oli
+name: Landsat 8/9 OLI (wall-to-wall multispectral)
+class: satellite
+tier: A                          # [sherwin2023]
+enabled_for_certification: true
+observation_mode: snapshot
+spatial_scope: site
+schedule: orbit
+pod:
+  pod50_kg_h: 3000.0             # TODO(verify) [sherwin2023]
+  pod90_kg_h: 9000.0             # TODO(verify)
+  gamma: 1.0
+  u_ref_m_s: 3.0
+  ab_cov: [[0.3, -0.04], [-0.04, 0.008]]   # ASSUMPTION
+  surface_adjustment: {enabled: true, rho_ref: 0.30, rho_p10: 0.12, phi_at_p10: 0.5, uncertainty_halfwidth: 0.5}
+  citations: [sherwin2023]
+  provenance: {status: summary, basis: "recalled from Sherwin 2023; replace with fit"}
+quantification:
+  ratio_95_low: 0.35
+  ratio_95_high: 2.20
+  tier: A
+  citations: [sherwin2023]
+  provenance: {status: summary, basis: "TODO(verify)"}
+false_positive:
+  rate_per_opportunity: 0.03
+  reported_rate_quantile_max: 0.25
+  citations: [sherwin2023]
+  provenance: {status: assumption, basis: "3 % per scene assumed"}
+constraints:
+  max_wind_m_s: 8.0
+  max_solar_zenith_deg: 70.0
+  max_cloud_fraction: null
+  day_only: true
+orbit:
+  tle_name: LANDSAT 9
+  norad_id: 49260
+  swath_km: 185.0
+  tasked: false
+  local_time_desc: "10:00 descending"
+  citations: [celestrak]
+cost:
+  per_site_visit_usd: null
+  per_tasking_usd: null
+  per_site_year_usd: 20.0
+  citations: [cost-assumptions]
+  provenance: {status: assumption, basis: "open data; nominal processing cost"}

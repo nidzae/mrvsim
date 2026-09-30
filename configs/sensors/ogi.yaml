@@ -1,0 +1,38 @@
+key: ogi
+name: Optical gas imaging camera, component-level survey (EPA Method 21 alternative)
+class: ogi
+tier: A                          # [ravikumar2018; zimmerle2020]
+enabled_for_certification: true
+observation_mode: survey
+spatial_scope: source
+schedule: survey
+pod:
+  pod50_kg_h: 0.02               # TODO(verify) [zimmerle2020]; realistic-field POD at typical imaging distance
+  pod90_kg_h: 0.10               # TODO(verify)
+  gamma: 0.5                     # ASSUMPTION
+  u_ref_m_s: 3.0
+  surface_adjustment: {enabled: false}
+  citations: [zimmerle2020, ravikumar2018]
+  provenance: {status: summary, basis: "field detection limits recalled from Zimmerle 2020; replace with fit"}
+quantification:
+  ratio_95_low: 0.25
+  ratio_95_high: 4.0
+  tier: C
+  citations: [ravikumar2018]
+  provenance: {status: assumption, basis: "OGI does not quantify; a wide factor-of-4 range stands in for follow-up Hi-Flow measurement"}
+false_positive:
+  rate_per_opportunity: 0.01
+  reported_rate_quantile_max: 0.25
+  citations: [zimmerle2020]
+  provenance: {status: assumption, basis: "1 % per component assumed"}
+constraints:
+  max_wind_m_s: 8.0
+  max_solar_zenith_deg: null
+  max_cloud_fraction: null
+  day_only: true
+cost:
+  per_site_visit_usd: 1000.0     # TODO(verify) [cost-assumptions]
+  per_tasking_usd: null
+  per_site_year_usd: null
+  citations: [cost-assumptions]
+  provenance: {status: assumption, basis: "analyst placeholder per site survey incl. travel"}

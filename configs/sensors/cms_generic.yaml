@@ -1,0 +1,40 @@
+key: cms_generic
+name: Continuous monitoring system, generic point-sensor network (METEC ADED class)
+class: cms
+tier: A                          # Tier A for detection [metec-aded; bell2023; ilonze2024]; quantification Tier C (TDD section 4 table)
+enabled_for_certification: true
+observation_mode: continuous
+spatial_scope: source            # hourly per-source detection series (TDD section 5.3, 6.4)
+schedule: hourly
+pod:
+  pod50_kg_h: 0.6                # TODO(verify) [bell2023; ilonze2024]
+  pod90_kg_h: 2.5                # TODO(verify)
+  gamma: 0.0                     # TDD section 4.1 default for continuous monitors
+  u_ref_m_s: 3.0
+  surface_adjustment: {enabled: false}
+  citations: [metec-aded, bell2023, ilonze2024]
+  provenance: {status: summary, basis: "hourly-detection POD recalled from METEC ADED single-blind results; replace with fit"}
+quantification:
+  beta: 0.0
+  sigma: 0.9                     # TDD section 4.2 and 6.4: Tier C default for CMS quantification
+  tier: C
+  citations: [bell2023, ilonze2024]
+  provenance: {status: summary, basis: "TDD section 4.2 default absent product-specific METEC quantification"}
+false_positive:
+  rate_per_opportunity: 0.002    # per hour; TODO(verify) [ilonze2024]
+  reported_rate_quantile_max: 0.25
+  citations: [ilonze2024]
+  provenance: {status: assumption, basis: "0.2 % of hours flagged spuriously assumed"}
+constraints:
+  max_wind_m_s: null
+  max_solar_zenith_deg: null
+  max_cloud_fraction: null
+  day_only: false
+  outage_probability: 0.03       # TDD section 5.2 outage gate; TODO(verify)
+  wind_sector_coverage: 0.85     # TDD section 5.2: wind sector must intersect sensor placement; TODO(verify)
+cost:
+  per_site_visit_usd: null
+  per_tasking_usd: null
+  per_site_year_usd: 15000.0     # TODO(verify) [cost-assumptions]
+  citations: [cost-assumptions]
+  provenance: {status: assumption, basis: "analyst placeholder for a multi-node network incl. data service"}
