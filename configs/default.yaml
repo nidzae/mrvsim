@@ -1,0 +1,32 @@
+# MRVSim default run configuration.
+# Sections mirror the pipeline stages in TDD section 1. Each stage validates its
+# own section; the io layer validates only seed / year / replications.
+#
+# Phase 0 note: only the reproducibility scaffolding reads this file. Later
+# phases populate the stage sections and every numeric value carries a
+# citation key from docs/REFERENCES.md.
+name: default
+seed: 20260930
+year: 2024
+replications: 200          # R in TDD section 7; interactive recompute uses 20 (PRD N3)
+
+population:
+  n_per_stratum: 100       # TDD section 3.1 (default 100, minimum 30)
+  min_per_stratum: 30
+  priors_dir: configs/priors
+
+sensors:
+  library_dir: configs/sensors
+  min_tier_for_certification: A   # PRD N2
+
+policy: {}                 # TDD section 8; populated in Phase 7
+
+estimator:
+  method: fast             # fast = importance sampling (TDD section 6.7); exact = PyMC NUTS
+  n_draws: 10000
+  k_max: 8                 # TDD section 6.1
+
+scoring:
+  bar_intensity: 0.002     # B for KPI-1 (PRD section 5.3 example: 0.2 %)
+  bar_mass_t_yr: 50.0      # B for KPI-2 (PRD section 5.3 example: 50 t/yr)
+  w_max: 0.30              # maximum relative half-width (PRD section 5.4)
