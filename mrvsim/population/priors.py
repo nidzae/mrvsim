@@ -19,7 +19,7 @@ DEFAULT_PRIORS_PATH = Path(__file__).resolve().parents[2] / "configs" / "priors"
 
 _SCALAR_KEYS = (
     "lambda_k", "p_intermittent", "mu_0", "sigma_0", "mu_1", "sigma_1", "q_tail", "alpha",
-    "nu_on", "tau_on", "nu_off", "tau_off",
+    "nu_on", "tau_on", "nu_off", "tau_off", "sigma_nu_on", "sigma_nu_off",
 )
 _THROUGHPUT_KEYS = ("ln_gas_m3_yr_mu", "ln_gas_m3_yr_sigma", "ln_oil_bbl_yr_mu", "ln_oil_bbl_yr_sigma")
 
@@ -44,6 +44,8 @@ class StratumPriors:
     tau_on: float
     nu_off: float            # ln D_off (h)                                      [duren2019; cusworth2022]
     tau_off: float
+    sigma_nu_on: float       # between-source sd of nu_on within the stratum (pi heterogeneity)
+    sigma_nu_off: float
     ln_gas_m3_yr_mu: float   # throughput                                        [ghgrp; state-production-data]
     ln_gas_m3_yr_sigma: float
     ln_oil_bbl_yr_mu: float
@@ -62,6 +64,8 @@ class StratumPriors:
         for k in ("sigma_0", "sigma_1", "tau_on", "tau_off", "ln_gas_m3_yr_sigma", "ln_oil_bbl_yr_sigma"):
             if getattr(self, k) <= 0:
                 raise ValueError(f"{k} must be > 0")
+        if self.sigma_nu_on < 0 or self.sigma_nu_off < 0:
+            raise ValueError("sigma_nu_on / sigma_nu_off must be >= 0")
         if self.lambda_k < 0:
             raise ValueError("lambda_k must be >= 0")
         if self.q_tail <= 0 or self.alpha <= 0:

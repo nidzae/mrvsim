@@ -1,0 +1,142 @@
+"""Estimator tests (TDD section 6; CLAUDE.md Phase 4 acceptance tests)."""
+
+from __future__ import annotations
+
+import copy
+
+import numpy as np
+import pytest
+
+from mrvsim.estimate import build_inputs, run_fast_estimator
+from mrvsim.estimate.likelihood import K_MAX, SensorParams, enumerate_states, snapshot_nd_loglik
+from mrvsim.io.seeds import SeedTree
+from mrvsim.observe.deployment import DeploymentPlan, SensorDeployment
+from mrvsim.observe.simulator import simulate_observations
+from mrvsim.population import generate_population, load_strata
+from mrvsim.population.temporal import StatePaths, simulate_intermittent_states
+from mrvsim.sensors import load_library
+
+LIB = load_library()
+YEAR = 2024
+N_FAC = 24
+
+
+def _custom_population(seed: int, q_kg_h: float, intermittent: bool, nu_on: float = 2.0, nu_off: float = 4.5, tau: float = 1.0):
+    """Population of N_FAC single-source facilities in stratum 0 with a prescribed source."""
+    base = generate_population({"n_per_stratum": 30}, SeedTree(seed))
+    p = copy.copy(base)
+    idx = np.arange(N_FAC)
+    for name in ("stratum_idx", "basin_idx", "ftype_idx", "tclass_idx", "lat", "lon"):
+        setattr(p, name, getattr(base, name)[idx])
+    p.n_sources = np.ones(N_FAC, np.int64); p.source_offset = np.arange(N_FAC + 1); p.src_facility = np.arange(N_FAC)
+    p.z = np.full(N_FAC, 1 if intermittent else 0, np.int8); p.q_kg_h = np.full(N_FAC, q_kg_h)
+    p.nu_on = np.full(N_FAC, nu_on); p.tau_on = np.full(N_FAC, tau); p.nu_off = np.full(N_FAC, nu_off); p.tau_off = np.full(N_FAC, tau)
+    if intermittent:
+        from mrvsim.population.temporal import duty_cycle
+        p.pi = duty_cycle(p.nu_on, p.tau_on, p.nu_off, p.tau_off)
+        states = simulate_intermittent_states(np.random.default_rng(seed), p.nu_on, p.tau_on, p.nu_off, p.tau_off)
+    else:
+        p.pi = np.ones(N_FAC); states = np.ones((N_FAC, 8760), dtype=bool)
+    p.states = StatePaths.from_bool(states)
+    cond = copy.copy(base.conditions)
+    for name in ("p_cloud", "surface_reflectance", "surface_heterogeneity", "wind_k", "wind_lambda"):
+        setattr(cond, name, getattr(base.conditions, name)[idx])
+    p.conditions = cond
+    thr = copy.copy(base.throughput)
+    for name in ("gas_mkt_m3_yr", "oil_bbl_yr", "x_ch4", "g_ch4_kg_yr", "f_gas", "mmbtu_yr", "ghgrp_reporter"):
+        setattr(thr, name, getattr(base.throughput, name)[idx])
+    p.throughput = thr
+    return p
+
+
+def _plan(pop, aircraft_visits: int, cms: bool) -> DeploymentPlan:
+    plan = DeploymentPlan(year=YEAR)
+    facs = np.arange(pop.n_facilities)
+    if aircraft_visits:
+        rng = np.random.default_rng(0)
+        hours = (np.sort(rng.choice(np.arange(24, 8736, 24), size=aircraft_visits, replace=False))[None, :] + 18)  # ~noon central
+        plan.deployments["bridger_gml"] = SensorDeployment("bridger_gml", facs, np.tile(hours, (facs.size, 1)).ravel(), np.repeat(facs, aircraft_visits))
+    if cms:
+        plan.deployments["cms_generic"] = SensorDeployment("cms_generic", facs)
+    return plan
+
+
+def _run(pop, plan, seed: int, n_draws: int = 4000):
+    seeds = SeedTree(seed)
+    obs = simulate_observations(pop, LIB, plan, seeds, YEAR)
+    inputs = build_inputs(pop, obs, LIB, seeds)
+    post = run_fast_estimator(inputs, pop.strata, pop.priors, LIB, seeds, n_draws=n_draws)
+    return obs, inputs, post
+
+
+def test_enumeration_matches_brute_force() -> None:
+    rng = np.random.default_rng(0)
+    n = 50
+    K = rng.integers(1, K_MAX + 1, size=n)
+    omega = (np.arange(K_MAX)[None, :] < K[:, None]).astype(float)
+    q = np.exp(rng.normal(1, 1, (n, K_MAX))); pi = rng.uniform(0.05, 0.95, (n, K_MAX))
+    en = enumerate_states(q, pi, omega)
+    # weights sum to one per draw, and every draw is in exactly one group
+    for sel, Q, logw in en.groups:
+        np.testing.assert_allclose(np.exp(logw).sum(axis=1), 1.0, atol=1e-10)
+    assert sorted(np.concatenate([g[0] for g in en.groups]).tolist()) == list(range(n))
+    # brute force expectation of a test function vs. enumeration
+    sp = SensorParams.from_sensor(LIB["bridger_gml"])
+    ll = snapshot_nd_loglik(en, sp, wind=3.0, rho=0.3, count=1, prune_tol=0.0)
+    for d in range(5):
+        k = K[d]; states = (np.arange(2**k)[:, None] >> np.arange(k)[None, :]) & 1
+        Qs = states @ q[d, :k]
+        w = np.prod(np.where(states == 1, pi[d, :k], 1 - pi[d, :k]), axis=1)
+        expect = np.sum(w * (1 - sp.pod(Qs * sp.q_factor(3.0, 0.3))))
+        assert np.isclose(ll[d], np.log(expect), atol=1e-9)
+
+
+def test_steady_source_20_aircraft_passes() -> None:
+    """CLAUDE.md Phase 4: one steady source, 20 aircraft passes -> median q within 10 %, 90 % interval contains truth."""
+    pop = _custom_population(101, q_kg_h=30.0, intermittent=False)
+    obs, inputs, post = _run(pop, _plan(pop, aircraft_visits=20, cms=False), seed=7, n_draws=6000)
+    truth = pop.true_mass_kg_yr()
+    rel_err = np.abs(post.mass_kg_yr_p50 - truth) / truth
+    covered = post.covers(truth)
+    # population-level statements: median error within 10 % for most facilities; the 90 % interval covers ~90 %
+    assert np.median(rel_err) < 0.10, np.median(rel_err)
+    assert covered.mean() >= 0.80, covered.mean()
+    assert np.all(post.ess > 30)
+    # intensity interval is consistent with the noisy denominator
+    assert np.all(post.intensity_p10 < post.intensity_p50) and np.all(post.intensity_p50 < post.intensity_p90)
+
+
+def test_intermittent_identifiability_cms_narrows_pi() -> None:
+    """PRD section 7.4 / CLAUDE.md Phase 4: without CMS the interval on pi is wide; adding CMS narrows it."""
+    pop = _custom_population(202, q_kg_h=60.0, intermittent=True, nu_on=2.0, nu_off=4.5)
+    _, _, post_no = _run(pop, _plan(pop, aircraft_visits=4, cms=False), seed=8, n_draws=4000)
+    _, _, post_cms = _run(pop, _plan(pop, aircraft_visits=4, cms=True), seed=8, n_draws=4000)
+    w_no = post_no.pi_mean_p90 - post_no.pi_mean_p10
+    w_cms = post_cms.pi_mean_p90 - post_cms.pi_mean_p10
+    assert np.median(w_no) > 0.15, np.median(w_no)                # wide without CMS
+    assert np.median(w_cms) < 0.6 * np.median(w_no), (np.median(w_no), np.median(w_cms))   # CMS narrows
+    # and the mass interval narrows too
+    assert np.median(post_cms.relative_half_width("mass")) < np.median(post_no.relative_half_width("mass"))
+    # CMS posterior on pi is centred near the truth
+    truth_pi = pop.pi.mean()
+    assert abs(np.median(post_cms.pi_mean_p50) - truth_pi) < 0.1
+
+
+def test_no_observations_returns_prior() -> None:
+    pop = _custom_population(303, q_kg_h=5.0, intermittent=False)
+    plan = DeploymentPlan(year=YEAR)   # nothing deployed
+    seeds = SeedTree(9)
+    obs = simulate_observations(pop, LIB, plan, seeds, YEAR)
+    inputs = build_inputs(pop, obs, LIB, seeds)
+    post = run_fast_estimator(inputs, pop.strata, pop.priors, LIB, seeds, n_draws=2000)
+    assert np.allclose(post.ess, 2000)                           # uniform weights
+    assert np.all(post.mass_kg_yr_p90 > post.mass_kg_yr_p10 * 5)   # prior is wide
+
+
+def test_fast_estimator_reproducible() -> None:
+    pop = _custom_population(404, q_kg_h=20.0, intermittent=False)
+    plan = _plan(pop, aircraft_visits=3, cms=False)
+    _, _, a = _run(pop, plan, seed=5, n_draws=1000)
+    _, _, b = _run(pop, plan, seed=5, n_draws=1000)
+    np.testing.assert_array_equal(a.mass_kg_yr_p50, b.mass_kg_yr_p50)
+    np.testing.assert_array_equal(a.ess, b.ess)

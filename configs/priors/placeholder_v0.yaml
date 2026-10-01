@@ -17,6 +17,8 @@
 #   q_tail, alpha   Pareto splice point and tail index                          [cusworth2022; sherwin2024]
 #   nu_on, tau_on   ln D_on                                                     [daniels2023; cms-duration-2024]
 #   nu_off, tau_off ln D_off; duty cycle pi = E[D_on] / (E[D_on] + E[D_off])   [duren2019; cusworth2022]
+#   sigma_nu_on, sigma_nu_off  between-source spread of nu_on / nu_off within a stratum, so that pi varies
+#                   across sources and is a genuine latent for the estimator (DECISION_LOG 2026-09-30, Phase 4)
 #   throughput      ln V_gas,mkt (m3/yr) and ln oil (bbl/yr) per basin x type   [ghgrp; state-production-data]
 provenance: PLACEHOLDER
 version: v0
@@ -35,6 +37,8 @@ defaults:
   tau_on: 1.0
   nu_off: 4.5        # ln(90 h)
   tau_off: 1.0
+  sigma_nu_on: 0.7   # PLACEHOLDER between-source spread
+  sigma_nu_off: 0.7  # PLACEHOLDER
   throughput:
     ln_gas_m3_yr_mu: 15.0     # ~3.3e6 m3/yr
     ln_gas_m3_yr_sigma: 1.2

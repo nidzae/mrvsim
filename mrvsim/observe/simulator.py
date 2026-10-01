@@ -169,13 +169,14 @@ def _false_positive_rates(rng: np.random.Generator, sensor: Sensor, n: int) -> n
 
 
 def _detect_and_report(rng_det: np.random.Generator, rng_rep: np.random.Generator, sensor: Sensor, q_obs: np.ndarray,
-                       wind: np.ndarray, rho: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+                       wind: np.ndarray, rho: np.ndarray, no_fp: bool = False) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Bernoulli(POD) for q_obs > 0, false-positive rule for q_obs == 0; reported rates (TDD section 5.3)."""
     n = q_obs.shape[0]
     p = sensor.pod.prob(q_obs, wind_m_s=wind, rho_surf=rho)
     emitting = q_obs > 0
     u = rng_det.random(n)
-    detected = np.where(emitting, u < p, u < sensor.false_positive.rate_per_opportunity)
+    lam = 0.0 if no_fp else sensor.false_positive.rate_per_opportunity
+    detected = np.where(emitting, u < p, u < lam)
     false_pos = detected & ~emitting
     reported = np.full(n, np.nan)
     true_det = detected & emitting
@@ -187,7 +188,7 @@ def _detect_and_report(rng_det: np.random.Generator, rng_rep: np.random.Generato
 
 
 def _gates_snapshot(rng: np.random.Generator, sensor: Sensor, pop: Population, fac: np.ndarray, hour: np.ndarray,
-                    sza: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+                    sza: np.ndarray, force_usable: bool = False) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Cloud, sun, wind gates for snapshot opportunities. Returns (usable, cloud_blocked, sun_blocked, wind_blocked, wind)."""
     month = month_of_hour(hour)
     p_cloud = pop.conditions.cloud_prob(fac, month)
@@ -203,6 +204,8 @@ def _gates_snapshot(rng: np.random.Generator, sensor: Sensor, pop: Population, f
         sun_blocked = np.zeros(fac.shape[0], dtype=bool)
     wind = pop.conditions.draw_wind_m_s(rng, fac, month).astype(np.float32)
     wind_blocked = (wind > sensor.constraints.max_wind_m_s) if sensor.constraints.max_wind_m_s is not None else np.zeros_like(cloud_blocked)
+    if force_usable:   # oracle for the variance budget's spatial-completeness component (TDD section 6.8)
+        cloud_blocked[:] = False; sun_blocked[:] = False; wind_blocked[:] = False
     usable = ~(cloud_blocked | sun_blocked | wind_blocked)
     return usable, cloud_blocked, sun_blocked, wind_blocked, wind
 
@@ -210,19 +213,19 @@ def _gates_snapshot(rng: np.random.Generator, sensor: Sensor, pop: Population, f
 # --------------------------------------------------------------------------- per-sensor simulators
 
 def simulate_snapshot(sensor: Sensor, sensor_idx: int, pop: Population, fac: np.ndarray, hour: np.ndarray,
-                      sza: np.ndarray, seeds: SeedTree) -> ObservationLog:
+                      sza: np.ndarray, seeds: SeedTree, force_usable: bool = False, no_fp: bool = False) -> ObservationLog:
     """Aircraft or satellite site-level snapshots at the given (facility, hour) opportunities."""
     n = fac.shape[0]
     log = ObservationLog()
     if n == 0:
         return log
-    usable, cloud_b, sun_b, wind_b, wind = _gates_snapshot(seeds.rng("observe", "gates", sensor=sensor.key), sensor, pop, fac, hour, sza)
+    usable, cloud_b, sun_b, wind_b, wind = _gates_snapshot(seeds.rng("observe", "gates", sensor=sensor.key), sensor, pop, fac, hour, sza, force_usable)
     rho = pop.conditions.surface_reflectance[fac].astype(np.float32)
     q_true = pop.facility_rate_at_pairs(fac, hour)                       # Q_i(t), TDD section 4.3
     detected = np.zeros(n, dtype=bool); reported = np.full(n, np.nan); fp = np.zeros(n, dtype=bool)
     if usable.any():
         d, r, f = _detect_and_report(seeds.rng("observe", "detect", sensor=sensor.key), seeds.rng("observe", "report", sensor=sensor.key),
-                                     sensor, q_true[usable], wind[usable], rho[usable])
+                                     sensor, q_true[usable], wind[usable], rho[usable], no_fp)
         detected[usable], reported[usable], fp[usable] = d, r, f
     log.facility_idx = fac.astype(np.int64); log.source_idx = np.full(n, -1, np.int64); log.sensor_idx = np.full(n, sensor_idx, np.int16)
     log.hour_idx = hour.astype(np.int64); log.usable = usable; log.cloud_blocked = cloud_b; log.sun_blocked = sun_b; log.wind_blocked = wind_b
@@ -231,13 +234,14 @@ def simulate_snapshot(sensor: Sensor, sensor_idx: int, pop: Population, fac: np.
     return log
 
 
-def simulate_survey(sensor: Sensor, sensor_idx: int, pop: Population, fac: np.ndarray, hour: np.ndarray, seeds: SeedTree, year: int) -> ObservationLog:
+def simulate_survey(sensor: Sensor, sensor_idx: int, pop: Population, fac: np.ndarray, hour: np.ndarray, seeds: SeedTree, year: int,
+                    force_usable: bool = False, no_fp: bool = False) -> ObservationLog:
     """Drone/OGI per-source surveys (TDD section 4.3, 5.3, 6.5). One row per (visit, candidate source)."""
     log = ObservationLog()
     if fac.shape[0] == 0:
         return log
     sza = solar_zenith_deg(hour_index_to_unix(year, hour), pop.lat[fac], pop.lon[fac]).astype(np.float32)
-    usable_v, cloud_b, sun_b, wind_b, wind_v = _gates_snapshot(seeds.rng("observe", "gates", sensor=sensor.key), sensor, pop, fac, hour, sza)
+    usable_v, cloud_b, sun_b, wind_b, wind_v = _gates_snapshot(seeds.rng("observe", "gates", sensor=sensor.key), sensor, pop, fac, hour, sza, force_usable)
     # expand visits to sources
     counts = pop.n_sources[fac]
     rep = np.repeat(np.arange(fac.shape[0]), counts)
@@ -251,7 +255,7 @@ def simulate_survey(sensor: Sensor, sensor_idx: int, pop: Population, fac: np.nd
     detected = np.zeros(n, dtype=bool); reported = np.full(n, np.nan); fp = np.zeros(n, dtype=bool)
     if usable.any():
         d, r, f = _detect_and_report(seeds.rng("observe", "detect", sensor=sensor.key), seeds.rng("observe", "report", sensor=sensor.key),
-                                     sensor, q_src[usable], wind[usable], rho[usable])
+                                     sensor, q_src[usable], wind[usable], rho[usable], no_fp)
         detected[usable], reported[usable], fp[usable] = d, r, f
     log.facility_idx = fac[rep].astype(np.int64); log.source_idx = src; log.sensor_idx = np.full(n, sensor_idx, np.int16)
     log.hour_idx = hours_s.astype(np.int64); log.usable = usable; log.cloud_blocked = cloud_b[rep]; log.sun_blocked = sun_b[rep]
@@ -260,7 +264,8 @@ def simulate_survey(sensor: Sensor, sensor_idx: int, pop: Population, fac: np.nd
     return log
 
 
-def simulate_cms(sensor: Sensor, pop: Population, fac: np.ndarray, seeds: SeedTree, chunk: int = 256) -> CMSLog:
+def simulate_cms(sensor: Sensor, pop: Population, fac: np.ndarray, seeds: SeedTree, chunk: int = 256,
+                 force_usable: bool = False, no_fp: bool = False) -> CMSLog:
     """Hourly CMS series per instrumented facility (TDD section 5.2-5.3): per-source POD, OR-ed to a facility flag."""
     n_f = fac.shape[0]
     T = pop.n_hours
@@ -271,8 +276,9 @@ def simulate_cms(sensor: Sensor, pop: Population, fac: np.ndarray, seeds: SeedTr
     rng_g = seeds.rng("observe", "gates", sensor=sensor.key)
     rng_d = seeds.rng("observe", "detect", sensor=sensor.key)
     rng_r = seeds.rng("observe", "report", sensor=sensor.key)
-    p_out = sensor.constraints.outage_probability or 0.0
-    p_sector = sensor.constraints.wind_sector_coverage if sensor.constraints.wind_sector_coverage is not None else 1.0
+    p_out = 0.0 if force_usable else (sensor.constraints.outage_probability or 0.0)
+    p_sector = 1.0 if force_usable else (sensor.constraints.wind_sector_coverage if sensor.constraints.wind_sector_coverage is not None else 1.0)
+    lam_fp = 0.0 if no_fp else sensor.false_positive.rate_per_opportunity
     hours = np.arange(T)
     for lo in range(0, n_f, chunk):
         f = fac[lo:lo + chunk]; m = f.shape[0]
@@ -286,7 +292,7 @@ def simulate_cms(sensor: Sensor, pop: Population, fac: np.ndarray, seeds: SeedTr
         p = sensor.pod.prob(q)                                              # gamma = 0 for CMS -> no wind term
         det_src = (rng_d.random(q.shape) < p) & (q > 0)
         # false positives per facility-hour where nothing detected
-        fp = rng_d.random((m, T)) < sensor.false_positive.rate_per_opportunity
+        fp = rng_d.random((m, T)) < lam_fp
         det_fac = np.zeros((m, T), dtype=bool); np.logical_or.at(det_fac, owner, det_src)
         rep_src = np.where(det_src, sensor.quantification.draw_reported(rng_r, np.where(q > 0, q, 1.0)), 0.0)
         rep_fac = np.zeros((m, T)); np.add.at(rep_fac, owner, rep_src)
@@ -302,8 +308,11 @@ def simulate_cms(sensor: Sensor, pop: Population, fac: np.ndarray, seeds: SeedTr
 # --------------------------------------------------------------------------- driver
 
 def simulate_observations(pop: Population, library: SensorLibrary, plan: DeploymentPlan, seeds: SeedTree, year: int,
-                          cache_dir: Path | None = None) -> ObservationSet:
-    """Run every deployed sensor over the population for one year (TDD section 5)."""
+                          cache_dir: Path | None = None, force_usable: bool = False, no_false_positives: bool = False) -> ObservationSet:
+    """Run every deployed sensor over the population for one year (TDD section 5).
+
+    ``force_usable`` and ``no_false_positives`` are oracle switches for the variance budget (TDD section 6.8).
+    """
     keys = tuple(plan.sensor_keys())
     parts: list[ObservationLog] = []
     cms: dict[str, CMSLog] = {}
@@ -324,18 +333,18 @@ def simulate_observations(pop: Population, library: SensorLibrary, plan: Deploym
             fac, hour, sza = ov.facility_idx[covered], ov.hour_idx[covered], ov.solar_zenith_deg[covered]
             if sensor.orbit.tasked and dep.taskings_per_year is not None:
                 fac, hour, sza = _select_taskings(seeds.rng("observe", "tasking", sensor=key), fac, hour, sza, dep.taskings_per_year)
-            parts.append(simulate_snapshot(sensor, si, pop, fac, hour, sza, seeds))
+            parts.append(simulate_snapshot(sensor, si, pop, fac, hour, sza, seeds, force_usable, no_false_positives))
         elif sensor.schedule == "campaign":
             fac, hour = dep.visit_facility, dep.visit_hours
             sza = solar_zenith_deg(hour_index_to_unix(year, hour), pop.lat[fac], pop.lon[fac]).astype(np.float32)
             counts[key] = int(fac.shape[0])
-            parts.append(simulate_snapshot(sensor, si, pop, fac, hour, sza, seeds))
+            parts.append(simulate_snapshot(sensor, si, pop, fac, hour, sza, seeds, force_usable, no_false_positives))
         elif sensor.schedule == "survey":
             counts[key] = int(dep.visit_facility.shape[0])
-            parts.append(simulate_survey(sensor, si, pop, dep.visit_facility, dep.visit_hours, seeds, year))
+            parts.append(simulate_survey(sensor, si, pop, dep.visit_facility, dep.visit_hours, seeds, year, force_usable, no_false_positives))
         elif sensor.schedule == "hourly":
             counts[key] = int(dep.facilities.shape[0]) * pop.n_hours
-            cms[key] = simulate_cms(sensor, pop, dep.facilities, seeds)
+            cms[key] = simulate_cms(sensor, pop, dep.facilities, seeds, force_usable=force_usable, no_fp=no_false_positives)
         else:
             raise ValueError(f"unknown schedule {sensor.schedule!r} for {key}")
     log = ObservationLog.concat(parts, keys)

@@ -153,8 +153,16 @@ where $\hat{K}_{U,90}$ is the value below which the true KPI lies with 90% proba
 A bar is a pair $(B, w)$, where $w$ is the maximum permitted relative half-width of the 90% credible interval:
 
 $$
-w = \frac{\hat{K}_{U,90} - \hat{K}_{L,10}}{2 \, \hat{K}_{\text{median}}}
+w = \frac{\hat{K}_{U,90} - \hat{K}_{L,10}}{2 \, \hat{K}_{\text{median}}} \qquad \text{(superseded 2026-09-30; see DECISION\_LOG "two-sided 90 % credible interval")}
 $$
+
+**Amended (2026-09-30):** the 90% credible interval is two-sided, $[\hat{K}_{5}, \hat{K}_{95}]$, and
+
+$$
+w = \frac{\hat{K}_{95} - \hat{K}_{5}}{2 \, \hat{K}_{\text{median}}}.
+$$
+
+The certification bound in §5.3, $\hat{K}_{U,90}$, is unchanged: it is the one-sided 90% upper bound (90th percentile). The original formula above used the 10th and 90th percentiles, which bound only 80% of the posterior.
 
 A facility whose interval is wider than $w$ is reported as **indeterminate**, not as passing or failing.
 
@@ -338,3 +346,4 @@ DOIs marked `verify` in `REFERENCES.md` must be checked against the publisher be
 | 2026-09-30 | Initial draft | Nidhi / Claude |
 | 2026-09-30 | §10: Q4 resolved (LDAR-Sim v4 has no satellite scheduler); Q6 added (scope of LDAR-Sim reuse) | Claude (Phase 0) |
 | 2026-09-30 | §10: Q6 provisional answer (native simulator) | Claude (Phase 3) |
+| 2026-09-30 | §5.4: interval defined as two-sided 90 % [p5, p95]; original w formula marked superseded | Claude (Phase 4) |

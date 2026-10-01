@@ -195,7 +195,7 @@ def generate_population(
     cell_priors = [priors.for_cell(s.basin, s.facility_type) for s in strata.strata]
     P = {k: np.array([getattr(cp, k) for cp in cell_priors]) for k in (
         "lambda_k", "p_intermittent", "mu_0", "sigma_0", "mu_1", "sigma_1", "q_tail", "alpha",
-        "nu_on", "tau_on", "nu_off", "tau_off",
+        "nu_on", "tau_on", "nu_off", "tau_off", "sigma_nu_on", "sigma_nu_off",
         "ln_gas_m3_yr_mu", "ln_gas_m3_yr_sigma", "ln_oil_bbl_yr_mu", "ln_oil_bbl_yr_sigma",
     )}
     ghgrp_share = np.array([strata.facility_types[k].ghgrp_reporter_share for k in strata.facility_types])[ftype_idx]
@@ -209,8 +209,12 @@ def generate_population(
     mu, sigma = rate_params_for_type(z, P["mu_0"][src_stratum], P["sigma_0"][src_stratum], P["mu_1"][src_stratum], P["sigma_1"][src_stratum])
     q = draw_rates_kg_h(seeds.rng("population", "rates"), mu, sigma, P["q_tail"][src_stratum], P["alpha"][src_stratum])
 
-    nu_on, tau_on = P["nu_on"][src_stratum], P["tau_on"][src_stratum]
-    nu_off, tau_off = P["nu_off"][src_stratum], P["tau_off"][src_stratum]
+    # Per-source duration location parameters: stratum value plus between-source spread, so that duty
+    # cycles vary across sources (DECISION_LOG 2026-09-30, Phase 4). tau (within-source spread) stays per stratum.
+    rng_dur = seeds.rng("population", "durations")
+    nu_on = P["nu_on"][src_stratum] + rng_dur.normal(0.0, 1.0, size=src_stratum.shape) * P["sigma_nu_on"][src_stratum]
+    nu_off = P["nu_off"][src_stratum] + rng_dur.normal(0.0, 1.0, size=src_stratum.shape) * P["sigma_nu_off"][src_stratum]
+    tau_on, tau_off = P["tau_on"][src_stratum], P["tau_off"][src_stratum]
     pi = np.where(z == 1, duty_cycle(nu_on, tau_on, nu_off, tau_off), 1.0)
 
     # --- states -------------------------------------------------------------

@@ -322,7 +322,14 @@ $$
 \hat{I}_i = \frac{f_{\text{gas},i} \, \hat{M}_i}{G_i}
 $$
 
-The 10th, 50th, and 90th percentiles of $\hat{M}_i$ and $\hat{I}_i$ across samples are the reported lower bound, median, and upper bound.
+The 10th, 50th, and 90th percentiles of $\hat{M}_i$ and $\hat{I}_i$ across samples are the reported lower bound, median, and upper bound. *(Superseded 2026-09-30: the reported two-sided 90 % interval is the 5th and 95th percentiles; the 90th percentile remains the one-sided certification bound $\hat{K}_{U,90}$. See DECISION_LOG "two-sided 90 % credible interval".)*
+
+**Implementation notes (Phase 4, DECISION_LOG 2026-09-30):**
+- *Estimand.* The reported $\hat{M}_i$ is the posterior predictive of the realised annual mass: each intermittent source's on-hours $H_{ij}$ is drawn per posterior sample from a lognormal with mean $\pi_{ij} T$ and renewal-reward variance $T[(1-\pi)^2 \mathrm{Var}\,D_{\text{on}} + \pi^2 \mathrm{Var}\,D_{\text{off}}]/(\mathbb{E}D_{\text{on}} + \mathbb{E}D_{\text{off}})$, and $\hat{M}_i = \sum_j \omega_{ij} q_{ij} H_{ij}$. The expression above is the expectation of this predictive and is available as the `realised=False` option. See the decision log for why this is required for calibration against $M_i = \sum_t Q_i(t)$.
+- *Sampler.* Importance sampling from the prior with $10^4$ draws, with an automatic switch to tempered sequential Monte Carlo (resample-move) when the effective sample size is below 200.
+- *Snapshot likelihood.* The $2^K$ sum is evaluated exactly, grouped by the drawn $K$; non-detections are grouped by (sensor, 0.5 m/s wind bin); factors whose maximal POD is below $10^{-5}$ are skipped.
+- *CMS likelihood (v1 definition of §6.4).* Composite Gaussian likelihood on (i) the detected-hour fraction with predicted value $p = p_{\text{true}} + \lambda_{\text{FP}}(1 - p_{\text{true}})$, $p_{\text{true}} = 1 - \prod_j (1 - \omega_j \pi_j P_j)$, and variance $p(1-p)/n_{\text{runs}}$; (ii) the log mean detected-run length with predicted value from the OR-over-sources hazard $h = \sum_j w_j\,[1/(u\,\mathbb{E}D_{\text{on},j}) + (1 - P_j)]\,\prod_{k \ne j}(1 - d_k)$, $d_j = \omega_j \pi_j P_j$, $w_j = d_j/\sum d$, $u$ the usable fraction, mixed with $\lambda_{\text{FP}} n_u (1-p_{\text{true}})$ false-call singleton runs; (iii) the mean log reported rate, whose expectation is the lognormal-moment-matched $\mathbb{E}[\ln \sum_j \mathrm{det}_j r_j \mid \text{flagged}]$ mixed with the false-call rate law, with $\sigma = 0.9$.
+- *Survey likelihood (§6.5).* Poisson-process association: $\log L = \sum_j \log(1 - d_j) + \sum_k \log\big(\sum_j \tfrac{d_j}{1-d_j} \mathcal{N}(\ln r_k \mid \ln q_j + \beta, \sigma^2) + \lambda_{\text{FP}} f_{\text{FP}}(r_k)\big)$ with $d_j = \omega_j \pi_j P_s(q_j)$.
 
 ### 6.8 Variance budget
 
@@ -347,8 +354,8 @@ For a configuration, across all simulated facilities and $R$ Monte Carlo replica
 
 | Metric | Definition |
 |---|---|
-| **Calibration** $\kappa$ | Fraction of (facility, replication) pairs where the true KPI lies within the 90% interval. Target: $0.85 \le \kappa \le 0.95$. Reported separately for KPI-1 and KPI-2 and per stratum |
-| **Width** $w$ | Median over facilities of $(\hat{K}_{U,90} - \hat{K}_{L,10}) / (2\hat{K}_{50})$ |
+| **Calibration** $\kappa$ | Fraction of (facility, replication) pairs where the true KPI lies within the two-sided 90% interval $[\hat{K}_5, \hat{K}_{95}]$. Target: $0.85 \le \kappa \le 0.95$. Reported separately for KPI-1 and KPI-2 and per stratum |
+| **Width** $w$ | Median over facilities of $(\hat{K}_{95} - \hat{K}_{5}) / (2\hat{K}_{50})$ (amended 2026-09-30; originally $(\hat{K}_{U,90} - \hat{K}_{L,10})$, an 80 % interval) |
 | **Bias** | Median of $(\hat{K}_{50} - K_{\text{true}}) / K_{\text{true}}$ |
 | **Certifiable share** | Fraction of facilities (and of throughput, stratum-weighted) with $\hat{K}_{U,90} \le B$ and width $\le w_{\max}$ |
 | **Indeterminate share** | Fraction with interval straddling $B$ or width $> w_{\max}$ |
@@ -410,6 +417,7 @@ Each test is a pytest module with a pass/fail threshold. The tool displays resul
 - Population: $n_h \times |h| \approx 100 \times 60 = 6{,}000$ facilities, $\le 8$ sources each, $8{,}760$ hours → $4 \times 10^8$ state values per replication, stored as bit-packed arrays (≈ 50 MB).
 - Observation: vectorized over facilities per hour; ≈ 10 s per replication in NumPy.
 - Estimator, fast path: $10^4$ importance-sampling draws × 6,000 facilities ≈ 20 s.
+  **Measured (Phase 4, 2026-09-30):** 50–110 ms per facility in NumPy with the grouped exact enumeration and SMC fallback, i.e. 340–700 s for 6,300 facilities at $10^4$ draws; ~15 ms per facility at 2,000 draws. The 20 s figure requires compiled kernels and/or fewer draws; see DECISION_LOG "Fast path" and the Phase 4 status note.
 - Estimator, exact path (NUTS): ≈ 5–20 s per facility; run only on validation subsets and on drill-down.
 - Scoring with $R = 200$: ≈ 1–2 hours batch on a laptop for the exact path; interactive recompute uses $R = 20$ and the fast path (< 60 s, meeting PRD N3).
 
@@ -426,6 +434,7 @@ Each test is a pytest module with a pass/fail threshold. The tool displays resul
 7. **Source count** is capped at $K_{\max} = 8$; facilities with more distinct sources have their smaller sources merged.
 8. **Satellite POD parameters** rest on small blind-test samples; their posterior uncertainty is propagated but is itself uncertain.
 9. **Priors and truth share a parametric family**, so calibration in the OSSE is an upper bound on calibration in the field; V5 bounds the degradation.
+10. **Realisation variance is approximated** by a lognormal with renewal-reward CLT variance (Phase 4); for CMS facilities part of it is double-counted (conservative) because the observed detected fraction already reflects the realisation.
 
 Each limitation maps to a version-2 item in `DECISION_LOG.md`.
 
@@ -461,5 +470,7 @@ Each limitation maps to a version-2 item in `DECISION_LOG.md`.
 |---|---|
 | 2026-09-30 | Initial draft |
 | 2026-09-30 | §3.1, §3.4: Phase 1 implementation notes (strata cell list; stationary renewal start; hourly midpoint states) |
+| 2026-09-30 | §6.7, §7: interval is two-sided 90 % [p5, p95]; original percentiles marked superseded |
+| 2026-09-30 | §6.7 estimand (realised-mass predictive), sampler, §6.3–6.5 v1 likelihood definitions, §10 measured timings, §11 limitation 10: Phase 4 |
 | 2026-09-30 | §4.1 wind floor, §5.2 gate conventions: Phase 3 implementation notes |
 | 2026-09-30 | §4: Phase 2 note — sensor YAML blocks carry `provenance.status` (fitted / summary / assumption); POD may be specified as POD50/POD90; see DECISION_LOG "Sensor library provenance scheme" |
