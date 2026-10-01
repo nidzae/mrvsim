@@ -115,6 +115,8 @@ def facilities_geojson(run: LoadedRun, kpi: str = "intensity") -> dict[str, Any]
     truth = run.true_int if kpi == "intensity" else run.true_mass
     states = run.state_int if kpi == "intensity" else run.state_mass
     q = run.post_int_q if kpi == "intensity" else run.post_mass_q
+    other = run.post_mass if kpi == "intensity" else run.post_int          # the other KPI, for hover tooltips (display units)
+    other_scale = 1e-3 if kpi == "intensity" else 1.0
     ratio = run.prior_ratio(kpi); po = run.prior_only(kpi)
     ev = run.evidence
     basins = list(pop.strata.basins); ftypes = list(pop.strata.facility_types)
@@ -128,6 +130,8 @@ def facilities_geojson(run: LoadedRun, kpi: str = "intensity") -> dict[str, Any]
                  "p90": float(post[3, i]), "p95": float(post[4, i]), "truth": float(truth[i]), "scale": 1.0 if kpi == "intensity" else 1e-3,
                  # evidence (PRD section 5.4a): prior-width ratio, usable observations, prior-only flag
                  "prior_ratio": fin(ratio[i]), "prior_only": bool(po[i]),
+                 "other_kpi": "mass" if kpi == "intensity" else "intensity",
+                 "other_p05": float(other[0, i] * other_scale), "other_p50": float(other[2, i] * other_scale), "other_p95": float(other[4, i] * other_scale),
                  "n_obs": int(ev[0, i] + ev[1, i]) if ev is not None else None, "cms_h": int(ev[2, i]) if ev is not None else None}
         if q is not None:
             props["q"] = [float(v) for v in q[::5, i]]   # 21-point quantile grid (0, 5, ..., 100 %) for P(K <= B) at any bar

@@ -60,7 +60,7 @@ export default function App() {
         {!wide && <div className="side"><Sensors policy={policy} setPolicy={setPolicy} runSettings={{ ...runSettings, scoring }} setRunSettings={setRunSettings} onRunDone={onRunDone} busy={busy} setBusy={setBusy} />
           {health && !health.anthropic_key_configured && <p className="muted" style={{ marginTop: 10 }}>Gap analysis: the API server has no Anthropic credentials (set ANTHROPIC_API_KEY or run `ant auth login` where the server runs).</p>}</div>}
         <div className="content">
-          {tab === "Map" && <MapView runId={runId} kpi={kpi} bar={kpi === "intensity" ? bar : barMass} wMax={wMax} />}
+          {tab === "Map" && <MapView runId={runId} kpi={kpi} bar={kpi === "intensity" ? bar : barMass} barIntensity={bar} barMass={barMass} wMax={wMax} />}
           {tab === "Dashboard" && <Dashboard runId={runId} kpi={kpi} runSettings={{ ...runSettings, mode: "quick", policy, scoring }} pareto={pareto} onRerunFull={rerunFull} />}
           {tab === "Optimize" && <Optimize scoring={scoring} onPareto={setPareto} onApply={applyPolicy} />}
           {tab === "Gap analysis" && <GapAnalysis runId={runId} onApply={applyYaml} />}

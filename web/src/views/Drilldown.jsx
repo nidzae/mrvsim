@@ -26,7 +26,31 @@ function IntervalBar({ k, unit }) {
   );
 }
 
-export default function Drilldown({ runId, fid, kpi, bar, wMax, onClose }) {
+// One KPI block: decision at its bar, probability, interval bar, percentile table, precision line.
+function KpiBlock({ name, raw, bar, wMax, isInt, primary }) {
+  const k = { ...raw, bar, state: classify(raw, bar), precision: precision(raw, wMax) };
+  const w = halfWidth(k); const pb = probBelow(raw, bar);
+  const fmtK = (v) => (isInt ? fmtPct(v) : `${fmtNum(v, 1)} t/yr`);
+  const f = (v) => (isInt ? fmtPct(v) : fmtNum(v, 1));
+  return (
+    <div style={primary ? {} : { opacity: 0.92, borderTop: "1px solid var(--border)", marginTop: 10, paddingTop: 6 }}>
+      <h3>{name}{!primary && <span className="muted" style={{ fontWeight: 400, fontSize: 12 }}> · the other KPI, decided at its own bar ({fmtK(bar)})</span>}</h3>
+      <div className="prob"><b>{fmtProb(pb)}</b> posterior probability of being below the bar ({fmtK(bar)}) <span className={`badge ${k.state}`} style={{ marginLeft: 6 }}>{k.state}</span></div>
+      <div className="muted">{decision}</div>
+      <IntervalBar k={k} unit={isInt ? "" : "t/yr"} />
+      <table className="grid"><tbody>
+        <tr><th></th><th>p5 (fail bound)</th><th>p10</th><th>median</th><th>p90</th><th>p95 (cert. bound)</th><th>truth</th></tr>
+        <tr><th>posterior</th>{[k.p05, k.p10, k.p50, k.p90, k.p95, k.truth].map((v, i) => <td key={i} className="num">{f(v)}</td>)}</tr>
+        {k.prior && <tr><th>prior (no data)</th><td className="num">{f(k.prior.p05)}</td><td /><td className="num">{f(k.prior.p50)}</td><td /><td className="num">{f(k.prior.p95)}</td><td /></tr>}
+      </tbody></table>
+      <div className="muted" style={{ marginTop: 4 }}>
+        <b>Precision:</b> w = (p95 − p5) / (2 · median) = {fmtNum(w, 2)} {k.precision === "precise" ? "≤" : ">"} w_max {fmtNum(wMax, 2)} ({k.precision}). Does not affect the decision.
+      </div>
+    </div>
+  );
+}
+
+export default function Drilldown({ runId, fid, kpi, bar, barIntensity, barMass, wMax, onClose }) {
   const [d, setD] = useState(null); const [budget, setBudget] = useState(null); const [busy, setBusy] = useState(false); const [err, setErr] = useState(null);
   useEffect(() => { setD(null); setBudget(null); api.facility(runId, fid).then(setD).catch((e) => setErr(String(e))); }, [runId, fid]);
   const runBudget = async () => {
@@ -45,13 +69,8 @@ export default function Drilldown({ runId, fid, kpi, bar, wMax, onClose }) {
   const k = { ...raw, bar, state: classify(raw, bar), precision: precision(raw, wMax), priorOnly };
   const w = halfWidth(k); const pb = probBelow(raw, bar);
   const fmtK = (v) => (kpi === "intensity" ? fmtPct(v) : `${fmtNum(v, 1)} ${unit}`);
-  const probText = fmtProb(pb);
   const legacy = !raw.quantiles;   // scored before the quantile grid and evidence measures existed (2026-10-01)
   const thr = d.throughput; const mon = d.monitoring || [];
-  const decision = k.state === "certified" ? `p95 ${fmtK(k.p95)} ≤ bar ${fmtK(bar)}: at least 95 % posterior probability of being below the bar`
-    : k.state === "fails" ? `p5 ${fmtK(k.p05)} > bar ${fmtK(bar)}: at least 95 % posterior probability of being above the bar`
-    : k.state === "indeterminate" ? `interval ${fmtK(k.p05)}–${fmtK(k.p95)} straddles the bar ${fmtK(bar)}: the data cannot decide at 95 %`
-    : "no posterior for this facility";
   const sensors = [...new Set(d.timeline.map((t) => t.sensor))];
   const baseKind = (t) => (!t.usable ? (t.cloud_blocked ? "cloud-out" : t.sun_blocked ? "night" : "wind-out") : t.detected ? (t.false_positive ? "false positive" : "detection") : "non-detection");
   const pts = d.timeline.map((t) => { const k = baseKind(t); return { day: t.day, y: sensors.indexOf(t.sensor), kind: t.incidental && (k === "detection" || k === "non-detection") ? `incidental ${k}` : k, r: t.reported_kg_h, sensor: t.sensor, scene: t.scene_target }; });
@@ -71,22 +90,13 @@ export default function Drilldown({ runId, fid, kpi, bar, wMax, onClose }) {
       <div className="muted">{d.basin} · {d.facility_type} · {d.n_sources} source{d.n_sources > 1 ? "s" : ""} · posterior: {d.method}
         {thr && <> · gas throughput rank <b>{thr.rank}</b> of {thr.n_facilities} ({fmtNum(thr.gas_mkt_m3_yr / 1e6, 1)} Mm³/yr)</>}</div>
       {legacy && <div className="muted" style={{ marginTop: 4 }}>This run was scored before the probability grid and evidence measures existed; probabilities outside p5–p95 are bounds. Re-run it to get exact values.</div>}
-      <h3>{kpi === "intensity" ? "Methane intensity" : "Absolute emissions (t/yr)"}</h3>
-      <div className="prob"><b>{probText}</b> posterior probability of being below the bar ({fmtK(bar)})</div>
-      <div className="muted"><b className={`why ${k.state}`}>{k.state}</b> · {decision}</div>
-      <IntervalBar k={k} unit={unit} />
-      <table className="grid"><tbody>
-        <tr><th></th><th>p5 (fail bound)</th><th>p10</th><th>median</th><th>p90</th><th>p95 (cert. bound)</th><th>truth</th></tr>
-        <tr><th>posterior</th>{[k.p05, k.p10, k.p50, k.p90, k.p95, k.truth].map((v, i) => <td key={i} className="num">{kpi === "intensity" ? fmtPct(v) : fmtNum(v, 1)}</td>)}</tr>
-        {k.prior && <tr><th>prior (no data)</th><td className="num">{kpi === "intensity" ? fmtPct(k.prior.p05) : fmtNum(k.prior.p05, 1)}</td><td /><td className="num">{kpi === "intensity" ? fmtPct(k.prior.p50) : fmtNum(k.prior.p50, 1)}</td><td /><td className="num">{kpi === "intensity" ? fmtPct(k.prior.p95) : fmtNum(k.prior.p95, 1)}</td><td /></tr>}
-      </tbody></table>
-      <div className="muted" style={{ marginTop: 4 }}>
-        <b>Precision:</b> w = (p95 − p5) / (2 · median) = {fmtNum(w, 2)} {k.precision === "precise" ? "≤" : ">"} w_max {fmtNum(wMax, 2)} ({k.precision}). Does not affect the decision.
-      </div>
+      <KpiBlock name={kpi === "intensity" ? "Methane intensity" : "Absolute emissions (t/yr)"} raw={raw} bar={bar} wMax={wMax} isInt={kpi === "intensity"} primary />
       {ev && <div className="muted" style={{ marginTop: 4 }}>
         <b>Evidence:</b> {ev.n_usable_snapshots} usable snapshot{ev.n_usable_snapshots === 1 ? "" : "s"} · {ev.n_survey_visits} survey visit{ev.n_survey_visits === 1 ? "" : "s"} · {ev.cms_usable_hours.toLocaleString()} CMS hours {ev.n_incidental_usable > 0 && <> (of which {ev.n_incidental_usable} incidental)</>} · posterior interval is {Number.isFinite(ratio) ? `${Math.round(ratio * 100)} %` : "–"} as wide as the prior's (log scale; prior-only above {Math.round(ev.prior_only_ratio * 100)} %).
         {k.priorOnly && <span className="flagged"> Prior-only: the decision rests on the population prior, not on measurements of this facility.</span>}
       </div>}
+      <KpiBlock name={kpi === "intensity" ? "Absolute emissions (t/yr)" : "Methane intensity"} raw={kpi === "intensity" ? d.mass_t_yr : d.intensity}
+                bar={kpi === "intensity" ? (barMass ?? d.mass_t_yr.bar) : (barIntensity ?? d.intensity.bar)} wMax={wMax} isInt={kpi !== "intensity"} primary={false} />
       {mon.length > 0 && <>
         <h3>Monitoring at this facility</h3>
         <table className="grid"><tbody>
