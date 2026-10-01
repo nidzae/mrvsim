@@ -1,7 +1,9 @@
 [submodule "vendor/ldar_sim"]
 	path = vendor/ldar_sim
 	url = https://github.com/LDAR-Sim/LDAR_Sim.git
+	ignore = untracked
 [submodule "vendor/feast"]
 	path = vendor/feast
 	url = https://github.com/FEAST-SEDLab/FEAST_PtE.git
 	branch = FEAST_3.1
+	ignore = untracked
