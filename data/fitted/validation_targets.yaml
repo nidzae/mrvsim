@@ -1,86 +1,504 @@
-# Published comparison values for validation tests V1-V7 (TDD section 9).
-# Every numeric target carries a citation key (docs/REFERENCES.md) and a status:
-#   ok      transcribed from the publication and checked
-#   verify  recalled or taken from the TDD text; must be checked against the paper before any public claim
-#   missing value not yet transcribed; the test reports "skipped: target missing"
-# Tests also refuse to run while configs/priors has provenance PLACEHOLDER (CLAUDE.md Phase 6), unless
-# MRVSIM_ALLOW_PLACEHOLDER_VALIDATION=1 is set, in which case results are flagged diagnostic-only.
 provenance: TRANSCRIBED_PARTIAL
-last_updated: 2026-09-30
-
+last_updated: '2026-10-01   # Sherwin 2024 correction release transcribed (Tables S10/S21, CDF_data); Cusworth 2022; Rutherford 2021'
 V1:
   description: Detected-rate distribution above 10 kg/h per basin vs Cusworth 2022 / Sherwin 2024; persistence vs Cusworth 2022
-  citations: [cusworth2022, sherwin2024]
-  pass_rule: "KS p > 0.05 per basin when a target sample is provided; else all target quantiles inside the simulated 90 % bootstrap band. Persistence within published CI."
-  rate_quantiles_kg_h:          # per basin, quantiles of detected source rates above 10 kg/h; null = missing
-    permian:     {p25: null, p50: null, p75: null, p90: null, status: missing, citation: cusworth2022}
-    appalachian: {p25: null, p50: null, p75: null, p90: null, status: missing, citation: cusworth2022}
-    haynesville: {p25: null, p50: null, p75: null, p90: null, status: missing, citation: sherwin2024}
-    eagle_ford:  {p25: null, p50: null, p75: null, p90: null, status: missing, citation: sherwin2024}
-    bakken:      {p25: null, p50: null, p75: null, p90: null, status: missing, citation: sherwin2024}
-    dj:          {p25: null, p50: null, p75: null, p90: null, status: missing, citation: sherwin2024}
-    anadarko:    {p25: null, p50: null, p75: null, p90: null, status: missing, citation: sherwin2024}
-    san_juan:    {p25: null, p50: null, p75: null, p90: null, status: missing, citation: cusworth2022}
-    uinta:       {p25: null, p50: null, p75: null, p90: null, status: missing, citation: cusworth2022}
-  rate_sample_files: {}          # optional: basin -> CSV path with one detected rate (kg/h) per row, for the KS test
-  persistence:                   # share of point sources re-detected on revisit (multi-year); Cusworth 2022
-    value: null
-    ci_95: [null, null]
-    status: missing
+  citations:
+  - cusworth2022
+  - sherwin2024
+  pass_rule: 'Per basin: detected-site quantiles within the simulated 90 % bootstrap band (KS when a sample is given); site-level survival curve
+    within a factor of 2 at every level with S > 1e-3; Cusworth-style persistence within the published band'
+  rate_quantiles_kg_h:
+    permian:
+      p25: 29.4
+      p50: 40.17
+      p75: 79.57
+      p90: 231.47
+      status: ok
+      citation: sherwin2024
+      note: site emission among sites at or above the campaign detection floor 23.3 kg/h; Permian_fall2021 production CDF (Zenodo 17968370)
+      floor_kg_h: 23.35
+    appalachian:
+      p25: 511.02
+      p50: 1100.74
+      p75: 2027.06
+      p90: 3085.12
+      status: ok
+      citation: sherwin2024
+      note: site emission among sites at or above the campaign detection floor 92.2 kg/h; Pennsylvania_2021 production CDF (Zenodo 17968370)
+      floor_kg_h: 92.24
+    haynesville:
+      p25: null
+      p50: null
+      p75: null
+      p90: null
+      status: missing
+      citation: sherwin2024
+    eagle_ford:
+      p25: null
+      p50: null
+      p75: null
+      p90: null
+      status: missing
+      citation: sherwin2024
+    bakken:
+      p25: null
+      p50: null
+      p75: null
+      p90: null
+      status: missing
+      citation: sherwin2024
+    dj:
+      p25: 12.32
+      p50: 16.35
+      p75: 24.8
+      p90: 36.99
+      status: ok
+      citation: sherwin2024
+      note: site emission among sites at or above the campaign detection floor 10.2 kg/h; Denver_fall2021 production CDF (Zenodo 17968370)
+      floor_kg_h: 10.16
+    anadarko:
+      p25: null
+      p50: null
+      p75: null
+      p90: null
+      status: missing
+      citation: sherwin2024
+    san_juan:
+      p25: null
+      p50: null
+      p75: null
+      p90: null
+      status: missing
+      citation: cusworth2022
+    uinta:
+      p25: 9.94
+      p50: 12.53
+      p75: 19.21
+      p90: 31.32
+      status: ok
+      citation: sherwin2024
+      note: site emission among sites at or above the campaign detection floor 8.4 kg/h; Uinta_2020 production CDF (Zenodo 17968370)
+      floor_kg_h: 8.35
+  rate_sample_files: {}
+  persistence:
+    value: 0.26
+    ci_95:
+    - 0.2
+    - 0.35
+    by_basin:
+      permian: 0.26
+      appalachian: 0.6
+      san_joaquin: 0.29
+    status: ok
     citation: cusworth2022
-    note: "Duren 2019 reports mean intermittency 0.23 in California (TDD section 3.4) [duren2019]; not a US O&G basin target"
-
+    note: Cusworth 2022 persistence is per detected source over repeat overflights within a campaign; Duren 2019 gives 20-35 % (mean) for oil
+      & gas in California. The TDD's 0.23 is inside that band.
+  point_source_share:
+    value: 0.4
+    by_campaign:
+      permian_2019: 0.59
+      permian_2020: 0.41
+      permian_2021: 0.67
+      marcellus_2021: 0.59
+      sjv_2020: 0.47
+      sjv_2021: 0.13
+    threshold_kg_h: 10.0
+    status: ok
+    citation: cusworth2022
+  duration_shares:
+    short_0_0p3:
+    - 0.41
+    - 0.48
+    long_0p7_1:
+    - 0.38
+    - 0.39
+    status: ok
+    citation: cusworth2022
+  site_level_national:
+    quantiles_kg_h:
+      p10: 0.002
+      p25: 0.048
+      p50: 0.325
+      p75: 1.322
+      p90: 4.088
+      p95: 7.231
+      p99: 15.788
+      p99.9: 76.8
+    mean_kg_h: 1.674
+    top1pct_share: 0.253
+    top5pct_share: 0.499
+    status: ok
+    citation: rutherford2021
+    note: model-derived national site estimates (gas production sites), not direct measurements; used to constrain the full site-level distribution
+      including sub-detection sources
+  site_survival:
+    permian:
+      levels_kg_h:
+      - 0.1
+      - 0.3
+      - 1
+      - 3
+      - 10
+      - 30
+      - 100
+      - 300
+      - 1000
+      fraction_at_or_above:
+      - 0.68129
+      - 0.54199
+      - 0.35736
+      - 0.2044
+      - 0.08477
+      - 0.02405
+      - 0.00653
+      - 0.00255
+      - 0.00071
+      campaign: Permian_fall2021
+      status: ok
+      citation: sherwin2024
+    appalachian:
+      levels_kg_h:
+      - 0.1
+      - 0.3
+      - 1
+      - 3
+      - 10
+      - 30
+      - 100
+      - 300
+      - 1000
+      fraction_at_or_above:
+      - 0.54085
+      - 0.3563
+      - 0.17145
+      - 0.06545
+      - 0.01732
+      - 0.00561
+      - 0.00218
+      - 0.00186
+      - 0.00117
+      campaign: Pennsylvania_2021
+      status: ok
+      citation: sherwin2024
+    dj:
+      levels_kg_h:
+      - 0.1
+      - 0.3
+      - 1
+      - 3
+      - 10
+      - 30
+      - 100
+      - 300
+      - 1000
+      fraction_at_or_above:
+      - 0.64796
+      - 0.50593
+      - 0.31108
+      - 0.14602
+      - 0.03449
+      - 0.006
+      - 0.00074
+      - 0.00035
+      - 0.0
+      campaign: Denver_fall2021
+      status: ok
+      citation: sherwin2024
+    uinta:
+      levels_kg_h:
+      - 0.1
+      - 0.3
+      - 1
+      - 3
+      - 10
+      - 30
+      - 100
+      - 300
+      - 1000
+      fraction_at_or_above:
+      - 0.77824
+      - 0.62651
+      - 0.39027
+      - 0.18166
+      - 0.04037
+      - 0.006
+      - 0.00231
+      - 0.00124
+      - 0.00028
+      campaign: Uinta_2020
+      status: ok
+      citation: sherwin2024
 V2:
   description: Simulated basin totals vs Sherwin 2024 basin totals; FEAST 3.1 cross-check within 15 %
-  citations: [sherwin2024, kemp2016, feast-repo]
-  pass_rule: "Simulated stratum-weighted basin total inside the published 95 % CI; FEAST and MRVSim within 15 %"
-  basin_totals_t_h:              # production-segment basin methane emission rate (t/h) with 95 % CI
-    permian:     {value: null, ci_95: [null, null], status: missing, citation: sherwin2024}
-    appalachian: {value: null, ci_95: [null, null], status: missing, citation: sherwin2024}
-    haynesville: {value: null, ci_95: [null, null], status: missing, citation: sherwin2024}
-    eagle_ford:  {value: null, ci_95: [null, null], status: missing, citation: sherwin2024}
-    bakken:      {value: null, ci_95: [null, null], status: missing, citation: sherwin2024}
-    dj:          {value: null, ci_95: [null, null], status: missing, citation: sherwin2024}
-    anadarko:    {value: null, ci_95: [null, null], status: missing, citation: sherwin2024}
-    san_juan:    {value: null, ci_95: [null, null], status: missing, citation: sherwin2024}
-    uinta:       {value: null, ci_95: [null, null], status: missing, citation: sherwin2024}
+  citations:
+  - sherwin2024
+  - kemp2016
+  - feast-repo
+  pass_rule: Simulated true basin loss rate (sample emissions / sample marketed gas) inside the Sherwin 2024 campaign 95 % CI for basins with
+    a target; FEAST and MRVSim within 15 %
+  loss_rates:
+    range_low:
+      value: 0.0075
+      ci_95:
+      - 0.0065
+      - 0.0084
+      region: high-productivity, gas-rich region (not named in the abstract)
+      status: ok
+      citation: sherwin2024
+    range_high:
+      value: 0.0963
+      ci_95:
+      - 0.0904
+      - 0.1039
+      region: rapidly expanding, oil-focused region (not named in the abstract)
+      status: ok
+      citation: sherwin2024
+    six_region_weighted:
+      value: 0.0295
+      ci_95:
+      - 0.0279
+      - 0.0314
+      status: ok
+      citation: sherwin2024
+    regions_covered:
+    - permian
+    - appalachian
+    - dj
+    - uinta
+    - fort_worth
+    - san_joaquin
+    concentration: 0.05-1.66 % of well sites contribute 50-79 % of well-site emissions in 11 of 15 surveys; midstream 18-57 % of regional emissions
+    note: per-region values are in the correction workbook of Zenodo 10.5281/zenodo.17968370 (Key sim results correction 20250812.xlsx); transcribe
+      once read
+  basin_totals_t_h:
+    permian:
+      value: null
+      ci_95:
+      - null
+      - null
+      status: missing
+      citation: sherwin2024
+    appalachian:
+      value: null
+      ci_95:
+      - null
+      - null
+      status: missing
+      citation: sherwin2024
+    haynesville:
+      value: null
+      ci_95:
+      - null
+      - null
+      status: missing
+      citation: sherwin2024
+    eagle_ford:
+      value: null
+      ci_95:
+      - null
+      - null
+      status: missing
+      citation: sherwin2024
+    bakken:
+      value: null
+      ci_95:
+      - null
+      - null
+      status: missing
+      citation: sherwin2024
+    dj:
+      value: null
+      ci_95:
+      - null
+      - null
+      status: missing
+      citation: sherwin2024
+    anadarko:
+      value: null
+      ci_95:
+      - null
+      - null
+      status: missing
+      citation: sherwin2024
+    san_juan:
+      value: null
+      ci_95:
+      - null
+      - null
+      status: missing
+      citation: sherwin2024
+    uinta:
+      value: null
+      ci_95:
+      - null
+      - null
+      status: missing
+      citation: sherwin2024
   feast_tolerance: 0.15
-
+  loss_rates_by_basin:
+    permian:
+      value: 0.0189
+      ci_95:
+      - 0.0173
+      - 0.0206
+      campaign: Permian_fall2021
+      emissions_t_h: 118.0
+      emissions_ci_95:
+      - 108.0
+      - 129.0
+      status: ok
+      citation: sherwin2024
+      note: 'Table S10 (correction): campaign-wide emissions over covered gas production, production + midstream'
+    appalachian:
+      value: 0.0070999999999999995
+      ci_95:
+      - 0.0060999999999999995
+      - 0.008100000000000001
+      campaign: Pennsylvania_2021
+      emissions_t_h: 73.0
+      emissions_ci_95:
+      - 63.0
+      - 83.0
+      status: ok
+      citation: sherwin2024
+      note: 'Table S10 (correction): campaign-wide emissions over covered gas production, production + midstream'
+    dj:
+      value: 0.011000000000000001
+      ci_95:
+      - 0.01
+      - 0.0124
+      campaign: Denver_fall2021
+      emissions_t_h: 22.0
+      emissions_ci_95:
+      - 20.0
+      - 25.0
+      status: ok
+      citation: sherwin2024
+      note: 'Table S10 (correction): campaign-wide emissions over covered gas production, production + midstream'
+    uinta:
+      value: 0.0555
+      ci_95:
+      - 0.051500000000000004
+      - 0.0599
+      campaign: Uinta_2020
+      emissions_t_h: 19.0
+      emissions_ci_95:
+      - 18.0
+      - 21.0
+      status: ok
+      citation: sherwin2024
+      note: 'Table S10 (correction): campaign-wide emissions over covered gas production, production + midstream'
 V3:
   description: Reproduce published measurement-informed basin intensities with the sensor mix those studies used
-  citations: [haynesville-2025]
-  pass_rule: "Published estimate inside MRVSim's throughput-weighted basin interval; boundary-sensitivity factor within +/-30 %"
+  citations:
+  - haynesville-2025
+  pass_rule: Published estimate inside MRVSim's throughput-weighted basin interval; boundary-sensitivity factor within +/-30 %
   intensities:
-    haynesville: {value: 0.0079, ci_95: [0.0063, 0.0098], status: verify, citation: haynesville-2025, source: "TDD section 9 text"}
-    permian:     {value: 0.046,  ci_95: [0.044, 0.049],   status: verify, citation: haynesville-2025, source: "TDD section 9 text"}
-  sensor_mix: {bridger_gml: {coverage: 1.0, frequency_per_year: 2}}   # aircraft campaigns as in the MII studies; TODO(verify) exact mix
-  boundary_sensitivity_factor: {value: null, tolerance: 0.30, status: missing, citation: haynesville-2025}
-
+    haynesville:
+      value: 0.0079
+      ci_95:
+      - 0.0063
+      - 0.0098
+      status: ok
+      citation: haynesville-2025
+      source: 'Hajny et al. preprint abstract: 0.79 % [0.63 %, 0.98 %] (95 % CI), Bridger LiDAR, 8 % of facilities covered'
+    permian:
+      value: 0.046
+      ci_95:
+      - 0.044
+      - 0.049
+      status: missing
+      citation: haynesville-2025
+      source: TDD section 9 text; NOT found in the Hajny et al. preprint abstract on 2026-09-30 - source unknown, excluded from scoring until
+        located
+    permian_sherwin2024:
+      value: 0.0189
+      ci_95:
+      - 0.0173
+      - 0.0206
+      status: ok
+      citation: sherwin2024
+      source: Table S10 Permian_fall2021
+      basin: permian
+      sensor_mix_note: Kairos/Carbon Mapper aerial campaigns with partial-detection correction
+    appalachian_sherwin2024:
+      value: 0.0070999999999999995
+      ci_95:
+      - 0.0060999999999999995
+      - 0.008100000000000001
+      status: ok
+      citation: sherwin2024
+      source: Table S10 Pennsylvania_2021
+      basin: appalachian
+      sensor_mix_note: Kairos/Carbon Mapper aerial campaigns with partial-detection correction
+    dj_sherwin2024:
+      value: 0.011000000000000001
+      ci_95:
+      - 0.01
+      - 0.0124
+      status: ok
+      citation: sherwin2024
+      source: Table S10 Denver_fall2021
+      basin: dj
+      sensor_mix_note: Kairos/Carbon Mapper aerial campaigns with partial-detection correction
+    uinta_sherwin2024:
+      value: 0.0555
+      ci_95:
+      - 0.051500000000000004
+      - 0.0599
+      status: ok
+      citation: sherwin2024
+      source: Table S10 Uinta_2020
+      basin: uinta
+      sensor_mix_note: Kairos/Carbon Mapper aerial campaigns with partial-detection correction
+  sensor_mix:
+    bridger_gml:
+      coverage: 1.0
+      frequency_per_year: 2
+  boundary_sensitivity_factor:
+    value: null
+    tolerance: 0.3
+    status: missing
+    citation: haynesville-2025
 V4:
   description: Stratum stability, terciles -> quintiles
   citations: []
-  pass_rule: "All headline metrics change by less than 2x Monte Carlo SE"
+  pass_rule: All headline metrics change by less than 2x Monte Carlo SE
   se_multiplier: 2.0
   internal: true
-
 V5:
   description: Prior misspecification; truth from perturbed alpha, mu, nu_on while the estimator keeps the unperturbed prior
   citations: []
-  pass_rule: "kappa >= 0.80 under every single perturbation; report kappa under joint perturbation"
-  perturbations: {alpha: 0.3, mu: 0.3, nu_on: 0.5}
-  kappa_min: 0.80
+  pass_rule: kappa >= 0.80 under every single perturbation; report kappa under joint perturbation
+  perturbations:
+    alpha: 0.3
+    mu: 0.3
+    nu_on: 0.5
+  kappa_min: 0.8
   internal: true
-
 V6:
   description: Transient-event low bias; multi-hour blowdown observed by LEO satellites only (VLMR experiment)
-  citations: [vlmr-2026]
-  pass_rule: "Satellite-only mass estimate underestimates the released mass (ratio < 1) by the published order of magnitude"
-  event: {rate_t_h: 5.0, duration_h: 6, status: verify, citation: vlmr-2026, note: "Representative blowdown; replace with the VLMR release schedule"}
-  published_ratio: {value: null, range: [0.05, 0.8], status: verify, citation: vlmr-2026}
-
+  citations:
+  - vlmr-2026
+  pass_rule: Satellite-only mass estimate underestimates the released mass (ratio < 1) by the published order of magnitude
+  event:
+    rate_t_h: 5.0
+    duration_h: 6
+    status: verify
+    citation: vlmr-2026
+    note: Representative blowdown; replace with the VLMR release schedule (paper not fetched on 2026-09-30)
+  published_ratio:
+    value: null
+    range:
+    - 0.05
+    - 0.8
+    status: verify
+    citation: vlmr-2026
 V7:
   description: Calibration on the default configuration
   citations: []
-  pass_rule: "0.85 <= kappa <= 0.95 for both KPIs"
-  kappa_range: [0.85, 0.95]
+  pass_rule: 0.85 <= kappa <= 0.95 for both KPIs
+  kappa_range:
+  - 0.85
+  - 0.95
   internal: true

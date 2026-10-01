@@ -1,0 +1,612 @@
+# Fitted stratum priors (provenance FITTED). Produced by data/scripts/fit_priors.py on 2026-10-01T06:14:25+00:00.
+# Sources: [rutherford2021] component database and Omara national site estimates; [cusworth2022] persistence and point-source share;
+# [sherwin2024] heavy-tail statement; [ghgrp] midstream reported CH4. Throughput and conditions blocks are still PLACEHOLDER values
+# carried from placeholder_v0.yaml (see 'caveats' in fit_provenance). Full method in the script docstring.
+provenance: FITTED
+version: '2026-10-01'
+fit_provenance:
+  fitted_utc: '2026-10-01T06:14:25+00:00'
+  script: data/scripts/fit_priors.py
+  wellpad_method: Nelder-Mead on log site-level quantiles (Omara national), mean,
+    top-1 % share and Cusworth snapshot share > 10 kg/h; steady lognormal fixed from
+    Rutherford components
+  rutherford_components:
+    mu_0: -2.97100958011524
+    sigma_0: 2.0892865008326784
+    n: 3082
+    mean_kg_d: 10.9091653260341
+    median_kg_d: 1.230037
+  omara_targets:
+    quantiles:
+      25: 0.048150059
+      50: 0.324946961
+      75: 1.322086526
+      90: 4.0875927
+      95: 7.231308173
+      99: 15.787776013999995
+      99.9: 76.80224412681282
+    mean: 1.6739346357321996
+    top1_share: 0.252532621488219
+    n: 498121
+  wellpad_diagnostics:
+    loss: 0.25569791832674343
+    sim_quantiles_kg_h:
+      25: 0.14
+      50: 0.4168
+      75: 1.1121
+      90: 2.6929
+      95: 4.7215
+      99: 14.8282
+      99.9: 65.6718
+    target_quantiles_kg_h:
+      25: 0.0482
+      50: 0.3249
+      75: 1.3221
+      90: 4.0876
+      95: 7.2313
+      99: 15.7878
+      99.9: 76.8022
+    sim_mean: 1.3537215596009036
+    target_mean: 1.6739346357321996
+    sim_top1_share: 0.26597603656834956
+    target_top1_share: 0.252532621488219
+    sim_snapshot_share_above_10kgh: 0.47399600135367514
+    target_share: 0.4
+    sim_persistence_national: 0.5808457711442786
+    sim_mean_pi_intermittent: 0.02252531386834163
+  basin_persistence_targets:
+    permian: 0.26
+    appalachian: 0.6
+  midstream_ghgrp:
+    gathering:
+      lambda_k: 1.4978195151763378
+      mu_0: 2.012275434333046
+      n_facilities: 348
+      ghgrp_median_kg_h: 61.05079908675799
+      ghgrp_mean_kg_h: 165.71221395580747
+    processing:
+      lambda_k: 1.2883790151047938
+      mu_0: 0.1980419080762501
+      n_facilities: 439
+      ghgrp_median_kg_h: 10.480593607305936
+      ghgrp_mean_kg_h: 24.740576340999155
+    storage:
+      lambda_k: 1.0
+      mu_0: 0.3097310486190721
+      n_facilities: 51
+      ghgrp_median_kg_h: 17.14269406392694
+      ghgrp_mean_kg_h: 24.177858357955046
+    transmission:
+      lambda_k: 1.0380168779112338
+      mu_0: 0.33012030250187063
+      n_facilities: 652
+      ghgrp_median_kg_h: 12.586757990867579
+      ghgrp_mean_kg_h: 25.14493689945934
+  basin_fits_sherwin2024:
+    permian:
+      params:
+        lambda_k: 4.496614532407232
+        p_intermittent: 0.7012684299949803
+        mu_1: 2.809016420515542
+        sigma_1: 1.2092332319016075
+        q_tail: 325.6366854308648
+        alpha: 1.4432050945430468
+        mu_0: -2.142835882689579
+      diag:
+        loss_survival: 0.16248150511578352
+        loss_survival_stage1: 0.16248150511578352
+        p_survival_only: 0.7012684299949803
+        campaign: Permian_fall2021
+        levels:
+        - 0.1
+        - 0.3
+        - 1.0
+        - 3.0
+        - 10.0
+        - 30.0
+        - 100.0
+        - 300.0
+        - 1000.0
+        S_target:
+        - 0.6812880221785165
+        - 0.541989757616176
+        - 0.35736164266895576
+        - 0.204397268299511
+        - 0.08476989522278178
+        - 0.02405055600727043
+        - 0.006528233223035841
+        - 0.0025491938454668905
+        - 0.0007055478736755467
+        S_sim:
+        - 0.644375
+        - 0.5003
+        - 0.317475
+        - 0.17985
+        - 0.08725
+        - 0.034875
+        - 0.00715
+        - 0.00115
+        - 0.00025
+        persistence_target: 0.26
+        persistence_sim: 0.3569620253164557
+        sim_mean_rate_kg_h: 5.117371932294622
+        loss_rate_target_pct: 1.89
+        delta_mu_0: 0.8281736974256607
+    appalachian:
+      params:
+        lambda_k: 1.9475953390586318
+        p_intermittent: 0.4488107733999798
+        mu_1: 2.6170276801674834
+        sigma_1: 1.2078133500106145
+        q_tail: 561.1363611384173
+        alpha: 1.419668506445913
+        mu_0: -2.97099996685923
+      diag:
+        loss_survival: 1.1614852109941485
+        loss_survival_stage1: 1.1614852109941485
+        p_survival_only: 0.4488107733999798
+        campaign: Pennsylvania_2021
+        levels:
+        - 0.1
+        - 0.3
+        - 1.0
+        - 3.0
+        - 10.0
+        - 30.0
+        - 100.0
+        - 300.0
+        - 1000.0
+        S_target:
+        - 0.54084967884432
+        - 0.3562952115974729
+        - 0.17145483086895869
+        - 0.06545097979090432
+        - 0.01731707204405984
+        - 0.005608459025393669
+        - 0.0021803861210342194
+        - 0.0018648720643169368
+        - 0.001167204683380545
+        S_sim:
+        - 0.51845
+        - 0.336775
+        - 0.163275
+        - 0.0726
+        - 0.029925
+        - 0.011325
+        - 0.002
+        - 0.000225
+        - 0.0001
+        persistence_target: 0.6
+        persistence_sim: 0.3640710382513661
+        sim_mean_rate_kg_h: 1.6180323603333902
+        loss_rate_target_pct: 0.71
+        delta_mu_0: 9.613256009870398e-06
+    dj:
+      params:
+        lambda_k: 1.0020225824278521
+        p_intermittent: 0.059386157881834094
+        mu_1: 2.0343743842399657
+        sigma_1: 1.2446799067700074
+        q_tail: 1074.943425798147
+        alpha: 1.483127483519074
+        mu_0: -2.2077860180313142
+      diag:
+        loss_survival: 0.03954401453367239
+        loss_survival_stage1: 0.03954401453367239
+        p_survival_only: 0.059386157881834094
+        campaign: Denver_fall2021
+        levels:
+        - 0.1
+        - 0.3
+        - 1.0
+        - 3.0
+        - 10.0
+        - 30.0
+        - 100.0
+        - 300.0
+        - 1000.0
+        S_target:
+        - 0.6479636672975835
+        - 0.5059303897089789
+        - 0.31108311034852515
+        - 0.14602149416775223
+        - 0.03448897297443552
+        - 0.006000805265775287
+        - 0.0007383260264321723
+        - 0.0003542950504311905
+        - 0.0
+        S_sim:
+        - 0.7139
+        - 0.517
+        - 0.28155
+        - 0.117225
+        - 0.03285
+        - 0.0074
+        - 0.00105
+        - 0.0002
+        - 5.0e-05
+        persistence_target: null
+        persistence_sim: 0.9262820512820513
+        sim_mean_rate_kg_h: 1.9071728112188961
+        loss_rate_target_pct: 1.1
+        delta_mu_0: 0.7632235620839256
+    uinta:
+      params:
+        lambda_k: 3.258865703208438
+        p_intermittent: 0.4445167510286044
+        mu_1: 1.0186094942172095
+        sigma_1: 1.6179393093355798
+        q_tail: 291.97602014723276
+        alpha: 1.9104553322270363
+        mu_0: -1.9650118907064344
+      diag:
+        loss_survival: 0.23065415696157937
+        loss_survival_stage1: 0.23065415696157937
+        p_survival_only: 0.4445167510286044
+        campaign: Uinta_2020
+        levels:
+        - 0.1
+        - 0.3
+        - 1.0
+        - 3.0
+        - 10.0
+        - 30.0
+        - 100.0
+        - 300.0
+        - 1000.0
+        S_target:
+        - 0.7782407422367668
+        - 0.6265097403172646
+        - 0.39027180580800075
+        - 0.1816613832554201
+        - 0.04036883395652641
+        - 0.0060033234162952575
+        - 0.002313596618654434
+        - 0.001240114878822885
+        - 0.000280448684277493
+        S_sim:
+        - 0.78915
+        - 0.649225
+        - 0.4181
+        - 0.2079
+        - 0.064625
+        - 0.0166
+        - 0.002725
+        - 0.0006
+        - 0.00015
+        persistence_target: null
+        persistence_sim: 0.7186732186732187
+        sim_mean_rate_kg_h: 3.533030825801345
+        loss_rate_target_pct: 5.55
+        delta_mu_0: 1.0059976894088054
+    fort_worth:
+      params:
+        lambda_k: 1.0458236197930864
+        p_intermittent: 0.517014116539459
+        mu_1: 1.7557209845832786
+        sigma_1: 1.8816997779907454
+        q_tail: 6369.807073615149
+        alpha: 2.1508707060625407
+        mu_0: -2.4175993855743885
+      diag:
+        loss_survival: 0.03976004845355802
+        loss_survival_stage1: 0.03976004845355802
+        p_survival_only: 0.517014116539459
+        campaign: Fort_Worth_2021
+        levels:
+        - 0.1
+        - 0.3
+        - 1.0
+        - 3.0
+        - 10.0
+        - 30.0
+        - 100.0
+        - 300.0
+        - 1000.0
+        S_target:
+        - 0.4456771506814838
+        - 0.31197498626370124
+        - 0.16309396025072911
+        - 0.06824523554487368
+        - 0.022024184827805125
+        - 0.01067218658567235
+        - 0.0025735084759119916
+        - 0.00025201806149743525
+        - 0.0
+        S_sim:
+        - 0.428
+        - 0.283575
+        - 0.142625
+        - 0.063175
+        - 0.021675
+        - 0.007375
+        - 0.00205
+        - 0.00045
+        - 0.0001
+        persistence_target: null
+        persistence_sim: 0.44839449541284404
+        sim_mean_rate_kg_h: 1.5870799110577805
+        loss_rate_target_pct: 1.88
+        delta_mu_0: 0.5534101945408514
+    san_joaquin:
+      params:
+        lambda_k: 6.0572947762377345e-09
+        p_intermittent: 0.029429613098471204
+        mu_1: 4.547201537981326
+        sigma_1: 0.9436266558811676
+        q_tail: 2850304838214279.5
+        alpha: 1.081490110724605
+        mu_0: -4.158514627594532
+      diag:
+        loss_survival: 0.029152636819954895
+        loss_survival_stage1: 0.029152636819954895
+        p_survival_only: 0.029429613098471204
+        campaign: San_Joaquin_fall2021
+        levels:
+        - 0.1
+        - 0.3
+        - 1.0
+        - 3.0
+        - 10.0
+        - 30.0
+        - 100.0
+        - 300.0
+        - 1000.0
+        S_target:
+        - 0.1412448665253649
+        - 0.07619689062894253
+        - 0.02470962103073971
+        - 0.005222777384471326
+        - 0.0012541811205130432
+        - 0.0007208496159067096
+        - 0.00037055307736975635
+        - 9.145337284300008e-05
+        - 0.0
+        S_sim:
+        - 0.178875
+        - 0.075375
+        - 0.021975
+        - 0.005875
+        - 0.001475
+        - 0.0006
+        - 0.00025
+        - 2.5e-05
+        - 0.0
+        persistence_target: null
+        persistence_sim: 0.4264705882352941
+        sim_mean_rate_kg_h: 0.22697678868399462
+        loss_rate_target_pct: 2.37
+        delta_mu_0: -1.1875050474792923
+  citations:
+  - rutherford2021
+  - cusworth2022
+  - sherwin2024
+  - ghgrp
+  - duren2019
+  caveats:
+  - Omara site-level values are model-derived national estimates for gas production
+    sites, not direct measurements
+  - midstream uses GHGRP bottom-up reported CH4 (metric tons CH4), known to under-report
+    by roughly 2x versus measurements (Sherwin 2024); gathering values are operator-basin
+    aggregates (upper bound per station)
+  - 'durations: nu_on fixed at ln(7.4 h); only nu_off fitted; tau and sigma_nu kept
+    at placeholder values'
+  - basins with Sherwin 2024 site-level CDFs (Permian, Appalachian, DJ, Uinta; Fort
+    Worth -> other) have per-basin p, mu_1, sigma_1, q_tail, alpha fitted to the survival
+    curve (and Cusworth persistence where available); Haynesville, Eagle Ford, Bakken,
+    Anadarko, San Juan inherit the national fit
+defaults:
+  lambda_k: 2.119801182280954
+  p_intermittent: 0.21241910391505214
+  mu_0: -2.97100958011524
+  sigma_0: 2.0892865008326784
+  mu_1: 1.9413165459147947
+  sigma_1: 1.1814186702515788
+  q_tail: 179.94412673559808
+  alpha: 1.5616206786571096
+  nu_on: 2.0
+  tau_on: 1.0
+  nu_off: 6.224739448325849
+  tau_off: 1.0
+  sigma_nu_on: 0.7
+  sigma_nu_off: 0.7
+  throughput:
+    ln_gas_m3_yr_mu: 15.0
+    ln_gas_m3_yr_sigma: 1.2
+    ln_oil_bbl_yr_mu: 9.0
+    ln_oil_bbl_yr_sigma: 1.5
+facility_types:
+  wp_oil:
+    throughput:
+      ln_gas_m3_yr_mu: 13.5
+      ln_oil_bbl_yr_mu: 10.0
+  wp_gas:
+    throughput:
+      ln_gas_m3_yr_mu: 16.0
+      ln_oil_bbl_yr_mu: 5.0
+      ln_oil_bbl_yr_sigma: 2.0
+  wp_mixed:
+    throughput:
+      ln_gas_m3_yr_mu: 15.0
+      ln_oil_bbl_yr_mu: 9.0
+  gathering:
+    lambda_k: 1.4978195151763378
+    mu_0: 2.012275434333046
+    p_intermittent: 0.15
+    throughput:
+      ln_gas_m3_yr_mu: 18.5
+      ln_gas_m3_yr_sigma: 1.0
+      ln_oil_bbl_yr_mu: 0.0
+      ln_oil_bbl_yr_sigma: 0.1
+  processing:
+    lambda_k: 1.2883790151047938
+    mu_0: 0.1980419080762501
+    p_intermittent: 0.15
+    throughput:
+      ln_gas_m3_yr_mu: 20.5
+      ln_gas_m3_yr_sigma: 1.0
+      ln_oil_bbl_yr_mu: 0.0
+      ln_oil_bbl_yr_sigma: 0.1
+  storage:
+    lambda_k: 1.0
+    mu_0: 0.3097310486190721
+    p_intermittent: 0.15
+    throughput:
+      ln_gas_m3_yr_mu: 19.5
+      ln_gas_m3_yr_sigma: 1.0
+      ln_oil_bbl_yr_mu: 0.0
+      ln_oil_bbl_yr_sigma: 0.1
+  transmission:
+    lambda_k: 1.0380168779112338
+    mu_0: 0.33012030250187063
+    p_intermittent: 0.15
+    throughput:
+      ln_gas_m3_yr_mu: 20.0
+      ln_gas_m3_yr_sigma: 1.0
+      ln_oil_bbl_yr_mu: 0.0
+      ln_oil_bbl_yr_sigma: 0.1
+basins:
+  permian:
+    lambda_k: 4.496614532407232
+    p_intermittent: 0.7012684299949803
+    mu_1: 2.809016420515542
+    sigma_1: 1.2092332319016075
+    q_tail: 325.6366854308648
+    alpha: 1.4432050945430468
+    mu_0: -2.142835882689579
+  appalachian:
+    lambda_k: 1.9475953390586318
+    p_intermittent: 0.4488107733999798
+    mu_1: 2.6170276801674834
+    sigma_1: 1.2078133500106145
+    q_tail: 561.1363611384173
+    alpha: 1.419668506445913
+    mu_0: -2.97099996685923
+  haynesville: {}
+  eagle_ford: {}
+  bakken: {}
+  dj:
+    lambda_k: 1.0020225824278521
+    p_intermittent: 0.059386157881834094
+    mu_1: 2.0343743842399657
+    sigma_1: 1.2446799067700074
+    q_tail: 1074.943425798147
+    alpha: 1.483127483519074
+    mu_0: -2.2077860180313142
+  anadarko: {}
+  san_juan: {}
+  uinta:
+    lambda_k: 3.258865703208438
+    p_intermittent: 0.4445167510286044
+    mu_1: 1.0186094942172095
+    sigma_1: 1.6179393093355798
+    q_tail: 291.97602014723276
+    alpha: 1.9104553322270363
+    mu_0: -1.9650118907064344
+  other:
+    lambda_k: 1.0458236197930864
+    p_intermittent: 0.517014116539459
+    mu_1: 1.7557209845832786
+    sigma_1: 1.8816997779907454
+    q_tail: 6369.807073615149
+    alpha: 2.1508707060625407
+    mu_0: -2.4175993855743885
+conditions:
+  defaults:
+    cloud_monthly:
+    - 0.55
+    - 0.55
+    - 0.5
+    - 0.45
+    - 0.45
+    - 0.35
+    - 0.35
+    - 0.35
+    - 0.35
+    - 0.4
+    - 0.5
+    - 0.55
+    wind_weibull_k: 2.0
+    wind_weibull_lambda_monthly:
+    - 4.5
+    - 4.7
+    - 5.0
+    - 5.2
+    - 4.8
+    - 4.3
+    - 3.9
+    - 3.8
+    - 4.0
+    - 4.3
+    - 4.4
+    - 4.5
+    surface_reflectance: 0.25
+    surface_heterogeneity: 0.3
+  basins:
+    permian:
+      cloud_monthly:
+      - 0.4
+      - 0.4
+      - 0.35
+      - 0.3
+      - 0.35
+      - 0.3
+      - 0.3
+      - 0.3
+      - 0.3
+      - 0.3
+      - 0.35
+      - 0.4
+      surface_reflectance: 0.3
+      surface_heterogeneity: 0.2
+    appalachian:
+      cloud_monthly:
+      - 0.7
+      - 0.65
+      - 0.6
+      - 0.55
+      - 0.55
+      - 0.5
+      - 0.5
+      - 0.5
+      - 0.5
+      - 0.55
+      - 0.65
+      - 0.7
+      surface_reflectance: 0.15
+      surface_heterogeneity: 0.6
+    haynesville:
+      cloud_monthly:
+      - 0.6
+      - 0.55
+      - 0.5
+      - 0.45
+      - 0.45
+      - 0.4
+      - 0.4
+      - 0.4
+      - 0.4
+      - 0.45
+      - 0.55
+      - 0.6
+      surface_reflectance: 0.18
+      surface_heterogeneity: 0.5
+    bakken:
+      cloud_monthly:
+      - 0.65
+      - 0.6
+      - 0.55
+      - 0.5
+      - 0.5
+      - 0.45
+      - 0.35
+      - 0.35
+      - 0.4
+      - 0.5
+      - 0.6
+      - 0.65
+      surface_reflectance: 0.22
+    uinta:
+      surface_reflectance: 0.28
+    san_juan:
+      surface_reflectance: 0.28

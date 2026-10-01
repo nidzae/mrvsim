@@ -58,15 +58,15 @@ def test_surface_adjustment_shape() -> None:
 
 def test_quantification_reproduces_published_aircraft_range() -> None:
     """CLAUDE.md Phase 2: at least one aircraft sensor reproduces the published 95 % range (-60 %, +90 %)."""
-    s = LIB["bridger_gml"]
+    s = LIB["bridger_gml"]   # published 95 % interval -64.1 % to +87.0 % [daniels2023]
     lo, hi = s.quantification.ratio_interval(0.95)
-    assert lo == pytest.approx(0.40, abs=0.02)
-    assert hi == pytest.approx(1.90, abs=0.05)
+    assert lo == pytest.approx(0.359, abs=0.02)
+    assert hi == pytest.approx(1.870, abs=0.05)
     rng = np.random.default_rng(0)
     r = s.quantification.draw_reported(rng, np.full(200_000, 100.0))
     q2, q97 = np.percentile(r / 100.0, [2.5, 97.5])
-    assert q2 == pytest.approx(0.40, abs=0.02)
-    assert q97 == pytest.approx(1.90, abs=0.05)
+    assert q2 == pytest.approx(0.359, abs=0.02)
+    assert q97 == pytest.approx(1.870, abs=0.05)
 
 
 def test_quantification_loglik_peaks_at_truth_times_bias() -> None:

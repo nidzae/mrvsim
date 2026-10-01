@@ -7,21 +7,21 @@ observation_mode: continuous
 spatial_scope: source            # hourly per-source detection series (TDD section 5.3, 6.4)
 schedule: hourly
 pod:
-  pod50_kg_h: 0.6                # TODO(verify) [bell2023; ilonze2024]
-  pod90_kg_h: 2.5                # TODO(verify)
+  pod50_kg_h: 1.5                # Bell 2023: six of eight evaluable solutions had 90 % detection limits of 2.7-5.9 kg/h; Ilonze 2024: best four
+  pod90_kg_h: 4.5                #   3.9 [3.0, 5.5] to 6.2 [3.7, 16.7] kg/h. POD90 = 4.5 kg/h is the centre of the better solutions [bell2023; ilonze2024]
   gamma: 0.0                     # TDD section 4.1 default for continuous monitors
   u_ref_m_s: 3.0
   surface_adjustment: {enabled: false}
   citations: [metec-aded, bell2023, ilonze2024]
-  provenance: {status: summary, basis: "hourly-detection POD recalled from METEC ADED single-blind results; replace with fit"}
+  provenance: {status: summary, basis: "DL90 of the better-performing solutions in two METEC single-blind rounds (Bell 2023: 2.7-5.9 kg/h; Ilonze 2024: 3.9-6.2 kg/h); POD50 assumed at one third of DL90"}
 quantification:
   beta: 0.0
   sigma: 0.9                     # TDD section 4.2 and 6.4: Tier C default for CMS quantification
   tier: C
   citations: [bell2023, ilonze2024]
-  provenance: {status: summary, basis: "TDD section 4.2 default absent product-specific METEC quantification"}
+  provenance: {status: summary, basis: "TDD section 4.2 Tier C default; consistent with Bell 2023 (>1 kg/h mean relative errors -40 % to +93 %, single estimates -82 % to +448 %) and Ilonze 2024 (61-89 % of estimates within a factor of 3)"}
 false_positive:
-  rate_per_opportunity: 0.002    # per hour; TODO(verify) [ilonze2024]
+  rate_per_opportunity: 0.002    # per hour (assumption). Ilonze 2024 reports 6.9-13.2 % of detection reports as false positives for the best solutions [ilonze2024]
   reported_rate_quantile_max: 0.25
   citations: [ilonze2024]
   provenance: {status: assumption, basis: "0.2 % of hours flagged spuriously assumed"}

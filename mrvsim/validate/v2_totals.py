@@ -26,6 +26,17 @@ def run(targets: dict[str, Any] | None = None, n_per_stratum: int = 100, seed: i
     pop = generate_population({"n_per_stratum": n_per_stratum}, SeedTree(seed), priors=priors)
     truth = pop.true_mass_kg_yr()
     compared: dict[str, Any] = {}; verdicts = []; statuses = []
+    # basin loss rates: sample emissions over sample marketed methane (stratum-weighted), vs Sherwin 2024 Table S10
+    w = pop.stratum_weights("throughput")
+    for basin, blk in (tg.get("loss_rates_by_basin") or {}).items():
+        statuses.append(blk)
+        if basin not in pop.strata.basins:
+            continue
+        sel = pop.basin_idx == list(pop.strata.basins).index(basin)
+        lr = float((w[sel] * truth[sel]).sum() / (w[sel] * pop.throughput.g_ch4_kg_yr[sel]).sum())
+        lo, hi = blk["ci_95"]; ok = bool(lo <= lr <= hi)
+        compared[f"loss_rate_{basin}"] = {"sim_true_loss_rate": lr, "published": blk["value"], "published_ci": blk["ci_95"], "campaign": blk.get("campaign"), "pass": ok}
+        verdicts.append(ok)
     for basin, blk in tg["basin_totals_t_h"].items():
         statuses.append(blk)
         sim = weighted_basin_total_t_h(pop, truth, basin)

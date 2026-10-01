@@ -33,14 +33,15 @@ Grey is the most common result with sparse monitoring. Turning grey into green o
    - the interval as a bar against your bar line (thin band p5–p95, thick band p10–p90, circle at the median, triangle at the synthetic truth),
    - the **observation timeline**: one row per sensor, with detections, non-detections, cloud-outs, wind-outs and night passes,
    - **Compute variance budget**: which error source is making the interval wide (for example, "temporal sampling 60 %" means the sensors could not tell how often the source was on).
-4. **Change the sensor mix.** In **Sensors**, tick a sensor class on or off and set coverage (share of facilities), surveys or taskings per year, and targeting (random or throughput-weighted). Try adding `cms_generic` at 20 % coverage with throughput targeting. Press **Run**. Interactive runs estimate a stratified subsample (10 facilities per stratum, 2,000 posterior draws, 3 replications; change these under **Advanced**) and take about a minute.
-5. **Read the dashboard.** The headline tiles:
+4. **Pick a compute mode.** Under the sensor list, **quick** (default) estimates 10 facilities per stratum with 2,000 posterior draws and 3 replications in about a minute; **full** estimates every facility of the default sample with 10,000 draws and 5 replications and takes tens of minutes; **custom** uses the Advanced settings. The panel shows the time estimate. Explore with quick runs; when a mix looks good, open **Dashboard** and press **Re-run this mix at full resolution**.
+5. **Change the sensor mix.** In **Sensors**, tick a sensor class on or off and set coverage (share of facilities), surveys or taskings per year, and targeting (random or throughput-weighted). Try adding `cms_generic` at 20 % coverage with throughput targeting. Press **Run**. Interactive runs estimate a stratified subsample (10 facilities per stratum, 2,000 posterior draws, 3 replications; change these under **Advanced**) and take about a minute.
+6. **Read the dashboard.** The headline tiles:
    - **Certified share** — percent of facilities, and of gas throughput, that are green.
    - **Calibration κ** — should sit between 0.85 and 0.95. If it is outside that band the tile turns red: the intervals are not trustworthy.
    - **Median interval width** — smaller is better.
    - **Completeness** — share of large emissions the sensors could see at all.
    - **Cost per tonne detected** and **cost per certified MMBtu**.
-6. **Use the tornado chart.** On **Dashboard**, press **Compute tornado**. Each bar reruns the pipeline with one sensor change (a sensor off, doubled frequency, full coverage, or a missing sensor added at 20 %) and shows the change in median interval width. Negative bars narrow intervals; start with the most negative one.
+7. **Use the tornado chart.** On **Dashboard**, press **Compute tornado**. Each bar reruns the pipeline with one sensor change (a sensor off, doubled frequency, full coverage, or a missing sensor added at 20 %) and shows the change in median interval width. Negative bars narrow intervals; start with the most negative one.
 
 ## Finding the cheapest mix that meets a bar
 

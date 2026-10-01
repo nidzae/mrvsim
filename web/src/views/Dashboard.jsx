@@ -17,7 +17,7 @@ function SliceTable({ title, rows }) {
 }
 
 // Headline metrics, tornado, Pareto frontier, slices (PRD F10).
-export default function Dashboard({ runId, kpi, runSettings, pareto }) {
+export default function Dashboard({ runId, kpi, runSettings, pareto, onRerunFull }) {
   const [s, setS] = useState(null); const [err, setErr] = useState(null); const [busy, setBusy] = useState(false); const [prog, setProg] = useState(null);
   useEffect(() => { if (!runId) return; setS(null); api.summary(runId, kpi).then(setS).catch((e) => setErr(String(e))); }, [runId, kpi]);
   const runTornado = async () => {
@@ -84,7 +84,10 @@ export default function Dashboard({ runId, kpi, runSettings, pareto }) {
       <SliceTable title="By basin" rows={s.slices.basin} />
       <SliceTable title="By facility type" rows={s.slices.facility_type} />
       <SliceTable title="By true rate bin" rows={s.slices.rate_bin} />
-      <div className="panel muted">Run {s.run_id} · seed {s.manifest.seed} · git {s.manifest.git?.sha?.slice(0, 8) || "n/a"} · {fmtNum(s.manifest.elapsed_s, 0)} s · priors {s.summary.meta?.priors_provenance}</div>
+      {s.config?.estimator?.mode !== "full" && onRerunFull && (
+        <div className="panel"><b>Looks good?</b> <span className="muted">This was a {s.config?.estimator?.mode || "custom"} run ({s.config?.estimator?.facilities_per_stratum ?? "all"} facilities per stratum, {s.config?.estimator?.n_draws} draws, R = {s.summary.n_replications}).</span>{" "}
+          <button className="primary" onClick={() => onRerunFull(s.config)}>Re-run this mix at full resolution</button></div>)}
+      <div className="panel muted">Run {s.run_id} · mode {s.config?.estimator?.mode || "custom"} · seed {s.manifest.seed} · git {s.manifest.git?.sha?.slice(0, 8) || "n/a"} · {fmtNum(s.manifest.elapsed_s, 0)} s · priors {s.summary.meta?.priors_provenance}</div>
     </div>
   );
 }

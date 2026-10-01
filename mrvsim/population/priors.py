@@ -15,7 +15,11 @@ from typing import Any, Mapping
 import numpy as np
 import yaml
 
-DEFAULT_PRIORS_PATH = Path(__file__).resolve().parents[2] / "configs" / "priors" / "placeholder_v0.yaml"
+# Default priors: the fitted file when present (data/scripts/fit_priors.py, DECISION_LOG 2026-10-01), else the placeholder.
+_PRIORS_DIR = Path(__file__).resolve().parents[2] / "configs" / "priors"
+PLACEHOLDER_PRIORS_PATH = _PRIORS_DIR / "placeholder_v0.yaml"
+FITTED_PRIORS_PATH = _PRIORS_DIR / "fitted_2026-10-01.yaml"
+DEFAULT_PRIORS_PATH = FITTED_PRIORS_PATH if FITTED_PRIORS_PATH.exists() else PLACEHOLDER_PRIORS_PATH
 
 _SCALAR_KEYS = (
     "lambda_k", "p_intermittent", "mu_0", "sigma_0", "mu_1", "sigma_1", "q_tail", "alpha",

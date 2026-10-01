@@ -16,11 +16,11 @@ pod:
   citations: [sherwin2023]
   provenance: {status: summary, basis: "recalled from Sherwin 2023; replace with fit"}
 quantification:
-  ratio_95_low: 0.40
-  ratio_95_high: 1.90
+  ratio_95_low: 0.32
+  ratio_95_high: 2.10
   tier: A
   citations: [sherwin2023]
-  provenance: {status: summary, basis: "TODO(verify)"}
+  provenance: {status: summary, basis: "Sherwin 2023 stage 1 pooled satellite error: -68 % to +110 %; PRISMA-specific threshold not reported (TODO(verify))"}
 false_positive:
   rate_per_opportunity: 0.02
   reported_rate_quantile_max: 0.25

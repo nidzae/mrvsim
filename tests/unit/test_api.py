@@ -39,7 +39,7 @@ def test_health_sensors_quickstart_references(client: TestClient) -> None:
 
 @pytest.mark.slow
 def test_run_summary_facility_attribution(client: TestClient) -> None:
-    body = {"name": "api-test", "seed": 3, "replications": 1, "n_draws": 300, "facilities_per_stratum": 2, "n_per_stratum": 30,
+    body = {"name": "api-test", "mode": "custom", "seed": 3, "replications": 1, "n_draws": 300, "facilities_per_stratum": 2, "n_per_stratum": 30,
             "policy": {"sensors": {"bridger_gml": {"coverage": 1.0, "frequency_per_year": 2}, "cms_generic": {"coverage": 0.2, "targeting": "throughput"}}},
             "scoring": {"bar_mass_t_yr": 50.0, "bar_intensity": 0.002, "w_max": 0.3}}
     job = client.post("/api/run", json=body).json()
@@ -60,10 +60,10 @@ def test_run_summary_facility_attribution(client: TestClient) -> None:
     assert any(t["sensor"] == "bridger_gml" for t in d["timeline"])
     a = client.get(f"/api/run/{run_id}/attribution").json()
     keys = {i["key"] for i in a["items"]}
-    assert {"ghgrp", "sherwin2021", "cost-assumptions"} <= keys
-    assert a["priors_provenance"] == "PLACEHOLDER" and all(i["resolved"] for i in a["items"])
+    assert {"ghgrp", "johnson2021", "cost-assumptions"} <= keys
+    assert a["priors_provenance"] == "FITTED" and all(i["resolved"] for i in a["items"])
     v = client.get("/api/validation").json()
-    assert "targets" in v and v["priors_placeholder"] is True
+    assert "targets" in v and v["priors_placeholder"] is False
     bj = client.post(f"/api/run/{run_id}/facility/{fid}/budget?n_draws=300").json()
     vb = _wait(client, bj["job_id"])
     assert set(vb["shares"]) == {"quantification", "temporal_sampling", "detection_censoring", "spatial_completeness", "false_calls", "denominator"}
@@ -74,3 +74,12 @@ def test_run_summary_facility_attribution(client: TestClient) -> None:
 def test_unknown_job_and_run(client: TestClient) -> None:
     assert client.get("/api/jobs/nope").status_code == 404
     assert client.get("/api/run/nope/summary").status_code == 404
+
+
+def test_modes_and_estimate(client: TestClient) -> None:
+    q = client.post("/api/estimate", json={"mode": "quick"}).json()
+    f = client.post("/api/estimate", json={"mode": "full"}).json()
+    c = client.post("/api/estimate", json={"mode": "custom", "replications": 1, "n_draws": 500, "facilities_per_stratum": 2, "n_per_stratum": 30}).json()
+    assert q["facilities_estimated"] == 630 and q["replications"] == 3 and q["n_draws"] == 2000
+    assert f["facilities_estimated"] == 6300 and f["n_draws"] == 10000 and f["estimated_seconds"] > q["estimated_seconds"] * 5
+    assert c["facilities_estimated"] == 126 and c["replications"] == 1

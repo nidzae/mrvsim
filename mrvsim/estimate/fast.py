@@ -113,8 +113,11 @@ class PriorDraws:
         return (self.omega * h * self.q).sum(axis=1)
 
     def mean_pi_included(self) -> np.ndarray:
-        w = self.omega
-        return (w * self.pi).sum(axis=1) / np.maximum(w.sum(axis=1), 1)
+        """Rate-weighted duty cycle of the facility: sum omega pi q / sum omega q, i.e. the fraction of the facility's
+        emitting capacity that is on. (Changed 2026-10-01 from the unweighted mean over candidate sources, which prior-only
+        small sources dilute; the rate-weighted form is what continuous monitors constrain.)"""
+        w = self.omega * self.q
+        return (w * self.pi).sum(axis=1) / np.maximum(w.sum(axis=1), 1e-12)
 
 
 def draw_prior(rng: np.random.Generator, sp: StratumPriors, n: int, k_max: int = K_MAX) -> PriorDraws:
@@ -184,8 +187,8 @@ def make_facility_loglik(i: int, inputs: EstimatorInputs, sparams: list[SensorPa
         logL = np.zeros(n)
         pi = pd.pi
         if ab.pi_fixed is not None:
-            fixed = np.broadcast_to(ab.pi_fixed, (K_MAX,))
-            pi = np.where((pd.z == 1) & (pd.omega > 0), np.clip(fixed[None, :], 1e-6, 1.0), pd.pi)
+            fixed = np.broadcast_to(ab.pi_fixed, (K_MAX,))          # NaN = no oracle value for this candidate: keep the draw
+            pi = np.where((pd.z == 1) & (pd.omega > 0) & np.isfinite(fixed)[None, :], np.clip(np.nan_to_num(fixed, nan=1.0)[None, :], 1e-6, 1.0), pd.pi)
         if g1 > g0 or d1 > d0:
             en = enumerate_states(pd.q, pi, pd.omega)
             for g in range(g0, g1):
@@ -241,7 +244,7 @@ def estimate_facility(i: int, inputs: EstimatorInputs, priors_by_stratum: list[S
         info = {"method": "smc", "stages": res.n_stages, "acceptance": res.acceptance, "particles": n_p}
     if ab.pi_fixed is not None:
         fixed = np.broadcast_to(ab.pi_fixed, (K_MAX,))
-        pd.pi = np.where((pd.z == 1) & (pd.omega > 0), np.clip(fixed[None, :], 1e-6, 1.0), pd.pi)
+        pd.pi = np.where((pd.z == 1) & (pd.omega > 0) & np.isfinite(fixed)[None, :], np.clip(np.nan_to_num(fixed, nan=1.0)[None, :], 1e-6, 1.0), pd.pi)
     sig_g = 0.0 if ab.sigma_g_zero else float(inputs.sigma_g[i])
     G = denominator_draws(seeds.rng("estimate", "denominator", facility=i), float(inputs.g_hat_kg_yr[i]), sig_g, pd.q.shape[0])
     use_realised = realised if ab.realised is None else ab.realised

@@ -49,7 +49,7 @@ def test_intermittent_duty_cycle_identity(pop) -> None:
 def test_truth_quantities_consistent(pop) -> None:
     m = pop.true_mass_kg_yr()
     assert m.shape == (pop.n_facilities,)
-    assert np.all(m > 0)
+    assert np.all(m >= 0) and (m > 0).mean() > 0.9   # a site whose only source is very intermittent can emit nothing in a year
     # Realised mass should be close to the process expectation in aggregate.
     ratio = m.sum() / pop.expected_mass_kg_yr().sum()
     assert 0.9 < ratio < 1.1
@@ -97,9 +97,11 @@ def test_stratum_weights_sum_to_one(pop) -> None:
 def test_placeholder_priors_are_refused_for_validation() -> None:
     strata = load_strata()
     priors = load_priors(DEFAULT_PRIORS_PATH, list(strata.basins), list(strata.facility_types))
-    assert priors.is_placeholder
+    from mrvsim.population.priors import PLACEHOLDER_PRIORS_PATH
+    ph = load_priors(PLACEHOLDER_PRIORS_PATH, list(strata.basins), list(strata.facility_types))
+    assert ph.is_placeholder and not priors.is_placeholder
     with pytest.raises(PlaceholderPriorsError):
-        require_fitted(priors, "validation test V1")
+        require_fitted(ph, "validation test V1")
 
 
 def test_quintile_strata_for_v4() -> None:

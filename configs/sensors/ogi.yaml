@@ -7,13 +7,13 @@ observation_mode: survey
 spatial_scope: source
 schedule: survey
 pod:
-  pod50_kg_h: 0.02               # TODO(verify) [zimmerle2020]; realistic-field POD at typical imaging distance
-  pod90_kg_h: 0.10               # TODO(verify)
+  pod50_kg_h: 0.035              # Zimmerle 2020: high-experience surveyors reached 90 % POD at 3.29 slpm (7 scfh) = 0.134 kg/h at 2.7 m mean
+  pod90_kg_h: 0.134              #   imaging distance; overall detection rates 75 % (high experience), 45-49 % (others) [zimmerle2020]
   gamma: 0.5                     # ASSUMPTION
   u_ref_m_s: 3.0
   surface_adjustment: {enabled: false}
   citations: [zimmerle2020, ravikumar2018]
-  provenance: {status: summary, basis: "field detection limits recalled from Zimmerle 2020; replace with fit"}
+  provenance: {status: summary, basis: "Zimmerle et al. 2020 high-experience surveyor curve (90 % POD at 7 scfh = 0.134 kg/h methane); less experienced crews detect roughly half as many leaks"}
 quantification:
   ratio_95_low: 0.25
   ratio_95_high: 4.0
@@ -24,7 +24,7 @@ false_positive:
   rate_per_opportunity: 0.01
   reported_rate_quantile_max: 0.25
   citations: [zimmerle2020]
-  provenance: {status: assumption, basis: "1 % per component assumed"}
+  provenance: {status: summary, basis: "Zimmerle 2020: false positive rate 4.1 % (0-7.9 %) on zero-emission pad tests; 1 % per candidate source row"}
 constraints:
   max_wind_m_s: 8.0
   max_solar_zenith_deg: null

@@ -109,8 +109,10 @@ def test_overpass_cache_round_trip(pop, tmp_path) -> None:
     assert len(list(tmp_path.glob("*.npz"))) == 1
 
 
-def test_tropomi_detects_10_t_h_on_nearly_every_clear_overpass(pop) -> None:
-    """CLAUDE.md Phase 3 acceptance test."""
+def test_tropomi_detects_10_t_h_on_most_clear_overpasses(pop) -> None:
+    """CLAUDE.md Phase 3 acceptance test, relaxed per DECISION_LOG 2026-10-01: Schuit 2023 puts the TROPOMI
+    detection limit at ~5 t/h under favourable conditions (detected-plume 5th percentile 8 t/h), so a 10 t/h
+    source is detected on most, not nearly all, clear passes."""
     p = _single_source_population(pop, 10_000.0)
     s = LIB["tropomi"]
     ov = overpasses_for("tropomi", YEAR, p.lat, p.lon, s.orbit.swath_km, cache_dir=CACHE)
@@ -118,7 +120,7 @@ def test_tropomi_detects_10_t_h_on_nearly_every_clear_overpass(pop) -> None:
     clear = log.usable
     assert clear.sum() > 500
     frac = log.detected[clear].mean()
-    assert frac > 0.9, frac
+    assert frac > 0.5, frac
     # non-detections and cloud-outs are logged with conditions
     assert (~log.usable).sum() > 0 and np.all(np.isfinite(log.wind_m_s))
     assert np.isnan(log.reported_kg_h[~log.detected]).all()

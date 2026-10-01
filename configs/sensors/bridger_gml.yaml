@@ -7,24 +7,24 @@ observation_mode: snapshot
 spatial_scope: site              # TDD section 4.3: aircraft resolve the facility total
 schedule: campaign
 pod:
-  pod50_kg_h: 2.0                # TODO(verify) at u_ref, wind-normalised; [sherwin2021; elabbadi2024]
-  pod90_kg_h: 8.0                # TODO(verify)
+  pod50_kg_h: 1.0                # Johnson et al. 2021: field sensitivity ~1 kg/h; all releases above 2 kg/h detected [johnson2021]
+  pod90_kg_h: 3.0                # Johnson et al. 2021: >90 % POD at 3 kg/h under typical conditions [johnson2021]
   gamma: 1.0                     # TDD section 4.1 default for imaging sensors
   u_ref_m_s: 3.0
   surface_adjustment: {enabled: false}   # active LiDAR, not passive SWIR
-  citations: [sherwin2021, elabbadi2024, chen2024]
-  provenance: {status: summary, basis: "POD50/POD90 recalled from El Abbadi et al. 2024 and Sherwin et al. 2021 blind tests; replace with fit to the release table"}
+  citations: [johnson2021]
+  provenance: {status: summary, basis: "POD90 = 3 kg/h (>90 % POD, typical conditions) and ~1 kg/h field sensitivity from the Johnson, Tyner & Szekeres 2021 blinded evaluation (29 releases, 22 sites); not a fit to the release table"}
 quantification:
-  ratio_95_low: 0.40             # -60 % ... +90 % at 95 % for a single aircraft snapshot
-  ratio_95_high: 1.90            # [daniels2023; sherwin2023] as quoted in PRD section 8; TODO(verify) sensor-specific values
+  ratio_95_low: 0.359            # Bridger 95 % uncertainty interval -64.1 % to +87.0 % as quoted by Daniels et al. 2023 [daniels2023]
+  ratio_95_high: 1.870
   tier: A
-  citations: [elabbadi2024, sherwin2021, daniels2023]
-  provenance: {status: summary, basis: "beta, sigma derived from the -60 %/+90 % 95 % range quoted for aircraft snapshots"}
+  citations: [daniels2023, johnson2021]
+  provenance: {status: summary, basis: "beta, sigma derived from the published 95 % interval [-64.1 %, +87.0 %] (Daniels et al. 2023, citing Bridger's blind-test results)"}
 false_positive:
-  rate_per_opportunity: 0.01     # TODO(verify) [elabbadi2024]
+  rate_per_opportunity: 0.01     # El Abbadi 2024: no false positives in 63 zero releases across five aircraft platforms [elabbadi2024]; 1 % kept as a conservative field allowance
   reported_rate_quantile_max: 0.25
   citations: [elabbadi2024]
-  provenance: {status: assumption, basis: "blind tests report few false positives; 1 % per site pass assumed"}
+  provenance: {status: assumption, basis: "blind tests (El Abbadi 2024) produced zero false positives; 1 % per site pass is a conservative field allowance"}
 constraints:
   max_wind_m_s: 10.0
   max_solar_zenith_deg: null

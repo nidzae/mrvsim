@@ -1,0 +1,696 @@
+{
+ "source": "Sherwin et al. 2024 correction release, Zenodo 10.5281/zenodo.17968370 (Key sim results correction 20250812.xlsx Tables S10/S21; CDF_data)",
+ "citation_key": "sherwin2024",
+ "basins": {
+  "permian": {
+   "campaign": "Permian_fall2021",
+   "emissions_t_h": 118.0,
+   "emissions_ci_95": [
+    108.0,
+    129.0
+   ],
+   "covered_production_t_h": 6227.84081938927,
+   "loss_rate_pct": 1.89,
+   "loss_rate_ci_95_pct": [
+    1.73,
+    2.06
+   ],
+   "transition_point_kg_h": 144.041,
+   "min_detected_kg_h": 23.348039,
+   "n_production_plumes": 334.0,
+   "levels_kg_h": [
+    0.1,
+    0.3,
+    1,
+    3,
+    10,
+    30,
+    100,
+    300,
+    1000
+   ],
+   "fraction_at_or_above": [
+    0.6812880221785165,
+    0.541989757616176,
+    0.35736164266895576,
+    0.204397268299511,
+    0.08476989522278178,
+    0.02405055600727043,
+    0.006528233223035841,
+    0.0025491938454668905,
+    0.0007055478736755467
+   ],
+   "n_batches": 20,
+   "detected_quantiles_kg_h": {
+    "p25": 29.402908333287947,
+    "p50": 40.17301666651034,
+    "p75": 79.5745416655478,
+    "p90": 231.4671058788041
+   },
+   "detection_floor_kg_h": 23.348039
+  },
+  "appalachian": {
+   "campaign": "Pennsylvania_2021",
+   "emissions_t_h": 73.0,
+   "emissions_ci_95": [
+    63.0,
+    83.0
+   ],
+   "covered_production_t_h": 10242.4800414006,
+   "loss_rate_pct": 0.71,
+   "loss_rate_ci_95_pct": [
+    0.61,
+    0.81
+   ],
+   "transition_point_kg_h": 120.2427939888,
+   "min_detected_kg_h": 92.2414162,
+   "n_production_plumes": 64.0,
+   "levels_kg_h": [
+    0.1,
+    0.3,
+    1,
+    3,
+    10,
+    30,
+    100,
+    300,
+    1000
+   ],
+   "fraction_at_or_above": [
+    0.54084967884432,
+    0.3562952115974729,
+    0.17145483086895869,
+    0.06545097979090432,
+    0.01731707204405984,
+    0.005608459025393669,
+    0.0021803861210342194,
+    0.0018648720643169368,
+    0.001167204683380545
+   ],
+   "n_batches": 20,
+   "detected_quantiles_kg_h": {
+    "p25": 511.024498827415,
+    "p50": 1100.744485953403,
+    "p75": 2027.0644680445907,
+    "p90": 3085.11868131837
+   },
+   "detection_floor_kg_h": 92.2414162
+  },
+  "dj": {
+   "campaign": "Denver_fall2021",
+   "emissions_t_h": 22.0,
+   "emissions_ci_95": [
+    20.0,
+    25.0
+   ],
+   "covered_production_t_h": 1972.72576203208,
+   "loss_rate_pct": 1.1,
+   "loss_rate_ci_95_pct": [
+    1.0,
+    1.24
+   ],
+   "transition_point_kg_h": 116.3041602126,
+   "min_detected_kg_h": 10.1602126,
+   "n_production_plumes": 40.0,
+   "levels_kg_h": [
+    0.1,
+    0.3,
+    1,
+    3,
+    10,
+    30,
+    100,
+    300,
+    1000
+   ],
+   "fraction_at_or_above": [
+    0.6479636672975835,
+    0.5059303897089789,
+    0.31108311034852515,
+    0.14602149416775223,
+    0.03448897297443552,
+    0.006000805265775287,
+    0.0007383260264321723,
+    0.0003542950504311905,
+    0.0
+   ],
+   "n_batches": 20,
+   "detected_quantiles_kg_h": {
+    "p25": 12.323700000005834,
+    "p50": 16.34502083335319,
+    "p75": 24.80099375010933,
+    "p90": 36.99289500018995
+   },
+   "detection_floor_kg_h": 10.1602126
+  },
+  "uinta": {
+   "campaign": "Uinta_2020",
+   "emissions_t_h": 19.0,
+   "emissions_ci_95": [
+    18.0,
+    21.0
+   ],
+   "covered_production_t_h": 350.739267670637,
+   "loss_rate_pct": 5.55,
+   "loss_rate_ci_95_pct": [
+    5.15,
+    5.99
+   ],
+   "transition_point_kg_h": 102.983,
+   "min_detected_kg_h": 8.35453924,
+   "n_production_plumes": 56.0,
+   "levels_kg_h": [
+    0.1,
+    0.3,
+    1,
+    3,
+    10,
+    30,
+    100,
+    300,
+    1000
+   ],
+   "fraction_at_or_above": [
+    0.7782407422367668,
+    0.6265097403172646,
+    0.39027180580800075,
+    0.1816613832554201,
+    0.04036883395652641,
+    0.0060033234162952575,
+    0.002313596618654434,
+    0.001240114878822885,
+    0.000280448684277493
+   ],
+   "n_batches": 20,
+   "detected_quantiles_kg_h": {
+    "p25": 9.94194270833512,
+    "p50": 12.531218750007689,
+    "p75": 19.213962500035628,
+    "p90": 31.32324916684088
+   },
+   "detection_floor_kg_h": 8.35453924
+  },
+  "fort_worth": {
+   "campaign": "Fort_Worth_2021",
+   "emissions_t_h": 12.0,
+   "emissions_ci_95": [
+    11.0,
+    13.0
+   ],
+   "covered_production_t_h": 651.161692708556,
+   "loss_rate_pct": 1.88,
+   "loss_rate_ci_95_pct": [
+    1.68,
+    2.07
+   ],
+   "transition_point_kg_h": 30.135,
+   "min_detected_kg_h": 6.49974204010362,
+   "n_production_plumes": 80.0,
+   "levels_kg_h": [
+    0.1,
+    0.3,
+    1,
+    3,
+    10,
+    30,
+    100,
+    300,
+    1000
+   ],
+   "fraction_at_or_above": [
+    0.4456771506814838,
+    0.31197498626370124,
+    0.16309396025072911,
+    0.06824523554487368,
+    0.022024184827805125,
+    0.01067218658567235,
+    0.0025735084759119916,
+    0.00025201806149743525,
+    0.0
+   ],
+   "n_batches": 20,
+   "detected_quantiles_kg_h": {
+    "p25": 9.05230572440136,
+    "p50": 16.63217497814614,
+    "p75": 40.025164677998866,
+    "p90": 85.94416378767244
+   },
+   "detection_floor_kg_h": 6.49974204010362
+  },
+  "san_joaquin": {
+   "campaign": "San_Joaquin_fall2021",
+   "emissions_t_h": 5.0,
+   "emissions_ci_95": [
+    4.0,
+    5.0
+   ],
+   "covered_production_t_h": 198.018505347593,
+   "loss_rate_pct": 2.37,
+   "loss_rate_ci_95_pct": [
+    2.06,
+    2.74
+   ],
+   "transition_point_kg_h": 36.647,
+   "min_detected_kg_h": 15.9588297,
+   "n_production_plumes": 47.0,
+   "levels_kg_h": [
+    0.1,
+    0.3,
+    1,
+    3,
+    10,
+    30,
+    100,
+    300,
+    1000
+   ],
+   "fraction_at_or_above": [
+    0.1412448665253649,
+    0.07619689062894253,
+    0.02470962103073971,
+    0.005222777384471326,
+    0.0012541811205130432,
+    0.0007208496159067096,
+    0.00037055307736975635,
+    9.145337284300008e-05,
+    0.0
+   ],
+   "n_batches": 20,
+   "detected_quantiles_kg_h": {
+    "p25": 36.20318524501524,
+    "p50": 78.50176084112042,
+    "p75": 158.91594224987526,
+    "p90": 314.71386041024795
+   },
+   "detection_floor_kg_h": 15.9588297
+  }
+ },
+ "all_campaigns_table_s10": {
+  "Kairos_Permian": {
+   "emissions_t_h": 190.0,
+   "emissions_ci_95": [
+    179.0,
+    205.0
+   ],
+   "covered_production_t_h": 1952.04513368984,
+   "loss_rate_pct": 9.76,
+   "loss_rate_ci_95_pct": [
+    9.17,
+    10.48
+   ]
+  },
+  "Permian_2019": {
+   "emissions_t_h": 448.0,
+   "emissions_ci_95": [
+    427.0,
+    472.0
+   ],
+   "covered_production_t_h": 10397.1681360963,
+   "loss_rate_pct": 4.31,
+   "loss_rate_ci_95_pct": [
+    4.11,
+    4.54
+   ]
+  },
+  "Permian_2020": {
+   "emissions_t_h": 118.0,
+   "emissions_ci_95": [
+    108.0,
+    128.0
+   ],
+   "covered_production_t_h": 4766.52639123677,
+   "loss_rate_pct": 2.47,
+   "loss_rate_ci_95_pct": [
+    2.27,
+    2.68
+   ]
+  },
+  "Permian_summer2021": {
+   "emissions_t_h": 121.0,
+   "emissions_ci_95": [
+    112.0,
+    130.0
+   ],
+   "covered_production_t_h": 5950.42969481011,
+   "loss_rate_pct": 2.03,
+   "loss_rate_ci_95_pct": [
+    1.89,
+    2.18
+   ]
+  },
+  "Permian_fall2021": {
+   "emissions_t_h": 118.0,
+   "emissions_ci_95": [
+    108.0,
+    129.0
+   ],
+   "covered_production_t_h": 6227.84081938927,
+   "loss_rate_pct": 1.89,
+   "loss_rate_ci_95_pct": [
+    1.73,
+    2.06
+   ]
+  },
+  "San_Joaquin_2016": {
+   "emissions_t_h": 14.0,
+   "emissions_ci_95": [
+    13.0,
+    16.0
+   ],
+   "covered_production_t_h": 263.102638620321,
+   "loss_rate_pct": 5.39,
+   "loss_rate_ci_95_pct": [
+    4.78,
+    6.14
+   ]
+  },
+  "San_Joaquin_2017": {
+   "emissions_t_h": 17.0,
+   "emissions_ci_95": [
+    15.0,
+    19.0
+   ],
+   "covered_production_t_h": 284.167559262032,
+   "loss_rate_pct": 5.87,
+   "loss_rate_ci_95_pct": [
+    5.2,
+    6.61
+   ]
+  },
+  "San_Joaquin_summer2020": {
+   "emissions_t_h": 11.0,
+   "emissions_ci_95": [
+    10.0,
+    13.0
+   ],
+   "covered_production_t_h": 230.924406513369,
+   "loss_rate_pct": 4.78,
+   "loss_rate_ci_95_pct": [
+    4.22,
+    5.43
+   ]
+  },
+  "San_Joaquin_fall2020": {
+   "emissions_t_h": 8.0,
+   "emissions_ci_95": [
+    7.0,
+    10.0
+   ],
+   "covered_production_t_h": 245.23327540107,
+   "loss_rate_pct": 3.27,
+   "loss_rate_ci_95_pct": [
+    2.8,
+    3.9
+   ]
+  },
+  "San_Joaquin_fall2021": {
+   "emissions_t_h": 5.0,
+   "emissions_ci_95": [
+    4.0,
+    5.0
+   ],
+   "covered_production_t_h": 198.018505347593,
+   "loss_rate_pct": 2.37,
+   "loss_rate_ci_95_pct": [
+    2.06,
+    2.74
+   ]
+  },
+  "Denver_summer2021": {
+   "emissions_t_h": 21.0,
+   "emissions_ci_95": [
+    19.0,
+    23.0
+   ],
+   "covered_production_t_h": 1997.39449111609,
+   "loss_rate_pct": 1.04,
+   "loss_rate_ci_95_pct": [
+    0.95,
+    1.14
+   ]
+  },
+  "Denver_fall2021": {
+   "emissions_t_h": 22.0,
+   "emissions_ci_95": [
+    20.0,
+    25.0
+   ],
+   "covered_production_t_h": 1972.72576203208,
+   "loss_rate_pct": 1.1,
+   "loss_rate_ci_95_pct": [
+    1.0,
+    1.24
+   ]
+  },
+  "Pennsylvania_2021": {
+   "emissions_t_h": 73.0,
+   "emissions_ci_95": [
+    63.0,
+    83.0
+   ],
+   "covered_production_t_h": 10242.4800414006,
+   "loss_rate_pct": 0.71,
+   "loss_rate_ci_95_pct": [
+    0.61,
+    0.81
+   ]
+  },
+  "Uinta_2020": {
+   "emissions_t_h": 19.0,
+   "emissions_ci_95": [
+    18.0,
+    21.0
+   ],
+   "covered_production_t_h": 350.739267670637,
+   "loss_rate_pct": 5.55,
+   "loss_rate_ci_95_pct": [
+    5.15,
+    5.99
+   ]
+  },
+  "Fort_Worth_2021": {
+   "emissions_t_h": 12.0,
+   "emissions_ci_95": [
+    11.0,
+    13.0
+   ],
+   "covered_production_t_h": 651.161692708556,
+   "loss_rate_pct": 1.88,
+   "loss_rate_ci_95_pct": [
+    1.68,
+    2.07
+   ]
+  },
+  "Permian_2019_F2021_bounds": {
+   "emissions_t_h": 158.0,
+   "emissions_ci_95": [
+    148.0,
+    170.0
+   ],
+   "covered_production_t_h": 4755.80213305836,
+   "loss_rate_pct": 3.33,
+   "loss_rate_ci_95_pct": [
+    3.1,
+    3.58
+   ]
+  },
+  "Permian_2019_F2021_bounds_Delaware": {
+   "emissions_t_h": 95.0,
+   "emissions_ci_95": [
+    88.0,
+    102.0
+   ],
+   "covered_production_t_h": 3613.21650356226,
+   "loss_rate_pct": 2.63,
+   "loss_rate_ci_95_pct": [
+    2.45,
+    2.82
+   ]
+  },
+  "Permian_2019_F2021_Midland": {
+   "emissions_t_h": 64.0,
+   "emissions_ci_95": [
+    56.0,
+    73.0
+   ],
+   "covered_production_t_h": 1142.5856294961,
+   "loss_rate_pct": 5.58,
+   "loss_rate_ci_95_pct": [
+    4.93,
+    6.35
+   ]
+  },
+  "Northeast_Pennsylvania_2021": {
+   "emissions_t_h": 35.0,
+   "emissions_ci_95": [
+    29.0,
+    40.0
+   ],
+   "covered_production_t_h": 5095.62879506641,
+   "loss_rate_pct": 0.68,
+   "loss_rate_ci_95_pct": [
+    0.57,
+    0.79
+   ]
+  },
+  "Permian_F2021_Delaware": {
+   "emissions_t_h": 67.0,
+   "emissions_ci_95": [
+    60.0,
+    74.0
+   ],
+   "covered_production_t_h": 4660.00498706227,
+   "loss_rate_pct": 1.43,
+   "loss_rate_ci_95_pct": [
+    1.28,
+    1.59
+   ]
+  },
+  "Permian_F2021_Midland": {
+   "emissions_t_h": 51.0,
+   "emissions_ci_95": [
+    46.0,
+    57.0
+   ],
+   "covered_production_t_h": 1567.83583232706,
+   "loss_rate_pct": 3.27,
+   "loss_rate_ci_95_pct": [
+    2.92,
+    3.65
+   ]
+  },
+  "GHGI 2022": {
+   "emissions_t_h": 807.0,
+   "emissions_ci_95": [
+    644.0,
+    978.0
+   ],
+   "covered_production_t_h": 80004.0,
+   "loss_rate_pct": 1.01,
+   "loss_rate_ci_95_pct": [
+    0.81,
+    1.22
+   ]
+  },
+  "Total": {
+   "emissions_t_h": 589.0,
+   "emissions_ci_95": [
+    551.0,
+    630.0
+   ],
+   "covered_production_t_h": NaN,
+   "loss_rate_pct": 2.47,
+   "loss_rate_ci_95_pct": [
+    2.31,
+    2.64
+   ]
+  }
+ },
+ "all_campaigns_table_s21": {
+  "Kairos_Permian": {
+   "transition_point_kg_h": 48.15,
+   "min_detected_kg_h": 5.94645472151507,
+   "n_production_plumes": 1279.0
+  },
+  "Permian_2019": {
+   "transition_point_kg_h": 112.773,
+   "min_detected_kg_h": 15.0295249,
+   "n_production_plumes": 1749.0
+  },
+  "Permian_2020": {
+   "transition_point_kg_h": 134.008,
+   "min_detected_kg_h": 8.09191121,
+   "n_production_plumes": 284.0
+  },
+  "Permian_summer2021": {
+   "transition_point_kg_h": 129.276,
+   "min_detected_kg_h": 11.8134085,
+   "n_production_plumes": 416.0
+  },
+  "Permian_fall2021": {
+   "transition_point_kg_h": 144.041,
+   "min_detected_kg_h": 23.348039,
+   "n_production_plumes": 334.0
+  },
+  "San_Joaquin_2016": {
+   "transition_point_kg_h": 46.959,
+   "min_detected_kg_h": 9.0,
+   "n_production_plumes": 77.0
+  },
+  "San_Joaquin_2017": {
+   "transition_point_kg_h": 49.98,
+   "min_detected_kg_h": 11.0,
+   "n_production_plumes": 86.0
+  },
+  "San_Joaquin_summer2020": {
+   "transition_point_kg_h": 44.9047705545,
+   "min_detected_kg_h": 23.6321919,
+   "n_production_plumes": 94.0
+  },
+  "San_Joaquin_fall2020": {
+   "transition_point_kg_h": 44.21492048,
+   "min_detected_kg_h": 20.6464016,
+   "n_production_plumes": 48.0
+  },
+  "San_Joaquin_fall2021": {
+   "transition_point_kg_h": 36.647,
+   "min_detected_kg_h": 15.9588297,
+   "n_production_plumes": 47.0
+  },
+  "Denver_summer2021": {
+   "transition_point_kg_h": 121.027,
+   "min_detected_kg_h": 11.1023447,
+   "n_production_plumes": 34.0
+  },
+  "Denver_fall2021": {
+   "transition_point_kg_h": 116.3041602126,
+   "min_detected_kg_h": 10.1602126,
+   "n_production_plumes": 40.0
+  },
+  "Pennsylvania_2021": {
+   "transition_point_kg_h": 120.2427939888,
+   "min_detected_kg_h": 92.2414162,
+   "n_production_plumes": 64.0
+  },
+  "Uinta_2020": {
+   "transition_point_kg_h": 102.983,
+   "min_detected_kg_h": 8.35453924,
+   "n_production_plumes": 56.0
+  },
+  "Fort_Worth_2021": {
+   "transition_point_kg_h": 30.135,
+   "min_detected_kg_h": 6.49974204010362,
+   "n_production_plumes": 80.0
+  },
+  "Permian_2019_F2021_bounds": {
+   "transition_point_kg_h": 137.1,
+   "min_detected_kg_h": 16.3531338,
+   "n_production_plumes": 1052.0
+  },
+  "Permian_2019_F2021_bounds_Delaware": {
+   "transition_point_kg_h": 129.218,
+   "min_detected_kg_h": 16.3531338,
+   "n_production_plumes": 922.0
+  },
+  "Permian_2019_F2021_Midland": {
+   "transition_point_kg_h": 165.708,
+   "min_detected_kg_h": 16.3531338,
+   "n_production_plumes": 130.0
+  },
+  "Northeast_Pennsylvania_2021": {
+   "transition_point_kg_h": 495.445256,
+   "min_detected_kg_h": 495.445256,
+   "n_production_plumes": 12.0
+  },
+  "Permian_F2021_Delaware": {
+   "transition_point_kg_h": 165.722,
+   "min_detected_kg_h": 26.3700804,
+   "n_production_plumes": 126.0
+  },
+  "Permian_F2021_Midland": {
+   "transition_point_kg_h": 110.959,
+   "min_detected_kg_h": 23.348039,
+   "n_production_plumes": 208.0
+  }
+ }
+}

@@ -67,14 +67,39 @@ def run(targets: dict[str, Any] | None = None, n_per_stratum: int = 100, seed: i
                 entry[f"{p}_band"] = [float(lo), float(hi)]
             entry.update({"method": "quantile_band", "pass": ok}); verdicts.append(ok)
         compared[basin] = entry
-    pers = tg["persistence"]
-    inter = pop.z == 1
-    compared["persistence"] = {"sim_mean_duty_cycle_intermittent": float(pop.pi[inter].mean()), "sim_share_intermittent": float(inter.mean()),
-                               "target": pers.get("value"), "target_ci": pers.get("ci_95"), "pass": None if target_missing(pers) else None}
-    if not target_missing(pers):
-        lo, hi = pers["ci_95"]; v = float(pop.pi[inter].mean())
-        compared["persistence"]["pass"] = bool(lo <= v <= hi); verdicts.append(bool(lo <= v <= hi))
-    statuses.append(pers)
+    # site-level survival curves (Sherwin 2024 CDFs): simulated snapshot P(site rate >= x) within a factor of 2 where S > 1e-3
+    rng = np.random.default_rng(2)
+    snap = pop.facility_rate_at_pairs(np.arange(pop.n_facilities), rng.integers(0, pop.n_hours, size=pop.n_facilities))
+    for basin, blk in (tg.get("site_survival") or {}).items():
+        statuses.append(blk)
+        bi = list(pop.strata.basins).index(basin) if basin in pop.strata.basins else None
+        if bi is None:
+            continue
+        sel = pop.basin_idx == bi
+        levels = np.array(blk["levels_kg_h"], float); S_t = np.array(blk["fraction_at_or_above"], float)
+        S_sim = np.array([(snap[sel] >= x).mean() for x in levels])
+        use = S_t > 1e-3
+        ratio = (S_sim[use] + 1e-6) / (S_t[use] + 1e-6)
+        ok = bool(np.all((ratio > 0.5) & (ratio < 2.0)))
+        compared[f"survival_{basin}"] = {"levels_kg_h": levels.tolist(), "S_sim": S_sim.round(5).tolist(), "S_target": S_t.tolist(), "max_ratio_dev": float(np.max(np.abs(np.log(ratio)))), "pass": ok}
+        verdicts.append(ok)
+    # Cusworth-style persistence f = M/N over sources seen at least once in N = 4 snapshot passes above 10 kg/h
+    pers = tg["persistence"]; statuses.append(pers)
+    n_pass = 4
+    hours = rng.integers(0, pop.n_hours, size=(pop.n_facilities, n_pass))
+    det = np.stack([pop.facility_rate_at_pairs(np.arange(pop.n_facilities), hours[:, k]) > 10.0 for k in range(n_pass)], axis=1)
+    m = det.sum(axis=1); seen = m > 0
+    f_all = float((m[seen] / n_pass).mean()) if seen.any() else float("nan")
+    entry = {"sim_persistence_all": f_all, "target": pers.get("value"), "target_ci": pers.get("ci_95"), "by_basin": {}}
+    for basin, f_t in (pers.get("by_basin") or {}).items():
+        if basin not in pop.strata.basins:
+            continue
+        sel = (pop.basin_idx == list(pop.strata.basins).index(basin)) & seen
+        f_b = float((m[sel] / n_pass).mean()) if sel.any() else float("nan")
+        ok = bool(abs(f_b - f_t) <= 0.12) if np.isfinite(f_b) else False
+        entry["by_basin"][basin] = {"sim": f_b, "target": f_t, "pass": ok}; verdicts.append(ok)
+    entry["pass"] = all(v["pass"] for v in entry["by_basin"].values()) if entry["by_basin"] else None
+    compared["persistence"] = entry
     ts = worst_status(statuses)
     if not verdicts:
         res = ValidationResult(VID, NAME, "skipped", tg["pass_rule"], compared, "all targets missing in validation_targets.yaml", tg["citations"], ts)

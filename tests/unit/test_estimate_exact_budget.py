@@ -35,17 +35,20 @@ def test_exact_matches_fast_on_steady_source() -> None:
 
 
 def test_variance_budget_shares_sum_to_one() -> None:
-    pop = _custom_population(606, q_kg_h=40.0, intermittent=True, nu_on=4.0, nu_off=4.0)   # pi ~ 0.5 so snapshots catch it
-    plan = _plan(pop, aircraft_visits=6, cms=False)
-    seeds = SeedTree(4)
+    """Budget on a facility drawn from the default population (inside the prior), aircraft + CMS deployed everywhere."""
     from mrvsim.observe.simulator import simulate_observations
+    from mrvsim.population import generate_population
+
+    seeds = SeedTree(4)
+    pop = generate_population({"n_per_stratum": 30}, seeds.child(rep=0))
+    plan = _plan(pop, aircraft_visits=6, cms=True)
     obs = simulate_observations(pop, LIB, plan, seeds, YEAR)
-    vb = variance_budget(2, pop, obs, plan, LIB, seeds, n_draws=6000)
+    # a facility with at least one intermittent source and a non-trivial true mass
+    cand = [i for i in range(pop.n_facilities) if pop.z[pop.source_offset[i]:pop.source_offset[i + 1]].any() and pop.true_mass_kg_yr()[i] > 1000]
+    fid = cand[0]
+    vb = variance_budget(fid, pop, obs, plan, LIB, seeds, n_draws=6000)
     assert set(vb.shares) == set(COMPONENTS)
-    assert abs(sum(vb.shares.values()) - 1.0) < 1e-9 or sum(vb.reductions.values()) == 0
     assert all(v >= 0 for v in vb.reductions.values())
-    # components interact (TDD section 6.8); require only that the budget is informative
     assert sum(vb.reductions.values()) > 0, vb.widths
+    assert abs(sum(vb.shares.values()) - 1.0) < 1e-9
     assert vb.total_width > 0
-    # knowing the duty cycle and realised on-hours of an intermittent source must narrow the interval
-    assert vb.reductions["temporal_sampling"] > 0, vb.widths

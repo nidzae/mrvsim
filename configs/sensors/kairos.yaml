@@ -1,5 +1,5 @@
 key: kairos
-name: Kairos Aerospace LeakSurveyor (aircraft)
+name: Insight M (formerly Kairos Aerospace) hyperspectral imager (aircraft)
 class: aircraft
 tier: A                          # [sherwin2021; elabbadi2024]
 enabled_for_certification: true
@@ -7,24 +7,24 @@ observation_mode: snapshot
 spatial_scope: site
 schedule: campaign
 pod:
-  pod50_kg_h: 4.0                # TODO(verify) [sherwin2021; elabbadi2024]
-  pod90_kg_h: 15.0               # TODO(verify)
+  pod50_kg_h: 6.0                # El Abbadi 2024: smallest detected 3.40 kg/h, largest missed 10.47 kg/h, all releases above 5 kg/h per m/s detected
+  pod90_kg_h: 15.0               #   -> 5 (kg/h)/(m/s) x u_ref 3 m/s = 15 kg/h at the 90 % point; 2 (kg/h)/(m/s) x 3 at the 50 % point [elabbadi2024]
   gamma: 1.0
   u_ref_m_s: 3.0
   surface_adjustment: {enabled: true, rho_ref: 0.30, rho_p10: 0.12, phi_at_p10: 0.5, uncertainty_halfwidth: 0.5}  # passive SWIR imager; TDD section 4.1 assumption
-  citations: [sherwin2021, elabbadi2024]
-  provenance: {status: summary, basis: "POD50/POD90 recalled from blind tests; replace with fit"}
+  citations: [elabbadi2024, sherwin2021]
+  provenance: {status: summary, basis: "wind-normalised thresholds from El Abbadi et al. 2024 (191 filtered releases): all releases above 5 kg/h per m/s detected; smallest detected 3.40 kg/h; largest missed 10.47 kg/h. Sherwin 2021 (older system): all 173 releases above 15 kg/h per m/s detected, none of 12 below 8.3"}
 quantification:
   ratio_95_low: 0.40
   ratio_95_high: 1.90
   tier: A
-  citations: [elabbadi2024, sherwin2021, daniels2023]
-  provenance: {status: summary, basis: "derived from the -60 %/+90 % aircraft 95 % range; TODO(verify) sensor-specific"}
+  citations: [elabbadi2024, daniels2023]
+  provenance: {status: summary, basis: "El Abbadi 2024 parity slope 1.13, R^2 0.87 (124 fully blinded estimates); spread taken as the generic aircraft -60 %/+90 % 95 % range"}
 false_positive:
   rate_per_opportunity: 0.01
   reported_rate_quantile_max: 0.25
   citations: [elabbadi2024]
-  provenance: {status: assumption, basis: "1 % per site pass assumed"}
+  provenance: {status: assumption, basis: "zero false positives in 63 zero releases (El Abbadi 2024); 1 % kept as a conservative field allowance"}
 constraints:
   max_wind_m_s: 10.0
   max_solar_zenith_deg: null

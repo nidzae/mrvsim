@@ -7,20 +7,20 @@ observation_mode: snapshot
 spatial_scope: site              # a facility total, but at pixel scale it aggregates neighbours; handled as site-level in v1
 schedule: orbit
 pod:
-  pod50_kg_h: 2500.0             # TODO(verify) [schuit2023; lauvaux2022; jacob2022]. At u_ref = 3 m/s; with gamma = 1 the
-  pod90_kg_h: 5000.0             # 90 % point is ~8 t/h at 5 m/s. Optimistic end of the literature; pinned by the Phase 3
-                                 # acceptance test (10 t/h detected on nearly every clear pass, CLAUDE.md).
+  pod50_kg_h: 6000.0             # Schuit 2023: "point source detection limit down to ~5 t/h under favorable conditions"; detected
+  pod90_kg_h: 10000.0            #   plumes in 2021 had a 5th percentile of 8 t/h (mean 44 t/h) [schuit2023]. At u_ref = 3 m/s, gamma = 1.
+                                 # Supersedes the 2.5/5 t/h values pinned by the original Phase 3 acceptance test (DECISION_LOG 2026-10-01).
   gamma: 1.0
   u_ref_m_s: 3.0
   surface_adjustment: {enabled: false}   # coarse pixels; surface albedo effects folded into the detection statistics
   citations: [schuit2023, lauvaux2022, jacob2022]
-  provenance: {status: summary, basis: "super-emitter detection statistics; no controlled release"}
+  provenance: {status: summary, basis: "Schuit et al. 2023 detection limit statement (~5 t/h favourable) and detected-rate 5th percentile (8 t/h); no controlled release exists at this scale"}
 quantification:
   ratio_95_low: 0.50
   ratio_95_high: 2.00
   tier: B
   citations: [schuit2023, lauvaux2022]
-  provenance: {status: summary, basis: "mass-balance / IME uncertainty of roughly a factor of 2; TODO(verify)"}
+  provenance: {status: summary, basis: "Schuit 2023 IME method with ensemble-based uncertainty; factor-of-2 spread assumed (ensemble SD not tabulated)"}
 false_positive:
   rate_per_opportunity: 0.005
   reported_rate_quantile_max: 0.25

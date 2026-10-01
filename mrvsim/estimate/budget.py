@@ -44,7 +44,9 @@ class VarianceBudget:
 
 
 def _width(i: int, inputs: EstimatorInputs, pbs, sparams, seeds: SeedTree, n_draws: int, ab: Ablation | None) -> float:
-    mass, _, _, w, _, _ = estimate_facility(i, inputs, pbs, sparams, seeds, n_draws, ab)
+    # Plain importance sampling with the facility's fixed prior-draw stream: every ablation reweights the SAME draws
+    # (common random numbers), so width differences reflect the likelihood change, not sampler noise.
+    mass, _, _, w, _, _ = estimate_facility(i, inputs, pbs, sparams, seeds, n_draws, ab, method="is")
     lo, hi = _weighted_percentiles(mass, w, (5, 95))
     return float(hi - lo)
 
@@ -60,7 +62,7 @@ def variance_budget(i: int, pop: Population, obs: ObservationSet, plan: Deployme
     widths["quantification"] = _width(i, inputs, pbs, sparams, seeds, n_draws, Ablation(sigma_quant=0.0))
     # temporal sampling: true pi of this facility's sources, by candidate index
     s0, s1 = pop.source_offset[i], pop.source_offset[i + 1]
-    true_pi = np.ones(8); k = min(s1 - s0, 8); true_pi[:k] = pop.pi[s0:s0 + k]
+    true_pi = np.full(8, np.nan); k = min(s1 - s0, 8); true_pi[:k] = pop.pi[s0:s0 + k]   # NaN: candidates beyond the true count keep their draws
     # the oracle knows both the duty cycles and the realised on-hours, so the predictive realisation noise is off too
     widths["temporal_sampling"] = _width(i, inputs, pbs, sparams, seeds, n_draws, Ablation(pi_fixed=true_pi, realised=False))
     # detection censoring: reveal sources below the deployed POD10

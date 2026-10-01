@@ -32,13 +32,15 @@ export default function App() {
   const [runId, setRunId] = useState(null); const [runs, setRuns] = useState([]);
   const [kpi, setKpi] = useState("intensity"); const [bar, setBar] = useState(0.002); const [barMass, setBarMass] = useState(50); const [wMax, setWMax] = useState(0.3);
   const [policy, setPolicy] = useState(DEFAULT_POLICY);
-  const [runSettings, setRunSettings] = useState({ name: "interactive", seed: 20260930, replications: 3, n_draws: 2000, facilities_per_stratum: 10, n_per_stratum: 30 });
+  const [runSettings, setRunSettings] = useState({ name: "interactive", mode: "quick", seed: 20260930, replications: 3, n_draws: 2000, facilities_per_stratum: 10, n_per_stratum: 30 });
   const [busy, setBusy] = useState(false); const [pareto, setPareto] = useState(null); const [health, setHealth] = useState(null);
   useEffect(() => { api.runs().then((r) => { setRuns(r.runs); const first = r.runs.find((x) => x.has_summary); if (first) setRunId(first.run_id); }).catch(() => {}); api.health().then(setHealth).catch(() => {}); }, []);
   const scoring = { bar_intensity: bar, bar_mass_t_yr: barMass, w_max: wMax };
   const applyYaml = (yaml) => { try { setPolicy(parsePolicyYaml(yaml)); setTab("Map"); } catch (e) { alert(`Could not parse the proposal: ${e}`); } };
   const applyPolicy = (p) => { setPolicy({ sensors: Object.fromEntries(Object.entries(p.sensors).filter(([, s]) => s.enabled !== false).map(([k, s]) => [k, { coverage: s.coverage, frequency_per_year: s.frequency_per_year, targeting: s.targeting }])) }); setTab("Map"); };
   const onRunDone = (id) => { setRunId(id); api.runs().then((r) => setRuns(r.runs)).catch(() => {}); };
+  const [fullRequest, setFullRequest] = useState(null);
+  const rerunFull = (cfg) => { setPolicy({ sensors: cfg.policy.sensors }); setFullRequest({ seed: cfg.seed, scoring: cfg.scoring }); setRunSettings((r) => ({ ...r, mode: "full", seed: cfg.seed })); setTab("Map"); };
   const wide = tab === "Validation" || tab === "Attribution";
   return (
     <div className="app">
@@ -59,7 +61,7 @@ export default function App() {
           {health && !health.anthropic_key_configured && <p className="muted" style={{ marginTop: 10 }}>Gap analysis: the API server has no Anthropic credentials (set ANTHROPIC_API_KEY or run `ant auth login` where the server runs).</p>}</div>}
         <div className="content">
           {tab === "Map" && <MapView runId={runId} kpi={kpi} bar={kpi === "intensity" ? bar : barMass} wMax={wMax} />}
-          {tab === "Dashboard" && <Dashboard runId={runId} kpi={kpi} runSettings={{ ...runSettings, policy, scoring }} pareto={pareto} />}
+          {tab === "Dashboard" && <Dashboard runId={runId} kpi={kpi} runSettings={{ ...runSettings, mode: "quick", policy, scoring }} pareto={pareto} onRerunFull={rerunFull} />}
           {tab === "Optimize" && <Optimize scoring={scoring} onPareto={setPareto} onApply={applyPolicy} />}
           {tab === "Gap analysis" && <GapAnalysis runId={runId} onApply={applyYaml} />}
           {tab === "Attribution" && <Attribution runId={runId} />}

@@ -10,10 +10,17 @@ export default function Sensors({ policy, setPolicy, runSettings, setRunSettings
   const get = (k) => policy.sensors[k];
   const upd = (k, patch) => setPolicy({ ...policy, sensors: { ...policy.sensors, [k]: { ...(get(k) || { coverage: 0.2, frequency_per_year: 1, targeting: "random" }), ...patch } } });
   const toggle = (k) => { const s = { ...policy.sensors }; if (s[k]) delete s[k]; else s[k] = { coverage: 0.2, frequency_per_year: lib.find((x) => x.key === k)?.schedule === "orbit" ? 12 : 1, targeting: "random" }; setPolicy({ ...policy, sensors: s }); };
+  const [mode, setMode] = useState(runSettings.mode || "quick"); const [est, setEst] = useState(null);
+  useEffect(() => { if (runSettings.mode && runSettings.mode !== mode) setMode(runSettings.mode); }, [runSettings.mode]);
+  useEffect(() => {
+    const body = { ...runSettings, mode, policy: { ...policy, min_tier: minTier } };
+    api.estimate(body).then(setEst).catch(() => setEst(null));
+  }, [mode, policy, runSettings, minTier]);
+  const fmtTime = (sec) => (sec < 90 ? `~${Math.max(10, Math.round(sec / 10) * 10)} s` : sec < 5400 ? `~${Math.round(sec / 60)} min` : `~${(sec / 3600).toFixed(1)} h`);
   const run = async () => {
     setBusy(true); setErr(null);
     try {
-      const body = { ...runSettings, policy: { ...policy, min_tier: minTier } };
+      const body = { ...runSettings, mode, policy: { ...policy, min_tier: minTier } };
       const j = await api.startRun(body); onRunStarted && onRunStarted(j);
       const res = await waitForJob(j.job_id, (jj) => setProg(jj.progress));
       onRunDone(res.run_id);
@@ -41,10 +48,22 @@ export default function Sensors({ policy, setPolicy, runSettings, setRunSettings
           <div className="field">posterior draws<input type="number" min="200" step="100" value={runSettings.n_draws} onChange={(e) => setRunSettings({ ...runSettings, n_draws: +e.target.value })} /></div>
           <div className="field">replications R<input type="number" min="1" max="200" value={runSettings.replications} onChange={(e) => setRunSettings({ ...runSettings, replications: +e.target.value })} /></div>
           <div className="field">seed<input type="number" value={runSettings.seed} onChange={(e) => setRunSettings({ ...runSettings, seed: +e.target.value })} /></div>
-          <div className="muted">Interactive runs estimate a stratified subsample (PRD N3); increase facilities per stratum and R for batch quality.</div>
+          <div className="muted">These apply in <b>custom</b> mode. Quick and Full override them.</div>
         </>}
       </div>
-      <div style={{ marginTop: 10 }}><button className="primary" disabled={busy} onClick={run}>{busy ? `Running… ${prog?.stage || ""}` : "Run"}</button></div>
+      <div className="sensor">
+        <div className="name">Compute mode</div>
+        <div className="seg">
+          {["quick", "full", "custom"].map((m) => <button key={m} className={`segbtn${mode === m ? " active" : ""}`} onClick={() => setMode(m)}>{m}</button>)}
+        </div>
+        <div className="muted">
+          {mode === "quick" && "Speed: 10 facilities per stratum, 2,000 draws, 3 replications. For exploring sensor mixes."}
+          {mode === "full" && "Precision: every facility of the default sample (100 per stratum), 10,000 draws, 5 replications. For a mix you want to trust."}
+          {mode === "custom" && "Uses the Advanced settings below."}
+          {est && <> Estimated {fmtTime(est.estimated_seconds)} for {est.facilities_estimated.toLocaleString()} facilities × {est.replications} replications.</>}
+        </div>
+      </div>
+      <div style={{ marginTop: 10 }}><button className="primary" disabled={busy} onClick={run}>{busy ? `Running ${prog?.mode || mode}… ${prog?.stage || ""}` : `Run ${mode}`}</button></div>
       {err && <p className="flagged">{err}</p>}
     </div>
   );

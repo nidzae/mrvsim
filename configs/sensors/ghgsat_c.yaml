@@ -7,25 +7,25 @@ observation_mode: snapshot
 spatial_scope: site
 schedule: orbit
 pod:
-  pod50_kg_h: 150.0              # TODO(verify) [sherwin2023]
-  pod90_kg_h: 300.0              # TODO(verify); POD90/POD50 = 2: blind tests saw no detections well below the limit
+  pod50_kg_h: 150.0              # Sherwin 2023: GHGSat-C2 detected the smallest release of the campaign, 0.197 [0.187, 0.208] t/h, at 2.0 m/s wind [sherwin2023]
+  pod90_kg_h: 300.0              # POD90/POD50 = 2; only 3 valid GHGSat measurements in the test, so (a, b) stay uncertain (ab_cov)
   gamma: 1.0
   u_ref_m_s: 3.0
   ab_cov: [[0.25, -0.04], [-0.04, 0.01]]   # ASSUMPTION standing in for the Laplace posterior until fitted (TDD section 4.1 sample-size note)
   surface_adjustment: {enabled: true, rho_ref: 0.30, rho_p10: 0.12, phi_at_p10: 0.5, uncertainty_halfwidth: 0.5}
   citations: [sherwin2023]
-  provenance: {status: summary, basis: "detection limit recalled from Sherwin et al. 2023 single-blind satellite test; replace with fit"}
+  provenance: {status: summary, basis: "Sherwin et al. 2023: smallest detection 0.197 t/h quantified to within 13 %; 3 valid measurements only"}
 quantification:
-  ratio_95_low: 0.40
-  ratio_95_high: 1.90
+  ratio_95_low: 0.32
+  ratio_95_high: 2.10
   tier: A
   citations: [sherwin2023]
-  provenance: {status: summary, basis: "satellite quantification error comparable to aircraft per Sherwin 2023; TODO(verify)"}
+  provenance: {status: summary, basis: "Sherwin 2023 stage 1 (modelled wind): estimates between -68 % and +110 % of metered; slope 0.855 [0.715, 0.995]; 75 % within +/-50 %"}
 false_positive:
   rate_per_opportunity: 0.02
   reported_rate_quantile_max: 0.25
   citations: [sherwin2023]
-  provenance: {status: assumption, basis: "2 % per scene assumed"}
+  provenance: {status: assumption, basis: "Sherwin 2023: no false positives (one zero release); 2 % per scene kept as a field allowance"}
 constraints:
   max_wind_m_s: 8.0
   max_solar_zenith_deg: 70.0     # TDD section 5.2

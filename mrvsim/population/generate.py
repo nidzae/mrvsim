@@ -174,8 +174,13 @@ def generate_population(
     priors: PriorSet | None = None,
     constants: Constants | None = None,
     n_hours: int = 8760,
+    coordinate_seeds: SeedTree | None = None,
 ) -> Population:
     """Generate the stratified synthetic population (TDD section 3).
+
+    ``coordinate_seeds`` (default: ``seeds``) draws the facility coordinates; the pipeline passes the
+    run-level tree so that locations are identical across Monte Carlo replications while emissions vary
+    (DECISION_LOG 2026-10-01). Identical coordinates let the satellite overpass cache hit after the first replication.
 
     Parameters
     ----------
@@ -209,7 +214,7 @@ def generate_population(
     basin_idx = basin_of_stratum[stratum_idx]
     ftype_idx = ftype_of_stratum[stratum_idx]
     tclass_idx = tclass_of_stratum[stratum_idx]
-    lat, lon = _facility_coordinates(seeds.rng("population", "coordinates"), strata, basin_idx)
+    lat, lon = _facility_coordinates((coordinate_seeds or seeds).rng("population", "coordinates"), strata, basin_idx)
 
     # per-stratum hyperparameters as arrays indexed by stratum
     cell_priors = [priors.for_cell(s.basin, s.facility_type) for s in strata.strata]

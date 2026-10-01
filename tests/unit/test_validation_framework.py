@@ -28,9 +28,13 @@ def test_targets_file_integrity() -> None:
 
 def test_refusal_on_placeholder_priors(monkeypatch) -> None:
     monkeypatch.delenv(ALLOW_PLACEHOLDER_ENV, raising=False)
-    st = load_strata(); pr = load_priors(DEFAULT_PRIORS_PATH, list(st.basins), list(st.facility_types))
+    from mrvsim.population.priors import PLACEHOLDER_PRIORS_PATH
+    from mrvsim.validate import common
+    st = load_strata(); pr = load_priors(PLACEHOLDER_PRIORS_PATH, list(st.basins), list(st.facility_types))
     assert pr.is_placeholder
+    monkeypatch.setattr(common, "default_priors", lambda: pr)
     for mod in (v1_rates, v4_stability, v5_misspecification, v6_transient, v7_calibration):
+        monkeypatch.setattr(mod, "default_priors", lambda: pr, raising=False)
         res = mod.run()
         assert res.status == "skipped" and "PLACEHOLDER" in res.reason, (mod.__name__, res.status, res.reason)
         assert res.elapsed_s is None   # refused before any computation
@@ -38,6 +42,7 @@ def test_refusal_on_placeholder_priors(monkeypatch) -> None:
 
 def test_perturb_priors() -> None:
     st = load_strata(); pr = load_priors(DEFAULT_PRIORS_PATH, list(st.basins), list(st.facility_types))
+    assert not pr.is_placeholder, "fitted priors expected as default"
     pp = perturb_priors(pr, alpha=0.3, mu=-0.3, nu_on=0.5)
     a, b = pr.for_cell("permian", "wp_gas"), pp.for_cell("permian", "wp_gas")
     assert b.alpha == pytest.approx(a.alpha + 0.3) and b.mu_0 == pytest.approx(a.mu_0 - 0.3) and b.mu_1 == pytest.approx(a.mu_1 - 0.3)
@@ -46,8 +51,7 @@ def test_perturb_priors() -> None:
 
 
 @pytest.mark.slow
-def test_v6_diagnostic_runs_on_placeholder(monkeypatch) -> None:
-    monkeypatch.setenv(ALLOW_PLACEHOLDER_ENV, "1")
+def test_v6_runs_as_validation_on_fitted_priors() -> None:
     res = v6_transient.run(n_events=40)
-    assert res.status in ("pass", "fail") and res.diagnostic_only
+    assert res.status in ("pass", "fail") and not res.diagnostic_only
     assert res.compared["mean_ratio_estimate_over_truth"] < 1.0

@@ -7,8 +7,8 @@ observation_mode: snapshot
 spatial_scope: site
 schedule: orbit
 pod:
-  pod50_kg_h: 3000.0             # TODO(verify) [sherwin2023]
-  pod90_kg_h: 6000.0             # TODO(verify); POD90/POD50 = 2
+  pod50_kg_h: 1500.0             # Sherwin 2023 tested Landsat 8 (wind 4.0 m/s) but reports no Landsat-specific threshold; set 1.5x Sentinel-2 (coarser SWIR band). TODO(verify)
+  pod90_kg_h: 3500.0
   gamma: 1.0
   u_ref_m_s: 3.0
   ab_cov: [[0.3, -0.04], [-0.04, 0.008]]   # ASSUMPTION
@@ -16,11 +16,11 @@ pod:
   citations: [sherwin2023]
   provenance: {status: summary, basis: "recalled from Sherwin 2023; replace with fit"}
 quantification:
-  ratio_95_low: 0.35
-  ratio_95_high: 2.20
+  ratio_95_low: 0.32
+  ratio_95_high: 2.10
   tier: A
   citations: [sherwin2023]
-  provenance: {status: summary, basis: "TODO(verify)"}
+  provenance: {status: summary, basis: "Sherwin 2023 stage 1 pooled satellite error: -68 % to +110 %"}
 false_positive:
   rate_per_opportunity: 0.03
   reported_rate_quantile_max: 0.25

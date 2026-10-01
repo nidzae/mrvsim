@@ -7,6 +7,7 @@ export const api = {
   health: () => fetch("/api/health").then(J),
   sensors: () => fetch("/api/sensors").then(J),
   runs: () => fetch("/api/runs").then(J),
+  estimate: (body) => fetch("/api/estimate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).then(J),
   startRun: (body) => fetch("/api/run", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).then(J),
   job: (id) => fetch(`/api/jobs/${id}`).then(J),
   summary: (runId, kpi) => fetch(`/api/run/${runId}/summary?kpi=${kpi}`).then(J),

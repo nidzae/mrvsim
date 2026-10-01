@@ -7,19 +7,19 @@ observation_mode: snapshot
 spatial_scope: site
 schedule: campaign
 pod:
-  pod50_kg_h: 15.0               # TODO(verify) [elabbadi2024; ayasse2024]
-  pod90_kg_h: 60.0               # TODO(verify)
+  pod50_kg_h: 8.5                # El Abbadi 2024 (Carbon Mapper, 82 filtered releases): largest missed 6.61 kg/h, smallest detected 10.92 kg/h,
+  pod90_kg_h: 12.0               #   "consistently quantified releases above 10 kg/h" [elabbadi2024]; Cusworth 2022: sources as low as 5-10 kg/h [cusworth2022]
   gamma: 1.0
   u_ref_m_s: 3.0
   surface_adjustment: {enabled: true, rho_ref: 0.30, rho_p10: 0.12, phi_at_p10: 0.5, uncertainty_halfwidth: 0.5}
   citations: [elabbadi2024, ayasse2024, cusworth2022]
-  provenance: {status: summary, basis: "POD50/POD90 recalled from El Abbadi 2024 and Ayasse 2024; replace with fit"}
+  provenance: {status: summary, basis: "bracketed by El Abbadi 2024's largest missed (6.61 kg/h) and smallest detected (10.92 kg/h) releases at the campaign winds; not a fit to the release table"}
 quantification:
-  ratio_95_low: 0.40
-  ratio_95_high: 1.90
+  ratio_95_low: 0.35
+  ratio_95_high: 2.20
   tier: A
   citations: [elabbadi2024, ayasse2024]
-  provenance: {status: summary, basis: "derived from the -60 %/+90 % aircraft 95 % range; TODO(verify)"}
+  provenance: {status: summary, basis: "El Abbadi 2024 parity slope 0.89 with R^2 0.61 (71 estimates), the loosest of the imaging spectrometers; spread widened to -65 %/+120 %"}
 false_positive:
   rate_per_opportunity: 0.01
   reported_rate_quantile_max: 0.25

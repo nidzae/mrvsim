@@ -103,7 +103,9 @@ $$
 P(q > x \mid x > q_{\text{tail},h}) = \left(\frac{x}{q_{\text{tail},h}}\right)^{-\alpha_h}
 $$
 
-Parameters are fitted so that (a) the rate distribution of detected sources above 10 kg/h matches [cusworth2022] and [sherwin2024] per basin, and (b) the sub-10 kg/h mass matches the component-level model of [rutherford2021]. Intermittent sources are given a higher $\mu_{h,1}$ than steady ones, consistent with the finding that short- and long-duration sources contribute comparably to point-source totals [cusworth2022].
+Parameters are fitted so that (a) the rate distribution of detected sources above 10 kg/h matches [cusworth2022] and [sherwin2024] per basin, and (b) the sub-10 kg/h mass matches the component-level model of [rutherford2021].
+
+**Implementation note (2026-10-01, DECISION_LOG "Fitted emission priors"):** the steady lognormal is moment-matched to Rutherford's component database; the remaining parameters are fitted per basin to the site-level survival curves of the Sherwin 2024 correction release and nationally to the Omara site distribution and the Cusworth point-source share. A single $p_h$ cannot reproduce both a high low-level emitting fraction and low persistence of large sources; size-dependent intermittency is a version-2 item. Intermittent sources are given a higher $\mu_{h,1}$ than steady ones, consistent with the finding that short- and long-duration sources contribute comparably to point-source totals [cusworth2022].
 
 **Weakness:** the splice point and $\alpha_h$ are poorly constrained by data below the aircraft detection limit. The prior misspecification test (V5) perturbs $\alpha_h$ by ±0.3 and checks that calibration degrades gracefully.
 
@@ -476,6 +478,7 @@ Each limitation maps to a version-2 item in `DECISION_LOG.md`.
 |---|---|
 | 2026-09-30 | Initial draft |
 | 2026-09-30 | §3.1, §3.4: Phase 1 implementation notes (strata cell list; stationary renewal start; hourly midpoint states) |
+| 2026-10-01 | §3.3: fitted priors note (Rutherford, Omara, Sherwin 2024, Cusworth); §4.1 sensor parameters grounded in blind tests (see sensor YAMLs) |
 | 2026-09-30 | §8: Phase 7 policy engine note |
 | 2026-09-30 | §9: Phase 6 validation framework note |
 | 2026-09-30 | §7: Phase 5 scoring conventions note |

@@ -37,15 +37,45 @@ DEFAULT_POLICY = {"sensors": {"bridger_gml": {"coverage": 1.0, "frequency_per_ye
 
 
 # ----------------------------------------------------------------------------- models
+# Compute modes (DECISION_LOG 2026-10-01 "Quick and Full compute modes"). Quick targets PRD N3; Full is the
+# TDD-resolution run (every facility of the default sample, 10^4 draws). Custom = whatever the request says.
+MODES: dict[str, dict[str, Any]] = {
+    "quick": {"facilities_per_stratum": 10, "n_draws": 2000, "replications": 3, "n_per_stratum": 30},
+    "full": {"facilities_per_stratum": None, "n_draws": 10_000, "replications": 5, "n_per_stratum": 100},
+}
+# Measured on this laptop (Phase 4/8 notes): estimator ms per facility by draws, observation s per replication per 1,000 facilities.
+_MS_PER_FAC = {2000: 15.0, 10_000: 65.0}
+_OBS_S_PER_KFAC = 1.2
+_OVERPASS_FIRST_S = 110.0
+
+
 class RunRequest(BaseModel):
     name: str = "interactive"
     seed: int = 20260930
+    mode: str = "quick"                    # quick | full | custom
     policy: dict[str, Any] = Field(default_factory=lambda: DEFAULT_POLICY)
     scoring: dict[str, Any] = Field(default_factory=lambda: {"bar_mass_t_yr": 50.0, "bar_intensity": 0.002, "w_max": 0.30})
     replications: int = 3
     n_draws: int = 2000
     facilities_per_stratum: int | None = 10
     n_per_stratum: int = 30
+
+    def resolved(self) -> "RunRequest":
+        if self.mode in MODES:
+            return self.model_copy(update=MODES[self.mode])
+        return self
+
+
+def estimate_seconds(req: RunRequest, n_strata: int = 63) -> dict[str, Any]:
+    r = req.resolved()
+    n_fac_total = r.n_per_stratum * n_strata
+    n_est = n_fac_total if r.facilities_per_stratum is None else min(r.facilities_per_stratum, r.n_per_stratum) * n_strata
+    ms = np.interp(r.n_draws, sorted(_MS_PER_FAC), [_MS_PER_FAC[k] for k in sorted(_MS_PER_FAC)])
+    per_rep = n_est * ms / 1000.0 + _OBS_S_PER_KFAC * n_fac_total / 1000.0 * len(r.policy.get("sensors", {}))
+    sats = sum(1 for k in r.policy.get("sensors", {}) if LIB[k].schedule == "orbit") if r.policy.get("sensors") else 0
+    total = r.replications * per_rep + (_OVERPASS_FIRST_S * sats / 5.0 if sats else 0.0)
+    return {"mode": r.mode, "facilities_estimated": int(n_est), "facilities_generated": int(n_fac_total), "n_draws": r.n_draws, "replications": r.replications,
+            "estimated_seconds": float(total), "note": "first run with new coordinates also computes satellite overpasses (cached afterwards)"}
 
 
 class OptimizeRequest(BaseModel):
@@ -77,16 +107,20 @@ class GapRequest(BaseModel):
 
 # ----------------------------------------------------------------------------- helpers
 def _cfg_from_request(req: RunRequest) -> RunConfig:
-    return RunConfig.from_dict({"name": req.name, "seed": req.seed, "replications": req.replications, "population": {"n_per_stratum": req.n_per_stratum},
-                                "policy": req.policy, "estimator": {"n_draws": req.n_draws}, "scoring": req.scoring})
+    req = req.resolved()
+    return RunConfig.from_dict({"name": f"{req.name} [{req.mode}]", "seed": req.seed, "replications": req.replications, "population": {"n_per_stratum": req.n_per_stratum},
+                                "policy": req.policy, "estimator": {"n_draws": req.n_draws, "mode": req.mode, "facilities_per_stratum": req.facilities_per_stratum},
+                                "scoring": req.scoring})
 
 
 def _run_job(req: RunRequest):
     from mrvsim.pipeline import run_scored
 
+    req = req.resolved()
+
     def fn(job):
         cfg = _cfg_from_request(req)
-        job.progress = {"stage": "running", "replications": req.replications}
+        job.progress = {"stage": "running", "replications": req.replications, "mode": req.mode, **estimate_seconds(req)}
         report, run, _ = run_scored(cfg, root=store.RUNS_DIR, replications=req.replications, n_draws=req.n_draws,
                                     facilities_per_stratum=req.facilities_per_stratum, library=LIB)
         store.load_run.cache_clear()
@@ -153,7 +187,12 @@ def runs() -> dict[str, Any]:
 @app.post("/api/run")
 def post_run(req: RunRequest) -> dict[str, Any]:
     job = JOBS.submit("run", _run_job(req))
-    return job.to_dict()
+    return {**job.to_dict(), "estimate": estimate_seconds(req)}
+
+
+@app.post("/api/estimate")
+def estimate(req: RunRequest) -> dict[str, Any]:
+    return estimate_seconds(req)
 
 
 @app.get("/api/jobs/{job_id}")
