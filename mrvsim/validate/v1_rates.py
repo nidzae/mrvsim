@@ -18,7 +18,7 @@ from mrvsim.validate.targets import load_targets, target_missing, worst_status
 VID, NAME = "V1", "Detected-rate distribution and persistence per basin"
 
 
-def simulated_detected_rates(pop, threshold_kg_h: float = 10.0) -> dict[str, np.ndarray]:
+def simulated_detected_rates(pop, threshold_kg_h: float = 10.0, floors: dict[str, float] | None = None) -> dict[str, np.ndarray]:
     """Facility-total rates seen by an aircraft-style snapshot at random hours, per basin, above the threshold.
 
     Point-source surveys report facility totals at the time of the overflight; we emulate that with one snapshot
@@ -29,7 +29,8 @@ def simulated_detected_rates(pop, threshold_kg_h: float = 10.0) -> dict[str, np.
     q = pop.facility_rate_at_pairs(np.arange(pop.n_facilities), hours)
     out: dict[str, np.ndarray] = {}
     for bi, key in enumerate(pop.strata.basins):
-        sel = (pop.basin_idx == bi) & (q > threshold_kg_h)
+        thr = (floors or {}).get(key, threshold_kg_h)
+        sel = (pop.basin_idx == bi) & (q > thr)
         out[key] = q[sel]
     return out
 
@@ -42,7 +43,8 @@ def run(targets: dict[str, Any] | None = None, n_per_stratum: int = 100, seed: i
     if ref:
         return ref
     pop = generate_population({"n_per_stratum": n_per_stratum}, SeedTree(seed), priors=priors)
-    sims = simulated_detected_rates(pop)
+    floors = {b: float(blk["floor_kg_h"]) for b, blk in tg["rate_quantiles_kg_h"].items() if isinstance(blk, dict) and blk.get("floor_kg_h")}
+    sims = simulated_detected_rates(pop, floors=floors)
     compared: dict[str, Any] = {}
     verdicts: list[bool] = []
     statuses = []
@@ -58,6 +60,8 @@ def run(targets: dict[str, Any] | None = None, n_per_stratum: int = 100, seed: i
             verdicts.append(bool(ks.pvalue > 0.05))
         elif blk.get("status") == "missing" or any(blk.get(p) is None for p in ("p25", "p50", "p75", "p90")):
             entry.update({"method": "none", "pass": None, "note": "target missing"})
+        elif sim.size < 30:
+            entry.update({"method": "none", "pass": None, "note": f"only {sim.size} simulated sites above the floor {floors.get(basin, 10.0):.1f} kg/h; increase n_per_stratum"})
         else:
             # weaker fallback: every target quantile inside the simulated 90 % bootstrap band of that quantile
             rng = np.random.default_rng(0); ok = True
@@ -78,7 +82,7 @@ def run(targets: dict[str, Any] | None = None, n_per_stratum: int = 100, seed: i
         sel = pop.basin_idx == bi
         levels = np.array(blk["levels_kg_h"], float); S_t = np.array(blk["fraction_at_or_above"], float)
         S_sim = np.array([(snap[sel] >= x).mean() for x in levels])
-        use = S_t > 1e-3
+        use = S_t * sel.sum() >= 20          # score only levels where the target implies >= 20 simulated facilities
         ratio = (S_sim[use] + 1e-6) / (S_t[use] + 1e-6)
         ok = bool(np.all((ratio > 0.5) & (ratio < 2.0)))
         compared[f"survival_{basin}"] = {"levels_kg_h": levels.tolist(), "S_sim": S_sim.round(5).tolist(), "S_target": S_t.tolist(), "max_ratio_dev": float(np.max(np.abs(np.log(ratio)))), "pass": ok}

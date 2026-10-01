@@ -120,7 +120,7 @@ def run_scored(cfg: RunConfig, root: str | Path = "runs", run_id: str | None = N
         n_strata = len(pop0.strata) if pop0 else 0
         basins = list(pop0.strata.basins) if pop0 else []
         report = aggregate(reps, n_strata, basins)
-        report.meta = {"sensors": list(cfg.policy.get("sensors", {}).keys()), "n_draws": n_draws or cfg.estimator.get("n_draws", 10_000),
+        report.meta = {"sensors": list(cfg.policy.get("sensors", {}).keys()), "n_draws": n_draws or cfg.estimator.get("n_draws", 10_000), "n_scored": int(reps[-1].n_scored),
                        "facilities_per_stratum": facilities_per_stratum, "replications": R,
                        "priors_provenance": pop0.priors.provenance if pop0 else None, "strata_provenance": pop0.strata.provenance if pop0 else None,
                        "citation_keys": sorted(set(pop0.citation_keys()) | set(library.citation_keys(list(cfg.policy.get("sensors", {}).keys()))) if pop0 else [])}

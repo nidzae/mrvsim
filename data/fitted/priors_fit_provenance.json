@@ -1,5 +1,5 @@
 {
-  "fitted_utc": "2026-10-01T06:14:25+00:00",
+  "fitted_utc": "2026-10-01T06:34:05+00:00",
   "script": "data/scripts/fit_priors.py",
   "wellpad_method": "Nelder-Mead on log site-level quantiles (Omara national), mean, top-1 % share and Cusworth snapshot share > 10 kg/h; steady lognormal fixed from Rutherford components",
   "rutherford_components": {
@@ -429,6 +429,255 @@
     "Omara site-level values are model-derived national estimates for gas production sites, not direct measurements",
     "midstream uses GHGRP bottom-up reported CH4 (metric tons CH4), known to under-report by roughly 2x versus measurements (Sherwin 2024); gathering values are operator-basin aggregates (upper bound per station)",
     "durations: nu_on fixed at ln(7.4 h); only nu_off fitted; tau and sigma_nu kept at placeholder values",
+    "well-pad throughput: GHGRP RY2023 marketed gas and oil per producing well (operator-basin reporters, well-weighted); per-well is a lower bound on per-pad throughput; midstream throughput still placeholder",
     "basins with Sherwin 2024 site-level CDFs (Permian, Appalachian, DJ, Uinta; Fort Worth -> other) have per-basin p, mu_1, sigma_1, q_tail, alpha fitted to the survival curve (and Cusworth persistence where available); Haynesville, Eagle Ford, Bakken, Anadarko, San Juan inherit the national fit"
-  ]
+  ],
+  "throughput_ghgrp": {
+    "anadarko/wp_gas": {
+      "n_reporters": 15,
+      "n_wells": 5205,
+      "gas_m3_per_well_median": 2877281.5629967726,
+      "ln_gas_m3_yr_mu": 14.87235650461913,
+      "ln_gas_m3_yr_sigma": 1.0952151587484704,
+      "ln_oil_bbl_yr_mu": 7.50541316671945,
+      "ln_oil_bbl_yr_sigma": 1.4827091647574333
+    },
+    "anadarko/wp_mixed": {
+      "n_reporters": 17,
+      "n_wells": 4004,
+      "gas_m3_per_well_median": 3688672.2016490554,
+      "ln_gas_m3_yr_mu": 15.120777114308384,
+      "ln_gas_m3_yr_sigma": 0.8652863097705406,
+      "ln_oil_bbl_yr_mu": 9.231440036332609,
+      "ln_oil_bbl_yr_sigma": 0.8873016601639716
+    },
+    "appalachian/wp_gas": {
+      "n_reporters": 36,
+      "n_wells": 21381,
+      "gas_m3_per_well_median": 5423713.7311425265,
+      "ln_gas_m3_yr_mu": 15.506291329027864,
+      "ln_gas_m3_yr_sigma": 1.689003186160506,
+      "ln_oil_bbl_yr_mu": 4.010393351146616,
+      "ln_oil_bbl_yr_sigma": 2.5
+    },
+    "appalachian/wp_mixed": {
+      "n_reporters": 6,
+      "n_wells": 262,
+      "gas_m3_per_well_median": 7801814.210908916,
+      "ln_gas_m3_yr_mu": 15.869866855756863,
+      "ln_gas_m3_yr_sigma": 1.405342257160847,
+      "ln_oil_bbl_yr_mu": 10.484425989955422,
+      "ln_oil_bbl_yr_sigma": 1.0066352322861472
+    },
+    "bakken/wp_mixed": {
+      "n_reporters": 21,
+      "n_wells": 9901,
+      "gas_m3_per_well_median": 1873387.0470776784,
+      "ln_gas_m3_yr_mu": 14.443258605607973,
+      "ln_gas_m3_yr_sigma": 1.141566872902292,
+      "ln_oil_bbl_yr_mu": 9.92570504123829,
+      "ln_oil_bbl_yr_sigma": 1.6256563671552577
+    },
+    "bakken/wp_oil": {
+      "n_reporters": 11,
+      "n_wells": 1213,
+      "gas_m3_per_well_median": 326121.377446762,
+      "ln_gas_m3_yr_mu": 12.695024914509991,
+      "ln_gas_m3_yr_sigma": 2.5,
+      "ln_oil_bbl_yr_mu": 10.151042052960412,
+      "ln_oil_bbl_yr_sigma": 0.7099236421935082
+    },
+    "dj/wp_gas": {
+      "n_reporters": 1,
+      "n_wells": 3235,
+      "gas_m3_per_well_median": 91463.48283153014,
+      "ln_gas_m3_yr_mu": 11.423695076866737,
+      "ln_gas_m3_yr_sigma": 0.3,
+      "ln_oil_bbl_yr_mu": 0.0,
+      "ln_oil_bbl_yr_sigma": 0.3
+    },
+    "dj/wp_mixed": {
+      "n_reporters": 12,
+      "n_wells": 10508,
+      "gas_m3_per_well_median": 2697560.201615292,
+      "ln_gas_m3_yr_mu": 14.807858293424353,
+      "ln_gas_m3_yr_sigma": 0.40189497672797053,
+      "ln_oil_bbl_yr_mu": 9.635404906647974,
+      "ln_oil_bbl_yr_sigma": 0.479376309901017
+    },
+    "dj/wp_oil": {
+      "n_reporters": 2,
+      "n_wells": 326,
+      "gas_m3_per_well_median": 459565.62336759677,
+      "ln_gas_m3_yr_mu": 13.038037025309002,
+      "ln_gas_m3_yr_sigma": 0.38273741920572674,
+      "ln_oil_bbl_yr_mu": 9.564923359027416,
+      "ln_oil_bbl_yr_sigma": 0.595399537582502
+    },
+    "eagle_ford/wp_gas": {
+      "n_reporters": 10,
+      "n_wells": 5282,
+      "gas_m3_per_well_median": 2441521.47809584,
+      "ln_gas_m3_yr_mu": 14.708131959535406,
+      "ln_gas_m3_yr_sigma": 1.0270439508442835,
+      "ln_oil_bbl_yr_mu": 6.9286518439402585,
+      "ln_oil_bbl_yr_sigma": 0.8300993644723096
+    },
+    "eagle_ford/wp_mixed": {
+      "n_reporters": 32,
+      "n_wells": 10491,
+      "gas_m3_per_well_median": 3266241.54469314,
+      "ln_gas_m3_yr_mu": 14.999150507124176,
+      "ln_gas_m3_yr_sigma": 0.9070385893059443,
+      "ln_oil_bbl_yr_mu": 10.127465598378532,
+      "ln_oil_bbl_yr_sigma": 0.8522502707478645
+    },
+    "eagle_ford/wp_oil": {
+      "n_reporters": 12,
+      "n_wells": 2752,
+      "gas_m3_per_well_median": 82015.60552750785,
+      "ln_gas_m3_yr_mu": 11.314664819450561,
+      "ln_gas_m3_yr_sigma": 2.5,
+      "ln_oil_bbl_yr_mu": 9.346165778366185,
+      "ln_oil_bbl_yr_sigma": 1.3363339918890695
+    },
+    "haynesville/wp_gas": {
+      "n_reporters": 34,
+      "n_wells": 10973,
+      "gas_m3_per_well_median": 5067918.958380521,
+      "ln_gas_m3_yr_mu": 15.438440829446954,
+      "ln_gas_m3_yr_sigma": 1.5691231539106458,
+      "ln_oil_bbl_yr_mu": 4.610022631738535,
+      "ln_oil_bbl_yr_sigma": 2.3264563750354084
+    },
+    "haynesville/wp_mixed": {
+      "n_reporters": 4,
+      "n_wells": 557,
+      "gas_m3_per_well_median": 268391.5311040853,
+      "ln_gas_m3_yr_mu": 12.500202130318382,
+      "ln_gas_m3_yr_sigma": 0.43630920559730063,
+      "ln_oil_bbl_yr_mu": 7.683189845325613,
+      "ln_oil_bbl_yr_sigma": 0.34449265707591853
+    },
+    "other/wp_gas": {
+      "n_reporters": 65,
+      "n_wells": 41544,
+      "gas_m3_per_well_median": 1323083.602080772,
+      "ln_gas_m3_yr_mu": 14.095475632393708,
+      "ln_gas_m3_yr_sigma": 0.769775597563391,
+      "ln_oil_bbl_yr_mu": 3.9013288113454525,
+      "ln_oil_bbl_yr_sigma": 2.2509620600151754
+    },
+    "other/wp_mixed": {
+      "n_reporters": 25,
+      "n_wells": 8567,
+      "gas_m3_per_well_median": 731315.7133311966,
+      "ln_gas_m3_yr_mu": 13.502600537875184,
+      "ln_gas_m3_yr_sigma": 1.1990966704988184,
+      "ln_oil_bbl_yr_mu": 8.662926127400354,
+      "ln_oil_bbl_yr_sigma": 1.0877954903408922
+    },
+    "other/wp_oil": {
+      "n_reporters": 27,
+      "n_wells": 24110,
+      "gas_m3_per_well_median": 53.845117077764826,
+      "ln_gas_m3_yr_mu": 3.9861117231264203,
+      "ln_gas_m3_yr_sigma": 2.5,
+      "ln_oil_bbl_yr_mu": 7.975017669332637,
+      "ln_oil_bbl_yr_sigma": 1.0782465134522463
+    },
+    "permian/wp_gas": {
+      "n_reporters": 1,
+      "n_wells": 5428,
+      "gas_m3_per_well_median": 88501.46380079928,
+      "ln_gas_m3_yr_mu": 11.39077437098126,
+      "ln_gas_m3_yr_sigma": 0.3,
+      "ln_oil_bbl_yr_mu": 1.863005042073031,
+      "ln_oil_bbl_yr_sigma": 0.3
+    },
+    "permian/wp_mixed": {
+      "n_reporters": 77,
+      "n_wells": 36959,
+      "gas_m3_per_well_median": 2695812.3238114445,
+      "ln_gas_m3_yr_mu": 14.807210135761666,
+      "ln_gas_m3_yr_sigma": 1.5990125448578638,
+      "ln_oil_bbl_yr_mu": 10.162822006299184,
+      "ln_oil_bbl_yr_sigma": 1.563471685479255
+    },
+    "permian/wp_oil": {
+      "n_reporters": 13,
+      "n_wells": 3503,
+      "gas_m3_per_well_median": 18600.71770667423,
+      "ln_gas_m3_yr_mu": 9.830955445337192,
+      "ln_gas_m3_yr_sigma": 2.5,
+      "ln_oil_bbl_yr_mu": 9.36509270534611,
+      "ln_oil_bbl_yr_sigma": 0.9045124747849298
+    },
+    "san_juan/wp_gas": {
+      "n_reporters": 8,
+      "n_wells": 7974,
+      "gas_m3_per_well_median": 1899649.4934013924,
+      "ln_gas_m3_yr_mu": 14.457179949961503,
+      "ln_gas_m3_yr_sigma": 0.5726419718614602,
+      "ln_oil_bbl_yr_mu": 4.4645507577482695,
+      "ln_oil_bbl_yr_sigma": 1.2634391465579429
+    },
+    "san_juan/wp_mixed": {
+      "n_reporters": 2,
+      "n_wells": 447,
+      "gas_m3_per_well_median": 2696932.1277216286,
+      "ln_gas_m3_yr_mu": 14.807625435962276,
+      "ln_gas_m3_yr_sigma": 0.3,
+      "ln_oil_bbl_yr_mu": 9.755883488614602,
+      "ln_oil_bbl_yr_sigma": 0.5230637858029495
+    },
+    "uinta/wp_gas": {
+      "n_reporters": 5,
+      "n_wells": 4712,
+      "gas_m3_per_well_median": 807866.7818842593,
+      "ln_gas_m3_yr_mu": 13.602152450004416,
+      "ln_gas_m3_yr_sigma": 0.5433625599729149,
+      "ln_oil_bbl_yr_mu": 5.294662138454313,
+      "ln_oil_bbl_yr_sigma": 1.0109971227819756
+    },
+    "uinta/wp_mixed": {
+      "n_reporters": 3,
+      "n_wells": 2114,
+      "gas_m3_per_well_median": 276295.57790173386,
+      "ln_gas_m3_yr_mu": 12.529226506084676,
+      "ln_gas_m3_yr_sigma": 0.8782432393974144,
+      "ln_oil_bbl_yr_mu": 7.797772033863498,
+      "ln_oil_bbl_yr_sigma": 1.2811441651484992
+    },
+    "uinta/wp_oil": {
+      "n_reporters": 4,
+      "n_wells": 2037,
+      "gas_m3_per_well_median": 82154.95013703768,
+      "ln_gas_m3_yr_mu": 11.316362378948101,
+      "ln_gas_m3_yr_sigma": 2.186378452677346,
+      "ln_oil_bbl_yr_mu": 8.971123132421766,
+      "ln_oil_bbl_yr_sigma": 1.2369855731842936
+    },
+    "national/wp_gas": {
+      "n_wells": 105734,
+      "ln_gas_m3_yr_mu": 14.373684023504296,
+      "ln_gas_m3_yr_sigma": 1.5460339456201522,
+      "ln_oil_bbl_yr_mu": 4.20614735465403,
+      "ln_oil_bbl_yr_sigma": 2.5
+    },
+    "national/wp_mixed": {
+      "n_wells": 83810,
+      "ln_gas_m3_yr_mu": 14.60047878844391,
+      "ln_gas_m3_yr_sigma": 1.393110656726776,
+      "ln_oil_bbl_yr_mu": 9.78914235636422,
+      "ln_oil_bbl_yr_sigma": 1.4394054289499796
+    },
+    "national/wp_oil": {
+      "n_wells": 33941,
+      "ln_gas_m3_yr_mu": 6.021680080439314,
+      "ln_gas_m3_yr_sigma": 2.5,
+      "ln_oil_bbl_yr_mu": 8.38248138895519,
+      "ln_oil_bbl_yr_sigma": 1.2677708562032644
+    }
+  }
 }

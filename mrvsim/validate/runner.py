@@ -18,7 +18,7 @@ MODULES: dict[str, Callable[..., ValidationResult]] = {
 }
 QUICK_KWARGS: dict[str, dict[str, Any]] = {   # reduced settings for an interactive run of the panel
     "V1": {"n_per_stratum": 60}, "V2": {"n_per_stratum": 60}, "V3": {"n_per_stratum": 30, "n_draws": 1500},
-    "V4": {"replications": 2, "facilities_per_stratum": 5, "n_draws": 1000}, "V5": {"n_per_stratum": 30, "n_draws": 1000, "step": 10},
+    "V4": {"replications": 3, "facilities_per_stratum": 6, "n_draws": 1000}, "V5": {"n_per_stratum": 30, "n_draws": 1000, "step": 10},
     "V6": {"n_events": 60}, "V7": {"replications": 3, "facilities_per_stratum": 5, "n_draws": 1000},
 }
 

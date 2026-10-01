@@ -144,9 +144,10 @@ def load_priors(path: str | Path, basins: list[str], facility_types: list[str]) 
     ft_over = raw.get("facility_types") or {}
     b_over = raw.get("basins") or {}
     cells: dict[tuple[str, str], StratumPriors] = {}
+    cell_over = raw.get("cells") or {}          # "basin/facility_type" -> overrides applied last (e.g. fitted throughput per cell)
     for b in basins:
         for f in facility_types:
-            merged = _merge(defaults, ft_over.get(f), b_over.get(b))
+            merged = _merge(defaults, ft_over.get(f), b_over.get(b), cell_over.get(f"{b}/{f}"))
             tp = merged.pop("throughput")
             kwargs = {k: float(merged[k]) for k in _SCALAR_KEYS}
             kwargs.update({k: float(tp[k]) for k in _THROUGHPUT_KEYS})

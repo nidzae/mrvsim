@@ -267,6 +267,49 @@ def ghgrp_midstream(mu0: float, s0: float) -> dict:
     return out
 
 
+BASIN_MAP = {"430 - Permian Basin": "permian", "160A - Appalachian Basin (Eastern Overthrust Area)": "appalachian", "160 - Appalachian Basin": "appalachian",
+             "230 - Arkla Basin": "haynesville", "260 - East Texas Basin": "haynesville", "220 - Gulf Coast Basin (LA, TX)": "eagle_ford", "395 - Williston Basin": "bakken",
+             "540 - Denver Basin": "dj", "360 - Anadarko Basin": "anadarko", "580 - San Juan Basin": "san_juan", "575 - Uinta Basin": "uinta"}
+MSCF_TO_M3 = 28.3168
+GAS_MJ_PER_MSCF = 1000 * 1.037 * 1.05506; OIL_MJ_PER_BBL = 6119.0
+
+
+def ghgrp_throughput() -> dict:
+    """Per basin x well-pad type lognormal of marketed gas (m3/yr) and oil (bbl/yr) per *well* from GHGRP RY2023 production
+    reporters (gas_prod_cal_year_for_sales [Mscf], oil_prod_cal_year_for_sales [bbl], well_producing_end_of_year) [ghgrp].
+    A reporter is an operator-basin aggregate; per-well values are its totals divided by its producing wells, and the
+    well-weighted spread across reporters is the within-cell spread. Well pads have one to several wells, so per-well
+    throughput is a lower bound on per-pad throughput (TODO: pad-level data, PRD Q5)."""
+    o = pd.read_csv(RAW / "ghgrp_ef_w_facility_overview_2023.csv", low_memory=False)
+    prod = o[o.industry_segment.str.contains("production", case=False, na=False) & ~o.industry_segment.str.contains("Offshore", na=False)]
+    g = prod.groupby("facility_id", as_index=False).agg(wells=("well_producing_end_of_year", "max"), gas=("gas_prod_cal_year_for_sales", "max"),
+                                                       oil=("oil_prod_cal_year_for_sales", "max"), basin_raw=("basin_associated_with_facility", "first"))
+    g = g[(g.wells > 0) & g.gas.notna()]
+    g["basin"] = g.basin_raw.map(BASIN_MAP).fillna("other")
+    e_gas = g.gas.fillna(0) * GAS_MJ_PER_MSCF; e_oil = g.oil.fillna(0) * OIL_MJ_PER_BBL
+    g["f_gas"] = np.where(e_gas + e_oil > 0, e_gas / (e_gas + e_oil), np.nan)
+    g["ftype"] = pd.cut(g.f_gas, [-0.01, 0.2, 0.8, 1.01], labels=["wp_oil", "wp_mixed", "wp_gas"]).astype(object)
+    g.loc[g.f_gas.isna(), "ftype"] = "wp_mixed"
+    g["gas_m3_per_well"] = g.gas * MSCF_TO_M3 / g.wells
+    g["oil_bbl_per_well"] = g.oil.fillna(0) / g.wells
+    out = {}
+    def wfit(x, w):
+        # well-weighted lognormal moments; sigma clamped to [0.3, 2.5] (single-reporter cells give degenerate or absurd spreads)
+        x = np.log(np.maximum(x, 1.0)); mu = np.average(x, weights=w); sd = np.sqrt(np.average((x - mu) ** 2, weights=w)); return float(mu), float(np.clip(sd, 0.3, 2.5))
+    for (b, ft), grp in g.groupby(["basin", "ftype"]):
+        if grp.wells.sum() < 200:
+            continue
+        gm, gs = wfit(grp.gas_m3_per_well.to_numpy(float), grp.wells.to_numpy(float))
+        om, os_ = wfit(grp.oil_bbl_per_well.to_numpy(float) + 1e-3, grp.wells.to_numpy(float))
+        out[f"{b}/{ft}"] = {"throughput": {"ln_gas_m3_yr_mu": gm, "ln_gas_m3_yr_sigma": gs, "ln_oil_bbl_yr_mu": om, "ln_oil_bbl_yr_sigma": os_},
+                            "n_reporters": int(len(grp)), "n_wells": int(grp.wells.sum()), "gas_m3_per_well_median": float(np.exp(gm))}
+    # national per type for basins without enough data
+    for ft, grp in g.groupby("ftype"):
+        gm, gs = wfit(grp.gas_m3_per_well.to_numpy(float), grp.wells.to_numpy(float)); om, os_ = wfit(grp.oil_bbl_per_well.to_numpy(float) + 1e-3, grp.wells.to_numpy(float))
+        out[f"national/{ft}"] = {"throughput": {"ln_gas_m3_yr_mu": gm, "ln_gas_m3_yr_sigma": gs, "ln_oil_bbl_yr_mu": om, "ln_oil_bbl_yr_sigma": os_}, "n_wells": int(grp.wells.sum())}
+    return out
+
+
 def main() -> int:
     fit, comp, tg, diag, th = fit_wellpads()
     basins = {"permian": 0.26, "appalachian": 0.60}   # Cusworth 2022 Table 1 (Permian 2019; Marcellus 2021)
@@ -279,6 +322,7 @@ def main() -> int:
         if b not in basin_over:
             basin_over[b] = {"p_intermittent": basin_p_from_persistence(th, comp["mu_0"], comp["sigma_0"], basins[b])}
     mid = ghgrp_midstream(comp["mu_0"], comp["sigma_0"])
+    thr = ghgrp_throughput()
     base = yaml.safe_load((REPO / "configs" / "priors" / "placeholder_v0.yaml").read_text())
     doc = {
         "provenance": "FITTED",
@@ -291,22 +335,30 @@ def main() -> int:
             "caveats": ["Omara site-level values are model-derived national estimates for gas production sites, not direct measurements",
                         "midstream uses GHGRP bottom-up reported CH4 (metric tons CH4), known to under-report by roughly 2x versus measurements (Sherwin 2024); gathering values are operator-basin aggregates (upper bound per station)",
                         "durations: nu_on fixed at ln(7.4 h); only nu_off fitted; tau and sigma_nu kept at placeholder values",
+                        "well-pad throughput: GHGRP RY2023 marketed gas and oil per producing well (operator-basin reporters, well-weighted); per-well is a lower bound on per-pad throughput; midstream throughput still placeholder",
                         "basins with Sherwin 2024 site-level CDFs (Permian, Appalachian, DJ, Uinta; Fort Worth -> other) have per-basin p, mu_1, sigma_1, q_tail, alpha fitted to the survival curve (and Cusworth persistence where available); Haynesville, Eagle Ford, Bakken, Anadarko, San Juan inherit the national fit"],
         },
         "defaults": {**fit, "throughput": base["defaults"]["throughput"]},
         "facility_types": {
-            "wp_oil": {"throughput": base["facility_types"]["wp_oil"]["throughput"]},
-            "wp_gas": {"throughput": base["facility_types"]["wp_gas"]["throughput"]},
-            "wp_mixed": {"throughput": base["facility_types"]["wp_mixed"]["throughput"]},
+            "wp_oil": {"throughput": thr["national/wp_oil"]["throughput"]},
+            "wp_gas": {"throughput": thr["national/wp_gas"]["throughput"]},
+            "wp_mixed": {"throughput": thr["national/wp_mixed"]["throughput"]},
             **{ft: {"lambda_k": v["lambda_k"], "mu_0": v["mu_0"], "p_intermittent": 0.15, "throughput": base["facility_types"][ft]["throughput"]} for ft, v in mid.items()},
         },
-        "basins": {b: basin_over.get(b, {}) for b in base["basins"]},
+        "basins": {b: {} for b in base["basins"]},
+        # per-basin well-pad fits apply to well-pad types only (midstream keeps its GHGRP-derived type parameters)
+        "cells": {**{f"{b}/{ft}": dict(v) for b, v in basin_over.items() for ft in ("wp_oil", "wp_gas", "wp_mixed")},
+                  **{k: {"throughput": v["throughput"]} for k, v in thr.items() if not k.startswith("national/")}},
         "conditions": base["conditions"],
     }
+    for k, v in thr.items():
+        if not k.startswith("national/") and k in doc["cells"] and "throughput" not in doc["cells"][k]:
+            doc["cells"][k]["throughput"] = v["throughput"]
+    doc["fit_provenance"]["throughput_ghgrp"] = {k: {kk: vv for kk, vv in v.items() if kk != "throughput"} | v["throughput"] for k, v in thr.items()}
     header = ("# Fitted stratum priors (provenance FITTED). Produced by data/scripts/fit_priors.py on " + doc["fit_provenance"]["fitted_utc"] + ".\n"
               "# Sources: [rutherford2021] component database and Omara national site estimates; [cusworth2022] persistence and point-source share;\n"
               "# [sherwin2024] heavy-tail statement; [ghgrp] midstream reported CH4. Throughput and conditions blocks are still PLACEHOLDER values\n"
-              "# carried from placeholder_v0.yaml (see 'caveats' in fit_provenance). Full method in the script docstring.\n")
+              "# carried from placeholder_v0.yaml for midstream; well-pad throughput is fitted from GHGRP per-well production (see 'caveats'). Full method in the script docstring.\n")
     OUT_YAML.write_text(header + yaml.safe_dump(doc, sort_keys=False, default_flow_style=False))
     OUT_PROV.write_text(json.dumps(doc["fit_provenance"], indent=2, default=float))
     print(json.dumps({"wellpad_fit": fit, "basin_over": basin_over, "basin_diag": {b: v["diag"] for b, v in basin_fits.items()}, "midstream": mid, "diag": diag}, indent=1, default=float))

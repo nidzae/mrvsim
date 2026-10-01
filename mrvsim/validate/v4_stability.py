@@ -37,6 +37,9 @@ def run(targets: dict[str, Any] | None = None, replications: int = 3, n_per_stra
         for m in HEADLINE:
             a, b = reports["terciles"].kpi[kpi][m], reports["quintiles"].kpi[kpi][m]
             se = float(np.sqrt(np.nan_to_num(a.se) ** 2 + np.nan_to_num(b.se) ** 2))
+            if m == "calibration":   # with few replications the MC SE understates sampling error; floor at the binomial SE over facilities
+                n_fac = max(reports["terciles"].meta.get("n_scored", 300), 1)
+                se = max(se, float(np.sqrt(2 * a.mean * (1 - a.mean) / n_fac)))
             diff = abs(a.mean - b.mean); ok = bool(diff <= k * se) if se > 0 else bool(diff == 0)
             compared[f"{kpi}.{m}"] = {"terciles": a.mean, "quintiles": b.mean, "diff": diff, "k_se": k * se, "pass": ok}
             verdicts.append(ok)

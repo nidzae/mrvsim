@@ -43,8 +43,11 @@ def run(targets: dict[str, Any] | None = None, n_per_stratum: int = 60, n_draws:
     cfg = base_config(population={"n_per_stratum": n_per_stratum}, policy={"sensors": tg["sensor_mix"]}, estimator={"n_draws": n_draws})
     res = run_replication(cfg, SeedTree(cfg.seed), 0, load_library(), n_draws=n_draws)
     compared: dict[str, Any] = {}; verdicts = []; statuses = []
-    for basin, blk in tg["intensities"].items():
+    for key, blk in tg["intensities"].items():
         statuses.append(blk)
+        basin = blk.get("basin", key)
+        if basin not in res.pop.strata.basins:
+            compared[key] = {"pass": None, "note": f"basin {basin!r} not simulated"}; continue
         lo, med, hi, truth = basin_intensity_interval(res, basin)
         entry = {"sim_interval": [lo, med, hi], "sim_truth": truth, "published": blk.get("value"), "published_ci": blk.get("ci_95")}
         if target_missing(blk):
@@ -52,7 +55,7 @@ def run(targets: dict[str, Any] | None = None, n_per_stratum: int = 60, n_draws:
         else:
             ok = lo <= float(blk["value"]) <= hi
             entry["pass"] = bool(ok); verdicts.append(bool(ok))
-        compared[basin] = entry
+        compared[key] = entry
     bs = tg["boundary_sensitivity_factor"]; statuses.append(bs)
     compared["boundary_sensitivity"] = {"published": bs.get("value"), "pass": None, "note": "not computed: published factor missing" if target_missing(bs) else "TODO: implement basin-box shrink test"}
     ts = worst_status(statuses)
