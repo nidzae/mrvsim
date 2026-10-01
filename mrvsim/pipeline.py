@@ -64,7 +64,7 @@ def run_replication(cfg: RunConfig, seeds: SeedTree, rep: int, library: SensorLi
     rs = seeds.child(rep=rep)
     pop = generate_population(cfg.population, rs, coordinate_seeds=seeds)   # locations fixed across replications
     plan = build_plan(cfg.policy, rs, pop.n_facilities, pop.lon, pop.throughput.gas_mkt_m3_yr, sensor_modes(library), cfg.year, basin_idx=pop.basin_idx)
-    obs = simulate_observations(pop, library, plan, rs, cfg.year, cache_dir=cache_dir)
+    obs = simulate_observations(pop, library, plan, rs, cfg.year, cache_dir=cache_dir, incidental_capture=bool(cfg.policy.get("incidental_capture", True)))
     inputs = build_inputs(pop, obs, library, rs)
     est = cfg.estimator
     nd = int(n_draws or est.get("n_draws", 10_000))

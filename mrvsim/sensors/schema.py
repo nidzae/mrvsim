@@ -67,10 +67,30 @@ class Constraints:
 class Orbit:
     tle_name: str                  # name as it appears in Celestrak TLE files [celestrak]
     norad_id: int | None
-    swath_km: float
+    swath_km: float                # wall-to-wall: the swath; tasked imagers: the scene's cross-track extent
     tasked: bool                   # tasked (GHGSat, PRISMA, EnMAP, Tanager) vs. wall-to-wall (TROPOMI, S2, Landsat)
     local_time_desc: str           # descriptive, e.g. "10:30 descending"
     citations: tuple[str, ...]
+    # Field of view and pointing (TDD section 5.1 as amended 2026-10-01, DECISION_LOG "Incidental capture"):
+    # a tasked imager frames a scene of fov_along_km x fov_cross_km centred on the target and can be tasked on any
+    # pass whose ground track lies within the ground reach of +/- max_off_nadir_deg. None = no pointing (reach = swath).
+    fov_along_km: float | None = None
+    fov_cross_km: float | None = None
+    max_off_nadir_deg: float | None = None
+    provenance: Provenance | None = None
+
+    def scene_km(self) -> tuple[float, float]:
+        """(along-track, cross-track) scene extent in km; defaults to a square of the swath."""
+        return (self.fov_along_km or self.swath_km, self.fov_cross_km or self.swath_km)
+
+
+@dataclass(frozen=True)
+class Footprint:
+    """Ground area an aircraft survey of one site also images (incidental neighbours), TDD section 5.1 as amended."""
+
+    survey_block_km: float         # side of the flown block centred on the visited site
+    citations: tuple[str, ...]
+    provenance: Provenance
 
 
 @dataclass(frozen=True)
@@ -105,11 +125,14 @@ class Sensor:
     orbit: Orbit | None = None
     notes: str = ""
     source_path: str = ""
+    footprint: Footprint | None = None     # aircraft only
 
     def citation_keys(self) -> tuple[str, ...]:
         keys = set(self.pod_citations) | set(self.quantification_citations) | set(self.false_positive.citations) | set(self.cost.citations)
         if self.orbit:
             keys |= set(self.orbit.citations)
+        if self.footprint:
+            keys |= set(self.footprint.citations)
         return tuple(sorted(keys))
 
     def unverified_blocks(self) -> tuple[str, ...]:
@@ -118,6 +141,10 @@ class Sensor:
                            ("false_positive", self.false_positive.provenance), ("cost", self.cost.provenance)):
             if prov.status != "fitted":
                 out.append(name)
+        if self.orbit and self.orbit.provenance is not None and self.orbit.provenance.status != "fitted":
+            out.append("field_of_view")
+        if self.footprint and self.footprint.provenance.status != "fitted":
+            out.append("footprint")
         return tuple(out)
 
 
@@ -225,7 +252,19 @@ def load_sensor(path: str | Path) -> Sensor:
             tle_name=str(orr["tle_name"]), norad_id=None if orr.get("norad_id") is None else int(orr["norad_id"]),
             swath_km=float(orr["swath_km"]), tasked=bool(orr["tasked"]), local_time_desc=str(orr.get("local_time_desc", "")),
             citations=_cites(orr.get("citations"), f"{w}.orbit"),
+            fov_along_km=_opt_float(orr.get("fov_along_km")), fov_cross_km=_opt_float(orr.get("fov_cross_km")),
+            max_off_nadir_deg=_opt_float(orr.get("max_off_nadir_deg")),
+            provenance=_prov(orr["provenance"], f"{w}.orbit") if orr.get("provenance") else None,
         )
+        if orbit.max_off_nadir_deg is not None and not 0.0 <= orbit.max_off_nadir_deg < 80.0:
+            raise SensorSchemaError(f"{w}: orbit.max_off_nadir_deg must be in [0, 80)")
+    footprint = None
+    fpr = raw.get("footprint")
+    if fpr:
+        footprint = Footprint(survey_block_km=float(fpr["survey_block_km"]), citations=_cites(fpr.get("citations"), f"{w}.footprint"),
+                              provenance=_prov(fpr.get("provenance"), f"{w}.footprint"))
+        if footprint.survey_block_km <= 0:
+            raise SensorSchemaError(f"{w}: footprint.survey_block_km must be positive")
 
     return Sensor(
         key=str(key), name=str(raw["name"]), sensor_class=str(raw["class"]), tier=tier, enabled_for_certification=enabled,
@@ -234,4 +273,5 @@ def load_sensor(path: str | Path) -> Sensor:
         quantification=quant, quantification_tier=q_tier, quantification_citations=_cites(qr.get("citations"), f"{w}.quantification"),
         quantification_provenance=_prov(qr.get("provenance"), f"{w}.quantification"),
         false_positive=fp, constraints=cons, cost=cost, orbit=orbit, notes=str(raw.get("notes", "")), source_path=str(p),
+        footprint=footprint,
     )

@@ -17,6 +17,7 @@ from typing import Any
 import numpy as np
 
 from mrvsim.io.seeds import SeedTree
+from mrvsim.observe.simulator import overpass_band_km
 from mrvsim.observe.overpass import overpasses_for
 from mrvsim.observe.simulator import simulate_snapshot
 from mrvsim.population import generate_population
@@ -59,7 +60,7 @@ def run(targets: dict[str, Any] | None = None, n_events: int = 200, seed: int = 
     est = np.zeros(n_events); n_det = np.zeros(n_events, int); n_pass_in_event = np.zeros(n_events, int)
     for si, key in enumerate(SATS):
         s = lib[key]
-        ov = overpasses_for(key, 2024, pop.lat, pop.lon, s.orbit.swath_km)
+        ov = overpasses_for(key, 2024, pop.lat, pop.lon, overpass_band_km(s))
         keep = ov.solar_zenith_deg < 90
         log = simulate_snapshot(s, si, pop, ov.facility_idx[keep], ov.hour_idx[keep], ov.solar_zenith_deg[keep], SeedTree(seed + si))
         true_det = log.detected & ~log.oracle_false_positive

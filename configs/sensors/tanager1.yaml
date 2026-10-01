@@ -36,7 +36,11 @@ orbit:
   swath_km: 18.0
   tasked: true
   local_time_desc: "sun-synchronous, morning"
-  citations: [celestrak, carbon-mapper]
+  citations: [celestrak, carbon-mapper, tanager-spec]
+  fov_along_km: 18.6             # ASSUMPTION: square scene of the nadir swath; strips can be longer [tanager-spec]
+  fov_cross_km: 18.6             # nadir swath 18.6 km, 24.2 km at maximum look angle [tanager-spec]
+  max_off_nadir_deg: 29.0        # TODO(verify): derived from the swath growth 18.6 -> 24.2 km (1/cos^2), not a published angle [tanager-spec]
+  provenance: {status: assumption, basis: "Carbon Mapper performance spec: swath 18.6-24.2 km with look angle; pointing angle derived, scene length assumed"}
 cost:
   per_site_visit_usd: null
   per_tasking_usd: 1000.0

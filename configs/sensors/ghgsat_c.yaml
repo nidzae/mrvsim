@@ -37,7 +37,11 @@ orbit:
   swath_km: 12.0
   tasked: true
   local_time_desc: "~10:30 descending (sun-synchronous)"
-  citations: [celestrak, sherwin2023]
+  citations: [celestrak, sherwin2023, ghgsat-c1-spec]
+  fov_along_km: 12.0             # scene approx. 12 km x 12 km (WAF-P staring imager) [ghgsat-c1-spec]
+  fov_cross_km: 12.0
+  max_off_nadir_deg: 15.0        # sensor pointing +/- 15 deg from nadir along & cross-track [ghgsat-c1-spec]; altitude from the TLE
+  provenance: {status: summary, basis: "ESA/CSA GHGSat-C1 product specification: FOV ~12 x 12 km, pointing +/-15 deg, 500 km SSO"}
 cost:
   per_site_visit_usd: null
   per_tasking_usd: 3000.0        # TODO(verify) [cost-assumptions]

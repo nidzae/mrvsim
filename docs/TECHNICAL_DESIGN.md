@@ -167,6 +167,7 @@ Each sensor class $s$ is a record with the following fields, each carrying a cit
 | Observation mode | — | snapshot / continuous / survey |
 | Spatial scope | — | site-level total / per-source |
 | Revisit or schedule | — | orbit (satellite), campaign (aircraft), survey list (drone/OGI), hourly (CMS) |
+| Field of view and pointing (added 2026-10-01) | — | Tasked imagers: scene extent along/cross-track and maximum off-nadir pointing angle (`orbit.fov_along_km`, `fov_cross_km`, `max_off_nadir_deg`); aircraft: surveyed block around a site (`footprint.survey_block_km`). Drive the field of regard and incidental capture of §5.1 |
 | Cost | — | Per site-visit, per tasking, or per site-year |
 | Validation tier | A–D | PRD §6.2 N2 |
 
@@ -229,6 +230,7 @@ For each facility, sensor, and hour, the simulator decides whether an observatio
 ### 5.1 Observation opportunities
 
 - **Satellites:** overpass times are computed by propagating public two-line orbital elements with Skyfield [skyfield] and testing whether the facility lies within the instrument swath. For tasked instruments (GHGSat, Tanager), an overpass is used only if the policy assigns tasking to that facility (§8). TROPOMI observes every daylight overpass.
+  *(Amended 2026-10-01, DECISION_LOG "Incidental capture": for a **tasked** imager the swath test is replaced by a **field-of-regard** test. With altitude $h$ from the pinned TLE's mean motion and maximum off-nadir angle $\theta$, the ground reach from the sub-satellite point is $R\,[\arcsin((R+h)/R \cdot \sin\theta) - \theta]$, and a facility can be tasked on any pass whose ground track lies within swath/2 + reach of it (GHGSat-C: ±15° from ~450–500 km, a band of roughly 260 km instead of 12 km). When a facility is tasked, the instrument frames a **scene** of `fov_along_km` × `fov_cross_km` centred on it and aligned with the ground-track heading at closest approach; every other facility inside that rectangle receives an **incidental** snapshot at the same hour, with the target's cloud state (same sky), its own sun angle and wind, and a detection draw from the same POD. Incidental rows are logged with `incidental = true` and the target's index, are not charged as taskings, and enter the likelihood, the evidence counts and completeness like any other snapshot. A (facility, hour) pair is logged once even if it lies in two overlapping scenes or is itself tasked. Off-nadir elongation of the footprint (≤ 4 % at 15°) and the ±15° along-track pointing (which shifts timing, not which passes qualify) are ignored. Aircraft site surveys do the same with an axis-aligned block of `footprint.survey_block_km` around the visited site. The policy flag `incidental_capture` (default true) switches the mechanism off for comparison.)*
 - **Aircraft:** the policy assigns each facility a list of campaign dates. *(Amended 2026-10-01, DECISION_LOG "Regional flight campaigns": with `scheduling: campaign`, each basin is flown in one window of `campaign_days` consecutive days per slice of the year and every covered facility in the basin gets one visit inside that window; with `scheduling: independent`, the default for existing configs, each facility's dates are drawn on their own as before.)*
 - **Drone / OGI:** the policy assigns survey dates.
 - **Continuous monitors (CMS):** every hour at instrumented facilities.
@@ -492,6 +494,7 @@ Each limitation maps to a version-2 item in `DECISION_LOG.md`.
 | 2026-09-30 | §9: Phase 6 validation framework note |
 | 2026-09-30 | §7: Phase 5 scoring conventions note |
 | 2026-09-30 | §6.7, §7: interval is two-sided 90 % [p5, p95]; original percentiles marked superseded |
+| 2026-10-01 | §4 table (field of view and pointing), §5.1 satellites (field of regard, scene footprint, incidental capture): DECISION_LOG "Incidental capture" |
 | 2026-10-01 | §5.1 aircraft scheduling (regional campaigns), §8.1 Targeting wording corrected and Scheduling row: DECISION_LOG "Regional flight campaigns" |
 | 2026-10-01 | §6.7 (quantile grid, prior summary, evidence counts persisted), §7 (decision-only certifiable/fails/indeterminate shares; precise, prior-only, evidence-ratio rows), §8.3 note: DECISION_LOG "certification is the compliance decision at 95 %" |
 | 2026-09-30 | §6.7 estimand (realised-mass predictive), sampler, §6.3–6.5 v1 likelihood definitions, §10 measured timings, §11 limitation 10: Phase 4 |

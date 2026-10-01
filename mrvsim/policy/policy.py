@@ -77,6 +77,7 @@ class Policy:
     rules: list[Rule] = field(default_factory=list)
     min_tier: str = "A"                  # validation-tier filter (PRD F6)
     name: str = "policy"
+    incidental_capture: bool = True      # neighbours inside a tasked scene / survey block are observed too (DECISION_LOG 2026-10-01)
 
     def validate(self) -> None:
         for k, s in self.sensors.items():
@@ -93,13 +94,14 @@ class Policy:
     # -- serialisation -----------------------------------------------------
     def to_dict(self) -> dict[str, Any]:
         return {"name": self.name, "min_tier": self.min_tier, "sensors": {k: asdict(v) for k, v in self.sensors.items()},
-                "rules": [asdict(r) for r in self.rules]}
+                "rules": [asdict(r) for r in self.rules], "incidental_capture": self.incidental_capture}
 
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> "Policy":
         sensors = {k: SensorPolicy(**v) for k, v in (d.get("sensors") or {}).items()}
         rules = [Rule(**r) for r in (d.get("rules") or [])]
-        p = cls(sensors=sensors, rules=rules, min_tier=str(d.get("min_tier", "A")), name=str(d.get("name", "policy")))
+        p = cls(sensors=sensors, rules=rules, min_tier=str(d.get("min_tier", "A")), name=str(d.get("name", "policy")),
+                incidental_capture=bool(d.get("incidental_capture", True)))
         p.validate()
         return p
 
@@ -124,11 +126,12 @@ class Policy:
                                 "frequency_per_year": s.frequency_per_year, "targeting": s.targeting,
                                 "scheduling": s.scheduling, "campaign_days": s.campaign_days}
                             for k, s in self.sensors.items()},
-                "rules": [asdict(r) for r in self.rules], "min_tier": self.min_tier}
+                "rules": [asdict(r) for r in self.rules], "min_tier": self.min_tier, "incidental_capture": self.incidental_capture}
 
     @classmethod
     def from_policy_cfg(cls, cfg: dict[str, Any], name: str = "policy") -> "Policy":
-        d = {"name": name, "min_tier": cfg.get("min_tier", "A"), "sensors": {}, "rules": cfg.get("rules") or []}
+        d = {"name": name, "min_tier": cfg.get("min_tier", "A"), "sensors": {}, "rules": cfg.get("rules") or [],
+             "incidental_capture": bool(cfg.get("incidental_capture", True))}
         for k, v in (cfg.get("sensors") or {}).items():
             d["sensors"][k] = {"enabled": v.get("enabled", True), "coverage": v.get("coverage", 1.0), "coverage_basis": v.get("coverage_basis", "facilities"),
                                "frequency_per_year": v.get("frequency_per_year", 1), "targeting": v.get("targeting", "random"),

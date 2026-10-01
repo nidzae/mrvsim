@@ -37,7 +37,11 @@ orbit:
   swath_km: 30.0
   tasked: true
   local_time_desc: "10:30 descending"
-  citations: [celestrak]
+  citations: [celestrak, eoportal-prisma]
+  fov_along_km: 30.0             # standard 30 x 30 km tile [eoportal-prisma]
+  fov_cross_km: 30.0
+  max_off_nadir_deg: 14.7        # TODO(verify) spacecraft body pointing +/-14.7 deg cross-track [eoportal-prisma]
+  provenance: {status: summary, basis: "eoPortal PRISMA mission page: 30 km swath, +/-14.7 deg off-nadir; status verify"}
 cost:
   per_site_visit_usd: null
   per_tasking_usd: 500.0         # TODO(verify) [cost-assumptions]; scientific tasking

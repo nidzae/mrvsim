@@ -46,6 +46,7 @@ class Overpasses:
     solar_zenith_deg: np.ndarray    # float32 at the facility at pass time
     tle_epoch: str
     step_s: float
+    heading_deg: np.ndarray | None = None   # float32, ground-track direction of motion at closest approach, clockwise from north
 
     def __len__(self) -> int:
         return int(self.facility_idx.shape[0])
@@ -54,6 +55,7 @@ class Overpasses:
         path.parent.mkdir(parents=True, exist_ok=True)
         np.savez_compressed(path, facility_idx=self.facility_idx, unix_time_s=self.unix_time_s, hour_idx=self.hour_idx,
                             cross_track_km=self.cross_track_km, solar_zenith_deg=self.solar_zenith_deg,
+                            heading_deg=self.heading_deg if self.heading_deg is not None else np.full(len(self), np.nan, np.float32),
                             meta=np.array([self.sensor_key, str(self.year), self.tle_epoch, str(self.step_s)]))
 
     @classmethod
@@ -61,7 +63,7 @@ class Overpasses:
         with np.load(path) as z:
             meta = list(z["meta"])
             return cls(meta[0], int(meta[1]), z["facility_idx"], z["unix_time_s"], z["hour_idx"], z["cross_track_km"],
-                       z["solar_zenith_deg"], meta[2], float(meta[3]))
+                       z["solar_zenith_deg"], meta[2], float(meta[3]), z["heading_deg"] if "heading_deg" in z else None)
 
 
 def read_tle(path: Path) -> tuple[str, str, str]:
@@ -71,6 +73,45 @@ def read_tle(path: Path) -> tuple[str, str, str]:
     if len(lines) >= 3:
         return lines[0].strip(), lines[1], lines[2]
     raise ValueError(f"{path}: not a TLE file")
+
+
+MU_EARTH_KM3_S2 = 398600.4418
+
+
+def tle_altitude_km(tle_path: Path) -> float:
+    """Mean orbital altitude from the TLE mean motion (line 2, columns 53-63, rev/day): a = (mu / n^2)^(1/3) - R_E."""
+    _, _, l2 = read_tle(tle_path)
+    n_rev_day = float(l2[52:63])
+    n = 2.0 * np.pi * n_rev_day / 86400.0
+    return float((MU_EARTH_KM3_S2 / n**2) ** (1.0 / 3.0) - EARTH_RADIUS_KM)
+
+
+def ground_reach_km(altitude_km: float, max_off_nadir_deg: float) -> float:
+    """Ground distance from the sub-satellite point reachable by pointing ``max_off_nadir_deg`` off nadir (spherical Earth).
+
+    With R the Earth radius and h the altitude, the Earth-central angle is
+    gamma = asin((R + h)/R sin(theta)) - theta and the ground distance is R gamma.
+    """
+    theta = np.deg2rad(max_off_nadir_deg)
+    ratio = (EARTH_RADIUS_KM + altitude_km) / EARTH_RADIUS_KM
+    arg = np.clip(ratio * np.sin(theta), -1.0, 1.0)
+    return float(EARTH_RADIUS_KM * (np.arcsin(arg) - theta))
+
+
+def tasking_band_km(swath_km: float, max_off_nadir_deg: float | None, altitude_km: float | None) -> float:
+    """Cross-track band (full width) within which a facility can be imaged on a pass: swath plus twice the pointing reach."""
+    if max_off_nadir_deg is None or altitude_km is None or max_off_nadir_deg <= 0:
+        return float(swath_km)
+    return float(swath_km + 2.0 * ground_reach_km(altitude_km, max_off_nadir_deg))
+
+
+def _bearing_deg(a: np.ndarray, b: np.ndarray) -> np.ndarray:
+    """Initial bearing from unit vectors a to b, degrees clockwise from north."""
+    lat1 = np.arcsin(np.clip(a[:, 2], -1, 1)); lat2 = np.arcsin(np.clip(b[:, 2], -1, 1))
+    lon1 = np.arctan2(a[:, 1], a[:, 0]); lon2 = np.arctan2(b[:, 1], b[:, 0])
+    dlon = lon2 - lon1
+    y = np.sin(dlon) * np.cos(lat2); x = np.cos(lat1) * np.sin(lat2) - np.sin(lat1) * np.cos(lat2) * np.cos(dlon)
+    return (np.rad2deg(np.arctan2(y, x)) + 360.0) % 360.0
 
 
 def _unit_xyz(lat_deg: np.ndarray, lon_deg: np.ndarray) -> np.ndarray:
@@ -122,10 +163,11 @@ def compute_overpasses(
     t_idx = np.concatenate([np.asarray(h, dtype=np.int64) for h in hits]) if len(hits) else np.array([], np.int64)
     if f_idx.size == 0:
         return Overpasses(sensor_key, year, f_idx, np.array([]), np.array([], np.int64), np.array([], np.float32),
-                          np.array([], np.float32), epoch, step_s)
+                          np.array([], np.float32), epoch, step_s, heading_deg=np.array([], np.float32))
     # Exact cross-track distance: point-to-segment for the segment [t_idx, t_idx+1] and [t_idx-1, t_idx]; take the min.
     d_km = np.full(f_idx.shape, np.inf)
     t_at = np.empty(f_idx.shape)
+    head = np.zeros(f_idx.shape)
     for a_idx, b_idx in ((t_idx, np.minimum(t_idx + 1, len(track) - 1)), (np.maximum(t_idx - 1, 0), t_idx)):
         a, b, p = track[a_idx], track[b_idx], fac[f_idx]
         ab = b - a
@@ -137,11 +179,12 @@ def compute_overpasses(
         better = dist < d_km
         d_km = np.where(better, dist, d_km)
         t_at = np.where(better, unix[a_idx] + s * (unix[b_idx] - unix[a_idx]), t_at)
+        head = np.where(better, _bearing_deg(a, b), head)
     keep = d_km <= swath_km / 2.0
-    f_idx, t_at, d_km = f_idx[keep], t_at[keep], d_km[keep]
+    f_idx, t_at, d_km, head = f_idx[keep], t_at[keep], d_km[keep], head[keep]
     # One opportunity per pass: collapse hits of the same facility within 10 minutes to the closest approach.
     order = np.lexsort((t_at, f_idx))
-    f_idx, t_at, d_km = f_idx[order], t_at[order], d_km[order]
+    f_idx, t_at, d_km, head = f_idx[order], t_at[order], d_km[order], head[order]
     new_pass = np.ones(f_idx.shape, dtype=bool)
     new_pass[1:] = (f_idx[1:] != f_idx[:-1]) | (np.diff(t_at) > 600.0)
     pass_id = np.cumsum(new_pass) - 1
@@ -149,19 +192,20 @@ def compute_overpasses(
     order2 = np.lexsort((d_km, pass_id))
     first = np.unique(pass_id[order2], return_index=True)[1]
     sel = order2[first]
-    f_idx, t_at, d_km = f_idx[sel], t_at[sel], d_km[sel]
+    f_idx, t_at, d_km, head = f_idx[sel], t_at[sel], d_km[sel], head[sel]
     hour = ((t_at - year_start_unix(year)) // 3600.0).astype(np.int64)
     ok = (hour >= 0) & (hour < 8760)
-    f_idx, t_at, d_km, hour = f_idx[ok], t_at[ok], d_km[ok], hour[ok]
+    f_idx, t_at, d_km, hour, head = f_idx[ok], t_at[ok], d_km[ok], hour[ok], head[ok]
     sza = solar_zenith_deg(t_at, np.asarray(fac_lat)[f_idx], np.asarray(fac_lon)[f_idx])
-    return Overpasses(sensor_key, year, f_idx, t_at, hour, d_km.astype(np.float32), sza.astype(np.float32), epoch, step_s)
+    return Overpasses(sensor_key, year, f_idx, t_at, hour, d_km.astype(np.float32), sza.astype(np.float32), epoch, step_s,
+                      heading_deg=head.astype(np.float32))
 
 
 def _cache_key(sensor_key: str, year: int, fac_lat: np.ndarray, fac_lon: np.ndarray, swath_km: float, step_s: float, tle_path: Path) -> str:
     h = hashlib.sha256()
     h.update(np.ascontiguousarray(fac_lat, dtype=np.float64).tobytes())
     h.update(np.ascontiguousarray(fac_lon, dtype=np.float64).tobytes())
-    h.update(f"{sensor_key}|{year}|{swath_km}|{step_s}|{Path(tle_path).read_text()}".encode())
+    h.update(f"v2|{sensor_key}|{year}|{swath_km}|{step_s}|{Path(tle_path).read_text()}".encode())   # v2: heading column
     return h.hexdigest()[:16]
 
 

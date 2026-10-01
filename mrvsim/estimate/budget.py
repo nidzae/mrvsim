@@ -71,11 +71,12 @@ def variance_budget(i: int, pop: Population, obs: ObservationSet, plan: Deployme
     small = [(float(q), 0.05) for q in pop.q_kg_h[s0:s1] if q < pod10]
     widths["detection_censoring"] = _width(i, inputs, pbs, sparams, seeds, n_draws, Ablation(extra_source_obs=small or None))
     # spatial completeness: re-simulate with gates forced usable
-    obs_forced = simulate_observations(pop, library, plan, seeds, obs.year, force_usable=True)
+    inc = bool(obs.meta.get("incidental_capture", True)) if isinstance(getattr(obs, "meta", None), dict) else True
+    obs_forced = simulate_observations(pop, library, plan, seeds, obs.year, force_usable=True, incidental_capture=inc)
     inputs_forced = build_inputs(pop, obs_forced, library, seeds)
     widths["spatial_completeness"] = _width(i, inputs_forced, pbs, sparams, seeds, n_draws, None)
     # false calls: re-simulate without false positives and drop the mixture term
-    obs_nofp = simulate_observations(pop, library, plan, seeds, obs.year, no_false_positives=True)
+    obs_nofp = simulate_observations(pop, library, plan, seeds, obs.year, no_false_positives=True, incidental_capture=inc)
     inputs_nofp = build_inputs(pop, obs_nofp, library, seeds)
     widths["false_calls"] = _width(i, inputs_nofp, pbs, sparams, seeds, n_draws, Ablation(lam_fp_zero=True))
     widths["denominator"] = _width(i, inputs, pbs, sparams, seeds, n_draws, Ablation(sigma_g_zero=True))

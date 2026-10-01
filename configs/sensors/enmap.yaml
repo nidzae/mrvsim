@@ -37,7 +37,11 @@ orbit:
   swath_km: 30.0
   tasked: true
   local_time_desc: "11:00 descending"
-  citations: [celestrak]
+  citations: [celestrak, enmap-mission]
+  fov_along_km: 30.0             # 30 x 30 km tiles [enmap-mission]
+  fov_cross_km: 30.0
+  max_off_nadir_deg: 30.0        # TODO(verify) off-nadir pointing +/-30 deg [enmap-mission]
+  provenance: {status: summary, basis: "EnMAP mission documentation: 30 km swath, +/-30 deg off-nadir pointing; status verify"}
 cost:
   per_site_visit_usd: null
   per_tasking_usd: 500.0

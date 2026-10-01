@@ -2,7 +2,7 @@
 
 Accounting conventions (DECISION_LOG 2026-09-30, Phase 5):
 * campaign / survey sensors: per_site_visit_usd x visits actually scheduled (weather losses are still paid for);
-* tasked satellites: per_tasking_usd x overpasses tasked (usable or not);
+* tasked satellites: per_tasking_usd x overpasses tasked (usable or not; incidental scene members are free);
 * wall-to-wall satellites and CMS: per_site_year_usd x facilities covered;
 * sample costs are scaled to national totals with the facility-count stratum weights W_h / n_h,
   i.e. ``national_cost = sum_i w_i * cost_i * N_national`` where N_national is supplied by the caller
@@ -43,7 +43,7 @@ def deployment_cost(plan: DeploymentPlan, obs: ObservationSet, library: SensorLi
             if c.per_tasking_usd is not None:
                 si = list(obs.log.sensor_keys).index(key) if key in obs.log.sensor_keys else -1
                 if si >= 0:
-                    rows = obs.log.sensor_idx == si
+                    rows = (obs.log.sensor_idx == si) & ~obs.log.incidental     # incidental scene members are not taskings
                     np.add.at(cost_fac, obs.log.facility_idx[rows], c.per_tasking_usd)
         else:  # wall-to-wall satellites, CMS
             if c.per_site_year_usd is not None:

@@ -116,14 +116,14 @@ def simulate_with_rules(pop: Population, library: SensorLibrary, plan: Deploymen
     """Two-pass simulation: triggering sensors, rules, then everything (with cued visits merged)."""
     trigger_keys = {r.trigger_sensor for r in policy.rules if r.trigger_sensor}
     if not policy.rules or not trigger_keys:
-        return simulate_observations(pop, library, plan, seeds, year, cache_dir=cache_dir), {}
+        return simulate_observations(pop, library, plan, seeds, year, cache_dir=cache_dir, incidental_capture=policy.incidental_capture), {}
     trig_plan = DeploymentPlan(year=year, deployments={k: v for k, v in plan.deployments.items() if k in trigger_keys})
-    trig_obs = simulate_observations(pop, library, trig_plan, seeds, year, cache_dir=cache_dir)
+    trig_obs = simulate_observations(pop, library, trig_plan, seeds, year, cache_dir=cache_dir, incidental_capture=policy.incidental_capture)
     cued = evaluate_trigger_rules(policy, pop, trig_obs, seeds)
     full_plan = merge_cued_visits(plan, cued)
     # The same seeds give the triggering sensors identical observations in the full pass (named streams), so the
     # cued visits are consistent with what they reacted to.
-    obs = simulate_observations(pop, library, full_plan, seeds, year, cache_dir=cache_dir)
+    obs = simulate_observations(pop, library, full_plan, seeds, year, cache_dir=cache_dir, incidental_capture=policy.incidental_capture)
     return obs, cued
 
 
@@ -138,13 +138,13 @@ def allocate_budget_to_widest(policy: Policy, pop: Population, library: SensorLi
     rules = [r for r in policy.rules if r.kind == "budget_to_widest_interval"]
     cued = CuedVisits()
     if not rules:
-        return simulate_observations(pop, library, plan, seeds, year, cache_dir=cache_dir), cued
+        return simulate_observations(pop, library, plan, seeds, year, cache_dir=cache_dir, incidental_capture=policy.incidental_capture), cued
     rule = rules[0]
     rng = seeds.rng("policy", "widest")
     month_start = np.array([0, 744, 1416, 2160, 2880, 3624, 4344, 5088, 5832, 6552, 7296, 8016, 8760])
     n_cued: dict[int, int] = {}
     for m in range(12):
-        obs = simulate_observations(pop, library, plan, seeds, year, cache_dir=cache_dir)
+        obs = simulate_observations(pop, library, plan, seeds, year, cache_dir=cache_dir, incidental_capture=policy.incidental_capture)
         # restrict the log to hours before the month start
         log = obs.log
         keep = log.hour_idx < month_start[m]
@@ -167,4 +167,4 @@ def allocate_budget_to_widest(policy: Policy, pop: Population, library: SensorLi
         start = len(cued) - min(rule.budget_per_month, len(cued))
         month_cv = CuedVisits(cued.facility[start:], cued.hour[start:], cued.rule_kind[start:], cued.trigger_day[start:])
         plan = merge_cued_visits(plan, {rule.target_sensor: month_cv})
-    return simulate_observations(pop, library, plan, seeds, year, cache_dir=cache_dir), cued
+    return simulate_observations(pop, library, plan, seeds, year, cache_dir=cache_dir, incidental_capture=policy.incidental_capture), cued

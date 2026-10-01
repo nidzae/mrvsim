@@ -33,10 +33,11 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
+from scipy.spatial import cKDTree
 
 from mrvsim.io.seeds import SeedTree
 from mrvsim.observe.deployment import DeploymentPlan
-from mrvsim.observe.overpass import Overpasses, overpasses_for
+from mrvsim.observe.overpass import TLE_DIR, Overpasses, overpasses_for, tasking_band_km, tle_altitude_km
 from mrvsim.observe.solar import hour_index_to_unix, solar_zenith_deg
 from mrvsim.population.generate import Population
 from mrvsim.sensors.library import SensorLibrary
@@ -75,6 +76,10 @@ class ObservationLog:
     # oracle (truth) columns, for scoring and the variance budget only
     oracle_true_rate_kg_h: np.ndarray = field(default_factory=lambda: np.array([], np.float64))
     oracle_false_positive: np.ndarray = field(default_factory=lambda: np.array([], bool))
+    # incidental capture (TDD section 5.1 as amended 2026-10-01): the row exists because a neighbour was tasked or
+    # surveyed and this facility fell inside the sensor's scene; scene_target_idx is that neighbour (-1 otherwise)
+    incidental: np.ndarray = field(default_factory=lambda: np.array([], bool))
+    scene_target_idx: np.ndarray = field(default_factory=lambda: np.array([], np.int64))
     sensor_keys: tuple[str, ...] = ()
 
     def __len__(self) -> int:
@@ -109,8 +114,14 @@ class ObservationLog:
         with np.load(path) as z:
             out = cls(sensor_keys=tuple(z["sensor_keys"].tolist()))
             for n in out.__dataclass_fields__:
-                if n != "sensor_keys":
+                if n == "sensor_keys":
+                    continue
+                if n in z.files:
                     setattr(out, n, z[n])
+                elif n == "incidental":                      # logs written before 2026-10-01
+                    setattr(out, n, np.zeros(z["facility_idx"].shape[0], dtype=bool))
+                elif n == "scene_target_idx":
+                    setattr(out, n, np.full(z["facility_idx"].shape[0], -1, dtype=np.int64))
             return out
 
 
@@ -231,7 +242,98 @@ def simulate_snapshot(sensor: Sensor, sensor_idx: int, pop: Population, fac: np.
     log.hour_idx = hour.astype(np.int64); log.usable = usable; log.cloud_blocked = cloud_b; log.sun_blocked = sun_b; log.wind_blocked = wind_b
     log.detected = detected; log.reported_kg_h = reported; log.wind_m_s = wind; log.rho_surf = rho
     log.solar_zenith_deg = sza.astype(np.float32); log.oracle_true_rate_kg_h = q_true; log.oracle_false_positive = fp
+    log.incidental = np.zeros(n, dtype=bool); log.scene_target_idx = np.full(n, -1, np.int64)
     return log
+
+
+def scene_neighbours(pop: Population, targets: np.ndarray, heading_deg: np.ndarray | None, along_km: float, cross_km: float,
+                     max_candidates: int = 4096) -> tuple[np.ndarray, np.ndarray]:
+    """Facilities inside the scene framed on each target (TDD section 5.1 as amended 2026-10-01).
+
+    The scene is a rectangle ``along_km`` x ``cross_km`` centred on the target and aligned with the
+    ground-track heading (clockwise from north); with ``heading_deg`` None it is axis-aligned (aircraft
+    survey block). Membership is tested in the local tangent plane of the target (equirectangular,
+    exact to well below 1 % at scene scale). Returns (row index into ``targets``, neighbour facility).
+    """
+    if targets.size == 0:
+        return np.array([], np.int64), np.array([], np.int64)
+    lat, lon = pop.lat, pop.lon
+    lat0 = float(np.mean(lat))
+    kx = 111.32 * np.cos(np.deg2rad(lat0)); ky = 110.574
+    xy = np.stack([lon * kx, lat * ky], axis=1)
+    tree = cKDTree(xy)
+    r = 0.5 * float(np.hypot(along_km, cross_km)) * 1.05
+    hits = tree.query_ball_point(xy[targets], r=r)
+    rows = np.concatenate([np.full(len(h), i, np.int64) for i, h in enumerate(hits)]) if len(hits) else np.array([], np.int64)
+    nb = np.concatenate([np.asarray(h, np.int64) for h in hits]) if len(hits) else np.array([], np.int64)
+    keep = nb != targets[rows]
+    rows, nb = rows[keep], nb[keep]
+    if rows.size == 0:
+        return rows, nb
+    t = targets[rows]
+    dx = (lon[nb] - lon[t]) * 111.32 * np.cos(np.deg2rad(lat[t])); dy = (lat[nb] - lat[t]) * ky   # east, north km
+    if heading_deg is None:
+        along, cross = dy, dx
+    else:
+        h = np.deg2rad(heading_deg[rows].astype(float))
+        along = dx * np.sin(h) + dy * np.cos(h)            # component along the direction of motion
+        cross = dx * np.cos(h) - dy * np.sin(h)
+    inside = (np.abs(along) <= along_km / 2.0) & (np.abs(cross) <= cross_km / 2.0)
+    return rows[inside], nb[inside]
+
+
+def simulate_incidental(sensor: Sensor, sensor_idx: int, pop: Population, target_log: ObservationLog, heading_deg: np.ndarray | None,
+                        along_km: float, cross_km: float, seeds: SeedTree, year: int, force_usable: bool = False, no_fp: bool = False) -> ObservationLog:
+    """Snapshots of facilities that fell inside scenes framed on other facilities (incidental capture).
+
+    Each incidental row shares the target's hour and cloud state (same scene, same sky); sun angle is the
+    neighbour's own, wind is drawn for the neighbour. A (facility, hour) pair that the sensor already
+    observed on purpose, or that lies in two overlapping scenes, is logged once.
+    """
+    log = ObservationLog()
+    n_t = len(target_log)
+    if n_t == 0:
+        return log
+    rows, nb = scene_neighbours(pop, target_log.facility_idx, heading_deg, along_km, cross_km)
+    if rows.size == 0:
+        return log
+    hour = target_log.hour_idx[rows]
+    # drop pairs already observed on purpose at that hour, then dedupe overlapping scenes
+    key_t = set(zip(target_log.facility_idx.tolist(), target_log.hour_idx.tolist()))
+    fresh = np.array([(int(f), int(h)) not in key_t for f, h in zip(nb, hour)], dtype=bool)
+    rows, nb, hour = rows[fresh], nb[fresh], hour[fresh]
+    _, first = np.unique(nb * HOURS_PER_YEAR + hour, return_index=True)
+    rows, nb, hour = rows[first], nb[first], hour[first]
+    n = nb.shape[0]
+    if n == 0:
+        return log
+    sza = solar_zenith_deg(hour_index_to_unix(year, hour), pop.lat[nb], pop.lon[nb]).astype(np.float32)
+    usable, cloud_b, sun_b, wind_b, wind = _gates_snapshot(seeds.rng("observe", "gates", sensor=sensor.key, kind="incidental"), sensor, pop, nb, hour, sza, force_usable)
+    cloud_b = target_log.cloud_blocked[rows].copy()              # same scene, same cloud state as the target
+    usable = ~(cloud_b | sun_b | wind_b)
+    rho = pop.conditions.surface_reflectance[nb].astype(np.float32)
+    q_true = pop.facility_rate_at_pairs(nb, hour)
+    detected = np.zeros(n, dtype=bool); reported = np.full(n, np.nan); fp = np.zeros(n, dtype=bool)
+    if usable.any():
+        d, r, f = _detect_and_report(seeds.rng("observe", "detect", sensor=sensor.key, kind="incidental"),
+                                     seeds.rng("observe", "report", sensor=sensor.key, kind="incidental"), sensor, q_true[usable], wind[usable], rho[usable], no_fp)
+        detected[usable], reported[usable], fp[usable] = d, r, f
+    log.facility_idx = nb.astype(np.int64); log.source_idx = np.full(n, -1, np.int64); log.sensor_idx = np.full(n, sensor_idx, np.int16)
+    log.hour_idx = hour.astype(np.int64); log.usable = usable; log.cloud_blocked = cloud_b; log.sun_blocked = sun_b; log.wind_blocked = wind_b
+    log.detected = detected; log.reported_kg_h = reported; log.wind_m_s = wind; log.rho_surf = rho
+    log.solar_zenith_deg = sza; log.oracle_true_rate_kg_h = q_true; log.oracle_false_positive = fp
+    log.incidental = np.ones(n, dtype=bool); log.scene_target_idx = target_log.facility_idx[rows].astype(np.int64)
+    return log
+
+
+def overpass_band_km(sensor: Sensor) -> float:
+    """Cross-track band a facility must lie in to be observable on a pass: the swath for wall-to-wall instruments,
+    the swath plus the pointing reach for tasked imagers (``Orbit.max_off_nadir_deg``, altitude from the pinned TLE)."""
+    assert sensor.orbit is not None
+    if not sensor.orbit.tasked or sensor.orbit.max_off_nadir_deg is None:
+        return float(sensor.orbit.swath_km)
+    alt = tle_altitude_km(TLE_DIR / f"{sensor.key}.tle")
+    return tasking_band_km(sensor.orbit.swath_km, sensor.orbit.max_off_nadir_deg, alt)
 
 
 def simulate_survey(sensor: Sensor, sensor_idx: int, pop: Population, fac: np.ndarray, hour: np.ndarray, seeds: SeedTree, year: int,
@@ -261,6 +363,7 @@ def simulate_survey(sensor: Sensor, sensor_idx: int, pop: Population, fac: np.nd
     log.hour_idx = hours_s.astype(np.int64); log.usable = usable; log.cloud_blocked = cloud_b[rep]; log.sun_blocked = sun_b[rep]
     log.wind_blocked = wind_b[rep]; log.detected = detected; log.reported_kg_h = reported; log.wind_m_s = wind; log.rho_surf = rho
     log.solar_zenith_deg = sza[rep]; log.oracle_true_rate_kg_h = q_src; log.oracle_false_positive = fp
+    log.incidental = np.zeros(n, dtype=bool); log.scene_target_idx = np.full(n, -1, np.int64)
     return log
 
 
@@ -308,10 +411,13 @@ def simulate_cms(sensor: Sensor, pop: Population, fac: np.ndarray, seeds: SeedTr
 # --------------------------------------------------------------------------- driver
 
 def simulate_observations(pop: Population, library: SensorLibrary, plan: DeploymentPlan, seeds: SeedTree, year: int,
-                          cache_dir: Path | None = None, force_usable: bool = False, no_false_positives: bool = False) -> ObservationSet:
+                          cache_dir: Path | None = None, force_usable: bool = False, no_false_positives: bool = False,
+                          incidental_capture: bool = True) -> ObservationSet:
     """Run every deployed sensor over the population for one year (TDD section 5).
 
     ``force_usable`` and ``no_false_positives`` are oracle switches for the variance budget (TDD section 6.8).
+    ``incidental_capture`` adds snapshots of facilities that fall inside a scene framed on another facility
+    (tasked satellite scenes, aircraft survey blocks); DECISION_LOG 2026-10-01 "Incidental capture".
     """
     keys = tuple(plan.sensor_keys())
     parts: list[ObservationLog] = []
@@ -323,22 +429,32 @@ def simulate_observations(pop: Population, library: SensorLibrary, plan: Deploym
         if sensor.schedule == "orbit":
             assert sensor.orbit is not None
             kwargs = {} if cache_dir is None else {"cache_dir": cache_dir}
-            ov: Overpasses = overpasses_for(key, year, pop.lat, pop.lon, sensor.orbit.swath_km, **kwargs)
+            ov: Overpasses = overpasses_for(key, year, pop.lat, pop.lon, overpass_band_km(sensor), **kwargs)
             counts[key] = len(ov)
             covered = np.isin(ov.facility_idx, dep.facilities)
             if sensor.constraints.day_only:
                 # Night-side passes of a sun-synchronous orbit are never opportunities for a passive
                 # sensor; dropping them here halves the log without losing any loggable non-detection.
                 covered &= ov.solar_zenith_deg < 90.0
-            fac, hour, sza = ov.facility_idx[covered], ov.hour_idx[covered], ov.solar_zenith_deg[covered]
+            idx = np.nonzero(covered)[0]
             if sensor.orbit.tasked and dep.taskings_per_year is not None:
-                fac, hour, sza = _select_taskings(seeds.rng("observe", "tasking", sensor=key), fac, hour, sza, dep.taskings_per_year)
-            parts.append(simulate_snapshot(sensor, si, pop, fac, hour, sza, seeds, force_usable, no_false_positives))
+                idx = _select_taskings(seeds.rng("observe", "tasking", sensor=key), ov.facility_idx[idx], ov.hour_idx[idx], dep.taskings_per_year, idx)
+            fac, hour, sza = ov.facility_idx[idx], ov.hour_idx[idx], ov.solar_zenith_deg[idx]
+            tlog = simulate_snapshot(sensor, si, pop, fac, hour, sza, seeds, force_usable, no_false_positives)
+            parts.append(tlog)
+            if incidental_capture and sensor.orbit.tasked:
+                heading = ov.heading_deg[idx] if ov.heading_deg is not None else None
+                along, cross = sensor.orbit.scene_km()
+                parts.append(simulate_incidental(sensor, si, pop, tlog, heading, along, cross, seeds, year, force_usable, no_false_positives))
         elif sensor.schedule == "campaign":
             fac, hour = dep.visit_facility, dep.visit_hours
             sza = solar_zenith_deg(hour_index_to_unix(year, hour), pop.lat[fac], pop.lon[fac]).astype(np.float32)
             counts[key] = int(fac.shape[0])
-            parts.append(simulate_snapshot(sensor, si, pop, fac, hour, sza, seeds, force_usable, no_false_positives))
+            tlog = simulate_snapshot(sensor, si, pop, fac, hour, sza, seeds, force_usable, no_false_positives)
+            parts.append(tlog)
+            if incidental_capture and sensor.footprint is not None:
+                b = sensor.footprint.survey_block_km
+                parts.append(simulate_incidental(sensor, si, pop, tlog, None, b, b, seeds, year, force_usable, no_false_positives))
         elif sensor.schedule == "survey":
             counts[key] = int(dep.visit_facility.shape[0])
             parts.append(simulate_survey(sensor, si, pop, dep.visit_facility, dep.visit_hours, seeds, year, force_usable, no_false_positives))
@@ -349,20 +465,21 @@ def simulate_observations(pop: Population, library: SensorLibrary, plan: Deploym
             raise ValueError(f"unknown schedule {sensor.schedule!r} for {key}")
     log = ObservationLog.concat(parts, keys)
     return ObservationSet(year=year, log=log, cms=cms, overpass_counts=counts,
-                          meta={"sensors": list(keys), "n_snapshot_rows": len(log), "n_cms_facilities": {k: int(c.facilities.size) for k, c in cms.items()}})
+                          meta={"sensors": list(keys), "n_snapshot_rows": len(log), "n_cms_facilities": {k: int(c.facilities.size) for k, c in cms.items()},
+                                "incidental_capture": bool(incidental_capture), "n_incidental_rows": int(log.incidental.sum()) if len(log) else 0})
 
 
-def _select_taskings(rng: np.random.Generator, fac: np.ndarray, hour: np.ndarray, sza: np.ndarray, per_year: int) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+def _select_taskings(rng: np.random.Generator, fac: np.ndarray, hour: np.ndarray, per_year: int, idx: np.ndarray) -> np.ndarray:
     """For tasked satellites keep at most ``per_year`` overpasses per facility, spread over the year.
 
     Overpasses are binned into ``per_year`` equal slices of the year and one is drawn per
-    non-empty slice, so monthly tasking gives roughly monthly looks.
+    non-empty slice, so monthly tasking gives roughly monthly looks. Returns the kept entries of ``idx``.
     """
     if fac.size == 0 or per_year <= 0:
-        return fac[:0], hour[:0], sza[:0]
+        return idx[:0]
     slice_idx = np.minimum((hour * per_year) // HOURS_PER_YEAR, per_year - 1)
     key = fac.astype(np.int64) * per_year + slice_idx
     order = np.lexsort((rng.random(fac.size), key))
     first = np.unique(key[order], return_index=True)[1]
     sel = np.sort(order[first])
-    return fac[sel], hour[sel], sza[sel]
+    return idx[sel]

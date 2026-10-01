@@ -174,9 +174,10 @@ def facility_detail(run: LoadedRun, fid: int, bar_mass_t: float | None, bar_inte
     m = log.facility_idx == fid
     keys = list(log.sensor_keys)
     timeline = [{"hour": int(h), "day": float(h / 24.0), "sensor": keys[int(s)], "usable": bool(u), "cloud_blocked": bool(c), "sun_blocked": bool(sb), "wind_blocked": bool(wb),
-                 "detected": bool(d), "reported_kg_h": None if not np.isfinite(r) else float(r), "false_positive": bool(fp), "source_idx": int(si)}
-                for h, s, u, c, sb, wb, d, r, fp, si in zip(log.hour_idx[m], log.sensor_idx[m], log.usable[m], log.cloud_blocked[m], log.sun_blocked[m], log.wind_blocked[m],
-                                                           log.detected[m], log.reported_kg_h[m], log.oracle_false_positive[m], log.source_idx[m])]
+                 "detected": bool(d), "reported_kg_h": None if not np.isfinite(r) else float(r), "false_positive": bool(fp), "source_idx": int(si),
+                 "incidental": bool(inc), "scene_target": int(st) if inc else None}
+                for h, s, u, c, sb, wb, d, r, fp, si, inc, st in zip(log.hour_idx[m], log.sensor_idx[m], log.usable[m], log.cloud_blocked[m], log.sun_blocked[m], log.wind_blocked[m],
+                                                                    log.detected[m], log.reported_kg_h[m], log.oracle_false_positive[m], log.source_idx[m], log.incidental[m], log.scene_target_idx[m])]
     timeline.sort(key=lambda r: r["hour"])
     cms = {}
     for key, c in run.obs.cms.items():
@@ -234,11 +235,16 @@ def facility_detail(run: LoadedRun, fid: int, bar_mass_t: float | None, bar_inte
         reason = ("selected" if covered else "not selected") if cov < 1.0 else "covered"
         if cov < 1.0 and targeting != "random":
             reason += f" (rank {rank} of {n_fac})"
+        si_log = keys.index(key) if key in keys else -1
+        inc_rows = m & (log.sensor_idx == si_log) & log.incidental if si_log >= 0 else np.zeros_like(m)
+        inc_targets = sorted({int(t) for t in log.scene_target_idx[inc_rows]})
         monitoring.append({"sensor": key, "schedule": sensor.schedule, "tasked": tasked, "covered": covered, "coverage": cov, "targeting": targeting,
+                           "incidental_looks": int(inc_rows.sum()), "incidental_usable": int((inc_rows & log.usable).sum()), "incidental_from": inc_targets[:12],
                            "frequency_per_year": freq, "scheduling": spec.get("scheduling", "independent") if sensor.schedule in ("campaign", "survey") else None,
                            "rule": rule, "how": how, "reason": reason, "planned_visit_days": days})
     ev = run.evidence
     evidence = {"n_usable_snapshots": int(ev[0, fid]), "n_survey_visits": int(ev[1, fid]), "cms_usable_hours": int(ev[2, fid]),
+                "n_incidental_usable": int((m & log.incidental & log.usable & (log.source_idx < 0)).sum()),
                 "prior_ratio_mass": None if not np.isfinite(run.prior_ratio("mass")[fid]) else float(run.prior_ratio("mass")[fid]),
                 "prior_ratio_intensity": None if not np.isfinite(run.prior_ratio("intensity")[fid]) else float(run.prior_ratio("intensity")[fid]),
                 "prior_only_ratio": float(run.config.scoring.get("prior_only_ratio", 0.9))} if ev is not None else None

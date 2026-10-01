@@ -186,7 +186,7 @@ def test_full_simulation_and_reproducibility(pop, tmp_path) -> None:
     np.testing.assert_array_equal(a.cms["cms_generic"].detected, b.cms["cms_generic"].detected)
     assert not np.array_equal(a.log.detected, c.log.detected) or len(a.log) == 0
     # tasked satellite: at most 12 looks per facility
-    gh = a.log.sensor_idx == list(a.log.sensor_keys).index("ghgsat_c")
+    gh = (a.log.sensor_idx == list(a.log.sensor_keys).index("ghgsat_c")) & ~a.log.incidental
     assert np.bincount(a.log.facility_idx[gh]).max() <= 12
     # aircraft: exactly 2 visits per covered facility
     br = a.log.sensor_idx == list(a.log.sensor_keys).index("bridger_gml")

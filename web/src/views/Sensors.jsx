@@ -47,6 +47,7 @@ export default function Sensors({ policy, setPolicy, runSettings, setRunSettings
         </div>); })}
       <div className="sensor"><button className="ghost" onClick={() => setShowAdv(!showAdv)}>Advanced {showAdv ? "▴" : "▾"}</button>
         {showAdv && <>
+          <div className="field"><label><input type="checkbox" checked={policy.incidental_capture !== false} onChange={(e) => setPolicy({ ...policy, incidental_capture: e.target.checked })} /> incidental capture</label><span className="muted" title="A tasked satellite scene (e.g. GHGSat 12 x 12 km) or an aircraft survey block also observes neighbours inside it, at no extra tasking cost.">neighbours inside a scene are observed too</span></div>
           <div className="field">validation-tier filter<select value={minTier} onChange={(e) => setMinTier(e.target.value)}>{TIERS.map((t) => <option key={t}>{t}</option>)}</select></div>
           <div className="field">facilities / stratum<input type="number" min="1" max="100" value={runSettings.facilities_per_stratum ?? 10} onChange={(e) => setRunSettings({ ...runSettings, facilities_per_stratum: +e.target.value })} /></div>
           <div className="field">posterior draws<input type="number" min="200" step="100" value={runSettings.n_draws} onChange={(e) => setRunSettings({ ...runSettings, n_draws: +e.target.value })} /></div>

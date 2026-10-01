@@ -53,8 +53,9 @@ export default function Drilldown({ runId, fid, kpi, bar, wMax, onClose }) {
     : k.state === "indeterminate" ? `interval ${fmtK(k.p05)}–${fmtK(k.p95)} straddles the bar ${fmtK(bar)}: the data cannot decide at 95 %`
     : "no posterior for this facility";
   const sensors = [...new Set(d.timeline.map((t) => t.sensor))];
-  const pts = d.timeline.map((t) => ({ day: t.day, y: sensors.indexOf(t.sensor), kind: !t.usable ? (t.cloud_blocked ? "cloud-out" : t.sun_blocked ? "night" : "wind-out") : t.detected ? (t.false_positive ? "false positive" : "detection") : "non-detection", r: t.reported_kg_h, sensor: t.sensor }));
-  const kinds = { detection: "#2a78d6", "non-detection": "#8d8b84", "cloud-out": "#c3c2b7", "wind-out": "#eda100", night: "#e5e4df", "false positive": "#e34948" };
+  const baseKind = (t) => (!t.usable ? (t.cloud_blocked ? "cloud-out" : t.sun_blocked ? "night" : "wind-out") : t.detected ? (t.false_positive ? "false positive" : "detection") : "non-detection");
+  const pts = d.timeline.map((t) => { const k = baseKind(t); return { day: t.day, y: sensors.indexOf(t.sensor), kind: t.incidental && (k === "detection" || k === "non-detection") ? `incidental ${k}` : k, r: t.reported_kg_h, sensor: t.sensor, scene: t.scene_target }; });
+  const kinds = { detection: "#2a78d6", "non-detection": "#8d8b84", "incidental detection": "#8fb8ea", "incidental non-detection": "#cfceca", "cloud-out": "#c3c2b7", "wind-out": "#eda100", night: "#e5e4df", "false positive": "#e34948" };
   const budgetRows = budget ? Object.entries(budget.shares).map(([c, s]) => ({ component: c.replace("_", " "), share: s })) : [];
   return (
     <div className="drill" {...stop}>
@@ -83,7 +84,7 @@ export default function Drilldown({ runId, fid, kpi, bar, wMax, onClose }) {
         <b>Precision:</b> w = (p95 − p5) / (2 · median) = {fmtNum(w, 2)} {k.precision === "precise" ? "≤" : ">"} w_max {fmtNum(wMax, 2)} ({k.precision}). Does not affect the decision.
       </div>
       {ev && <div className="muted" style={{ marginTop: 4 }}>
-        <b>Evidence:</b> {ev.n_usable_snapshots} usable snapshot{ev.n_usable_snapshots === 1 ? "" : "s"} · {ev.n_survey_visits} survey visit{ev.n_survey_visits === 1 ? "" : "s"} · {ev.cms_usable_hours.toLocaleString()} CMS hours · posterior interval is {Number.isFinite(ratio) ? `${Math.round(ratio * 100)} %` : "–"} as wide as the prior's (log scale; prior-only above {Math.round(ev.prior_only_ratio * 100)} %).
+        <b>Evidence:</b> {ev.n_usable_snapshots} usable snapshot{ev.n_usable_snapshots === 1 ? "" : "s"} · {ev.n_survey_visits} survey visit{ev.n_survey_visits === 1 ? "" : "s"} · {ev.cms_usable_hours.toLocaleString()} CMS hours {ev.n_incidental_usable > 0 && <> (of which {ev.n_incidental_usable} incidental)</>} · posterior interval is {Number.isFinite(ratio) ? `${Math.round(ratio * 100)} %` : "–"} as wide as the prior's (log scale; prior-only above {Math.round(ev.prior_only_ratio * 100)} %).
         {k.priorOnly && <span className="flagged"> Prior-only: the decision rests on the population prior, not on measurements of this facility.</span>}
       </div>}
       {mon.length > 0 && <>
@@ -93,10 +94,11 @@ export default function Drilldown({ runId, fid, kpi, bar, wMax, onClose }) {
           {mon.map((m) => <tr key={m.sensor} className={m.covered ? "" : "muted"}>
             <td>{m.sensor}</td>
             <td>{m.rule}<div className="muted">{m.how}</div></td>
-            <td><b className={m.covered ? "why certified" : "why indeterminate"}>{m.reason}</b>{m.planned_visit_days.length > 0 && <div className="muted">visit days {m.planned_visit_days.join(", ")}</div>}</td>
+            <td><b className={m.covered ? "why certified" : "why indeterminate"}>{m.reason}</b>{m.planned_visit_days.length > 0 && <div className="muted">visit days {m.planned_visit_days.join(", ")}</div>}
+              {m.incidental_looks > 0 && <div className="muted">seen incidentally {m.incidental_looks}× ({m.incidental_usable} usable) inside scenes framed on {m.incidental_from.length === 1 ? `facility #${m.incidental_from[0]}` : `${m.incidental_from.length} neighbours`}</div>}</td>
           </tr>)}
         </tbody></table>
-        <div className="muted" style={{ marginTop: 4 }}>Sensors are assigned per facility by coverage share and targeting; location plays no part. "Regional campaign" flies each basin within one window of days.</div>
+        <div className="muted" style={{ marginTop: 4 }}>Sensors are assigned per facility by coverage share and targeting; location plays no part in the assignment. A tasked satellite scene or an aircraft survey block also captures any neighbour inside it ("incidental"); "regional campaign" flies each basin within one window of days.</div>
       </>}
       <h3>Observation timeline</h3>
       <div style={{ height: 40 + 22 * sensors.length }}>
@@ -106,7 +108,7 @@ export default function Drilldown({ runId, fid, kpi, bar, wMax, onClose }) {
             <XAxis type="number" dataKey="day" domain={[0, 365]} tickCount={7} tick={{ fontSize: 11 }} stroke="var(--text-3)" />
             <YAxis type="number" dataKey="y" domain={[-0.5, sensors.length - 0.5]} ticks={sensors.map((_, i) => i)} tickFormatter={(i) => sensors[i]} width={90} tick={{ fontSize: 11 }} stroke="var(--text-3)" />
             <ZAxis range={[30, 30]} />
-            <Tooltip cursor={false} content={({ payload }) => payload?.length ? <div className="panel" style={{ padding: 6 }}>{`day ${payload[0].payload.day.toFixed(1)} · ${payload[0].payload.sensor} · ${payload[0].payload.kind}${payload[0].payload.r ? ` · ${fmtNum(payload[0].payload.r)} kg/h` : ""}`}</div> : null} />
+            <Tooltip cursor={false} content={({ payload }) => payload?.length ? <div className="panel" style={{ padding: 6 }}>{`day ${payload[0].payload.day.toFixed(1)} · ${payload[0].payload.sensor} · ${payload[0].payload.kind}${payload[0].payload.r ? ` · ${fmtNum(payload[0].payload.r)} kg/h` : ""}${payload[0].payload.scene != null ? ` · in the scene framed on facility #${payload[0].payload.scene}` : ""}`}</div> : null} />
             {Object.keys(kinds).map((kind) => <Scatter key={kind} name={kind} data={pts.filter((p) => p.kind === kind)} fill={kinds[kind]} />)}
           </ScatterChart>
         </ResponsiveContainer>

@@ -36,3 +36,7 @@ cost:
   per_site_year_usd: null
   citations: [cost-assumptions]
   provenance: {status: assumption, basis: "analyst placeholder per site pass in a basin-scale campaign"}
+footprint:
+  survey_block_km: 0.5           # TODO(verify) ASSUMPTION: a site survey images a ~0.5 km block around the target; neighbours inside are seen incidentally [survey-footprint-assumption]
+  citations: [survey-footprint-assumption]
+  provenance: {status: assumption, basis: "analyst assumption for the flown block around a site; replace with operator flight plans"}
