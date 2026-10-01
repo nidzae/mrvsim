@@ -62,7 +62,8 @@ table.grid td.num, table.grid th.num { text-align: right; }
 .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
 .map { height: calc(100vh - 48px - 24px); border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border); position: relative; }
 .map > .legend { position: absolute; left: 10px; bottom: 10px; background: var(--surface); padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border); z-index: 5; }
-.drill { position: absolute; right: 10px; top: 10px; bottom: 10px; width: min(560px, calc(100% - 20px)); overflow-y: auto; overscroll-behavior: contain; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px 20px; z-index: 10; box-shadow: 0 4px 16px rgba(0,0,0,.18); }
+.drill { position: absolute; right: 10px; top: 10px; bottom: 10px; width: min(560px, calc(100% - 20px)); overflow: hidden; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 0; z-index: 10; box-shadow: 0 4px 16px rgba(0,0,0,.18); }
+.drill-body { height: 100%; overflow-y: auto; overscroll-behavior: contain; padding: 12px 14px 20px 16px; box-sizing: border-box; }
 .drill .legend { position: static; flex-wrap: wrap; gap: 8px 14px; margin: 6px 0 2px; }
 .drill table.grid th, .drill table.grid td { white-space: nowrap; padding: 4px 6px; }
 .drill svg.interval { width: 100%; height: auto; display: block; }
@@ -94,3 +95,6 @@ pre.yaml { background: var(--surface-2); padding: 8px; border-radius: 6px; font-
 
 .dot.ring { background: transparent; border: 2px solid #1d1d1b; box-sizing: border-box; } .dot.faded { opacity: 0.4; }
 .drill .prob { font-size: 15px; margin: 6px 0 2px; } .drill .prob b { font-size: 20px; }
+
+.drill-handle { position: absolute; left: 0; top: 0; bottom: 0; width: 8px; cursor: ew-resize; border-left: 3px solid transparent; z-index: 3; }
+.drill-handle:hover, .drill-handle:active { border-left-color: var(--accent); }

@@ -58,8 +58,19 @@ export default function Drilldown({ runId, fid, kpi, bar, barIntensity, barMass,
     try { const j = await api.budget(runId, fid); setBudget(await waitForJob(j.job_id)); } catch (e) { setErr(String(e)); } finally { setBusy(false); }
   };
   const stop = { onWheel: (e) => e.stopPropagation(), onTouchMove: (e) => e.stopPropagation() };
-  if (err) return <div className="drill" {...stop}><button className="ghost" onClick={onClose}>close</button><p className="flagged">{err}</p></div>;
-  if (!d) return <div className="drill muted" {...stop}>Loading facility…</div>;
+  const [width, setWidth] = useState(() => { try { const v = +localStorage.getItem("mrvsim.drillWidth"); return v >= 360 ? v : 560; } catch { return 560; } });
+  const startResize = (e) => {
+    e.preventDefault();
+    const x0 = e.clientX, w0 = width;
+    const onMove = (ev) => { const w = Math.max(360, Math.min(w0 + (x0 - ev.clientX), window.innerWidth - 40)); setWidth(w); };
+    const onUp = () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); try { localStorage.setItem("mrvsim.drillWidth", String(width)); } catch { /* per-viewer convenience only */ } };
+    window.addEventListener("mousemove", onMove); window.addEventListener("mouseup", onUp);
+  };
+  useEffect(() => { try { localStorage.setItem("mrvsim.drillWidth", String(width)); } catch { /* ignore */ } }, [width]);
+  const style = { width: `min(${width}px, calc(100% - 20px))` };
+  const handle = <div className="drill-handle" title="drag to resize" onMouseDown={startResize} />;
+  if (err) return <div className="drill" style={style} {...stop}>{handle}<div className="drill-body"><button className="ghost" onClick={onClose}>close</button><p className="flagged">{err}</p></div></div>;
+  if (!d) return <div className="drill muted" style={style} {...stop}>{handle}<div className="drill-body">Loading facility…</div></div>;
   // Decide at the live bar from the top bar so the badge, the bar line and the map agree (PRD F9; DECISION_LOG 2026-10-01).
   const raw = kpi === "intensity" ? d.intensity : d.mass_t_yr; const unit = kpi === "intensity" ? "" : "t/yr";
   const ev = d.evidence || null;
@@ -74,10 +85,18 @@ export default function Drilldown({ runId, fid, kpi, bar, barIntensity, barMass,
   const sensors = [...new Set(d.timeline.map((t) => t.sensor))];
   const baseKind = (t) => (!t.usable ? (t.cloud_blocked ? "cloud-out" : t.sun_blocked ? "night" : "wind-out") : t.detected ? (t.false_positive ? "false positive" : "detection") : "non-detection");
   const pts = d.timeline.map((t) => { const k = baseKind(t); return { day: t.day, y: sensors.indexOf(t.sensor), kind: t.incidental && (k === "detection" || k === "non-detection") ? `incidental ${k}` : k, r: t.reported_kg_h, sensor: t.sensor, scene: t.scene_target }; });
-  const kinds = { detection: "#2a78d6", "non-detection": "#8d8b84", "incidental detection": "#8fb8ea", "incidental non-detection": "#cfceca", "cloud-out": "#c3c2b7", "wind-out": "#eda100", night: "#e5e4df", "false positive": "#e34948" };
+  // One hue per outcome; incidental looks are hollow markers of the same hue (QUICKSTART "observation timeline").
+  const kinds = { detection: "#2a78d6", "non-detection": "#3f3e3a", "incidental detection": "#2a78d6", "incidental non-detection": "#3f3e3a",
+                  "cloud-out": "#8e5bd8", "wind-out": "#c98500", night: "#0b0b0b", "false positive": "#e34948" };
+  const hollow = (kind) => kind.startsWith("incidental");
+  const Marker = ({ cx, cy, fill, hollowMark }) => (hollowMark
+    ? <circle cx={cx} cy={cy} r={4.5} fill="var(--surface)" stroke={fill} strokeWidth={2} />
+    : <circle cx={cx} cy={cy} r={4.5} fill={fill} />);
   const budgetRows = budget ? Object.entries(budget.shares).map(([c, s]) => ({ component: c.replace("_", " "), share: s })) : [];
   return (
-    <div className="drill" {...stop}>
+    <div className="drill" style={style} {...stop}>
+      {handle}
+      <div className="drill-body">
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: -12, background: "var(--surface)", padding: "4px 0", zIndex: 1 }}>
         <b>Facility #{d.id}</b>
         <span style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
@@ -119,11 +138,11 @@ export default function Drilldown({ runId, fid, kpi, bar, barIntensity, barMass,
             <YAxis type="number" dataKey="y" domain={[-0.5, sensors.length - 0.5]} ticks={sensors.map((_, i) => i)} tickFormatter={(i) => sensors[i]} width={90} tick={{ fontSize: 11 }} stroke="var(--text-3)" />
             <ZAxis range={[30, 30]} />
             <Tooltip cursor={false} content={({ payload }) => payload?.length ? <div className="panel" style={{ padding: 6 }}>{`day ${payload[0].payload.day.toFixed(1)} · ${payload[0].payload.sensor} · ${payload[0].payload.kind}${payload[0].payload.r ? ` · ${fmtNum(payload[0].payload.r)} kg/h` : ""}${payload[0].payload.scene != null ? ` · in the scene framed on facility #${payload[0].payload.scene}` : ""}`}</div> : null} />
-            {Object.keys(kinds).map((kind) => <Scatter key={kind} name={kind} data={pts.filter((p) => p.kind === kind)} fill={kinds[kind]} />)}
+            {Object.keys(kinds).map((kind) => <Scatter key={kind} name={kind} data={pts.filter((p) => p.kind === kind)} fill={kinds[kind]} shape={(props) => <Marker cx={props.cx} cy={props.cy} fill={kinds[kind]} hollowMark={hollow(kind)} />} />)}
           </ScatterChart>
         </ResponsiveContainer>
       </div>
-      <div className="legend">{Object.entries(kinds).map(([kname, c]) => <span key={kname}><span className="dot" style={{ background: c }} />{kname}</span>)}</div>
+      <div className="legend">{Object.entries(kinds).map(([kname, c]) => <span key={kname}><span className="dot" style={hollow(kname) ? { background: "transparent", border: `2px solid ${c}`, boxSizing: "border-box" } : { background: c }} />{kname}</span>)}</div>
       {Object.keys(d.cms).length > 0 && <div className="muted" style={{ marginTop: 6 }}>CMS: {Object.entries(d.cms).map(([s, c]) => `${s} detected share ${fmtPct(c.detected_share, 1)}`).join("; ")}</div>}
       <h3>Variance budget (oracle ablation, TDD §6.8)</h3>
       {!budget && <button className="primary" disabled={busy} onClick={runBudget}>{busy ? "computing…" : "Compute variance budget"}</button>}
@@ -143,6 +162,7 @@ export default function Drilldown({ runId, fid, kpi, bar, barIntensity, barMass,
         <table className="grid"><thead><tr><th>source</th><th className="num">q kg/h</th><th>type</th><th className="num">π</th><th className="num">on hours</th></tr></thead>
           <tbody>{d.oracle_truth_sources.map((s, i) => <tr key={i}><td>{i + 1}</td><td className="num">{fmtNum(s.q_kg_h, 2)}</td><td>{s.intermittent ? "intermittent" : "steady"}</td><td className="num">{fmtNum(s.pi, 3)}</td><td className="num">{s.on_hours}</td></tr>)}</tbody></table>
       </details>
+      </div>
     </div>
   );
 }
