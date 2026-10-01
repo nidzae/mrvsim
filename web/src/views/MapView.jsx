@@ -59,7 +59,7 @@ export default function MapView({ runId, kpi, bar, wMax }) {
       </div>
       {err && <div className="drill"><b>Could not load facilities.</b><div className="muted">{err}</div></div>}
       {!geo && !err && runId && <div className="drill muted">Loading facilities…</div>}
-      {sel !== null && <Drilldown runId={runId} fid={sel} kpi={kpi} onClose={() => setSel(null)} />}
+      {sel !== null && <Drilldown runId={runId} fid={sel} kpi={kpi} bar={bar} wMax={wMax} onClose={() => setSel(null)} />}
     </div>
   );
 }

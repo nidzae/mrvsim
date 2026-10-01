@@ -88,3 +88,5 @@ pre.yaml { background: var(--surface-2); padding: 8px; border-radius: 6px; font-
 .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; margin: 6px 0; }
 .segbtn { background: var(--surface); color: var(--text-2); border: 0; padding: 5px 12px; font: inherit; cursor: pointer; text-transform: capitalize; }
 .segbtn.active { background: var(--accent); color: #fff; font-weight: 600; }
+
+.why.certified { color: var(--good); } .why.fails { color: var(--critical); } .why.indeterminate { color: var(--indeterminate); }

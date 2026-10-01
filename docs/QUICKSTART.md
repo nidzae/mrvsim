@@ -31,6 +31,7 @@ Grey is the most common result with sparse monitoring. Turning grey into green o
 2. **Set your bar.** In the top bar, choose the KPI (**intensity** or **absolute (t/yr)**), enter the **bar** and the **precision w**. The map recolors immediately; no rerun is needed.
 3. **Click a grey facility.** The drill-down shows:
    - the interval as a bar against your bar line (thin band p5–p95, thick band p10–p90, circle at the median, triangle at the synthetic truth),
+   - a one-line **reason** for the colour at your current bar and precision (for example "p90 ≤ bar, but w = 0.58 > w_max 0.30: interval too wide to certify"). The badge and the bar line follow the top-bar controls, like the map,
    - the **observation timeline**: one row per sensor, with detections, non-detections, cloud-outs, wind-outs and night passes,
    - **Compute variance budget**: which error source is making the interval wide (for example, "temporal sampling 60 %" means the sensors could not tell how often the source was on).
 4. **Pick a compute mode.** Under the sensor list, **quick** (default) estimates 10 facilities per stratum with 2,000 posterior draws and 3 replications in about a minute; **full** estimates every facility of the default sample with 10,000 draws and 5 replications and takes tens of minutes; **custom** uses the Advanced settings. The panel shows the time estimate. Explore with quick runs; when a mix looks good, open **Dashboard** and press **Re-run this mix at full resolution**.

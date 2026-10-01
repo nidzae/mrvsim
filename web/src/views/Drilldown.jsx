@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, ScatterChart, Scatter, ZAxis, CartesianGrid } from "recharts";
-import { api, waitForJob, fmtNum, fmtPct } from "../api.js";
+import { api, waitForJob, classify, fmtNum, fmtPct } from "../api.js";
 
 const SENSOR_COLORS = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#4a3aa7", "#e34948"];
 
@@ -21,7 +21,7 @@ function IntervalBar({ k, unit }) {
   );
 }
 
-export default function Drilldown({ runId, fid, kpi, onClose }) {
+export default function Drilldown({ runId, fid, kpi, bar, wMax, onClose }) {
   const [d, setD] = useState(null); const [budget, setBudget] = useState(null); const [busy, setBusy] = useState(false); const [err, setErr] = useState(null);
   useEffect(() => { setD(null); setBudget(null); api.facility(runId, fid).then(setD).catch((e) => setErr(String(e))); }, [runId, fid]);
   const runBudget = async () => {
@@ -31,7 +31,17 @@ export default function Drilldown({ runId, fid, kpi, onClose }) {
   const stop = { onWheel: (e) => e.stopPropagation(), onTouchMove: (e) => e.stopPropagation() };
   if (err) return <div className="drill" {...stop}><button className="ghost" onClick={onClose}>close</button><p className="flagged">{err}</p></div>;
   if (!d) return <div className="drill muted" {...stop}>Loading facility…</div>;
-  const k = kpi === "intensity" ? d.intensity : d.mass_t_yr; const unit = kpi === "intensity" ? "" : "t/yr";
+  // Reclassify at the live (B, w_max) from the top bar so the badge, the bar line and the map agree (PRD F9).
+  // The server's stored state used the scoring config saved with the run.
+  const raw = kpi === "intensity" ? d.intensity : d.mass_t_yr; const unit = kpi === "intensity" ? "" : "t/yr";
+  const k = { ...raw, bar, state: classify(raw, bar, wMax) };
+  const w = k.p50 > 0 ? (k.p95 - k.p05) / (2 * k.p50) : Infinity;
+  const fmtK = (v) => (kpi === "intensity" ? fmtPct(v) : `${fmtNum(v, 1)} ${unit}`);
+  const reason = k.state === "fails" ? `p10 ${fmtK(k.p10)} > bar ${fmtK(bar)}: fails even at the lower 90 % bound`
+    : k.state === "certified" ? `p90 ${fmtK(k.p90)} ≤ bar ${fmtK(bar)} and w = ${fmtNum(w, 2)} ≤ ${fmtNum(wMax, 2)}`
+    : k.state === "indeterminate" ? (k.p90 > bar ? `p90 ${fmtK(k.p90)} > bar ${fmtK(bar)} but p10 ${fmtK(k.p10)} ≤ bar: interval straddles the bar`
+      : `p90 ${fmtK(k.p90)} ≤ bar ${fmtK(bar)}, but w = ${fmtNum(w, 2)} > w_max ${fmtNum(wMax, 2)}: interval too wide to certify`)
+    : "no posterior for this facility";
   const sensors = [...new Set(d.timeline.map((t) => t.sensor))];
   const pts = d.timeline.map((t) => ({ day: t.day, y: sensors.indexOf(t.sensor), kind: !t.usable ? (t.cloud_blocked ? "cloud-out" : t.sun_blocked ? "night" : "wind-out") : t.detected ? (t.false_positive ? "false positive" : "detection") : "non-detection", r: t.reported_kg_h, sensor: t.sensor }));
   const kinds = { detection: "#2a78d6", "non-detection": "#8d8b84", "cloud-out": "#c3c2b7", "wind-out": "#eda100", night: "#e5e4df", "false positive": "#e34948" };
@@ -48,6 +58,7 @@ export default function Drilldown({ runId, fid, kpi, onClose }) {
         <tr><th>p5</th><th>p10</th><th>median</th><th>p90 (cert. bound)</th><th>p95</th><th>truth</th></tr>
         <tr>{[k.p05, k.p10, k.p50, k.p90, k.p95, k.truth].map((v, i) => <td key={i} className="num">{kpi === "intensity" ? fmtPct(v) : fmtNum(v, 1)}</td>)}</tr>
       </tbody></table>
+      <div className="muted" style={{ marginTop: 4 }}><b className={`why ${k.state}`}>{k.state}</b> · {reason} · w = (p95 − p5) / (2 · median) = {fmtNum(w, 2)}</div>
       <h3>Observation timeline</h3>
       <div style={{ height: 40 + 22 * sensors.length }}>
         <ResponsiveContainer>
