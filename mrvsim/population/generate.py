@@ -136,6 +136,26 @@ class Population:
         self.states.save(directory / "states.npz")
 
 
+def load_population(directory: Path, strata: StrataTable | None = None, priors: PriorSet | None = None,
+                    constants: Constants | None = None, n_hours: int = 8760) -> Population:
+    """Inverse of :meth:`Population.save` (strata/priors/constants reloaded from configs unless given)."""
+    directory = Path(directory)
+    strata = strata or load_strata()
+    priors = priors or load_priors(DEFAULT_PRIORS_PATH, list(strata.basins), list(strata.facility_types))
+    constants = constants or Constants.load()
+    with np.load(directory / "facilities.npz") as f:
+        F = {k: f[k] for k in f.files}
+    with np.load(directory / "sources.npz") as s:
+        S = {k: s[k] for k in s.files}
+    states = StatePaths.load(directory / "states.npz")
+    thr = Throughput(F["gas_mkt_m3_yr"], F["oil_bbl_yr"], F["x_ch4"], F["g_ch4_kg_yr"], F["f_gas"], F["mmbtu_yr"], F["ghgrp_reporter"])
+    cond = Conditions(F["p_cloud"], F["surface_reflectance"], F["surface_heterogeneity"], F["wind_k"], F["wind_lambda"])
+    return Population(stratum_idx=F["stratum_idx"], basin_idx=F["basin_idx"], ftype_idx=F["ftype_idx"], tclass_idx=F["tclass_idx"], lat=F["lat"], lon=F["lon"],
+                      n_sources=F["n_sources"], source_offset=F["source_offset"], throughput=thr, conditions=cond,
+                      src_facility=S["src_facility"], z=S["z"], q_kg_h=S["q_kg_h"], pi=S["pi"], nu_on=S["nu_on"], tau_on=S["tau_on"], nu_off=S["nu_off"], tau_off=S["tau_off"],
+                      states=states, strata=strata, priors=priors, constants=constants, n_hours=n_hours, meta={"loaded_from": str(directory)})
+
+
 def _facility_coordinates(rng: np.random.Generator, strata: StrataTable, basin_idx: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     """Uniform placement inside each basin's box [basin-extents] (representative, not real assets)."""
     keys = list(strata.basins)

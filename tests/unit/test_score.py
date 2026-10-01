@@ -100,7 +100,7 @@ def test_run_scored_persists_and_aggregates(tmp_path) -> None:
     assert report.n_replications == 2
     assert report.kpi["mass"]["calibration"].n == 2 and np.isfinite(report.kpi["mass"]["calibration"].se)
     assert set(report.state_counts["mass"]) == set(STATES)
-    assert (run.dir / "summary.json").exists() and (run.dir / "population" / "sources.npz").exists()
+    assert (run.dir / "summary.json").exists() and (run.dir / "population" / "sources.npz").exists() and (run.dir / "posterior_mass_pcts.npy").exists()
     import json
     s = json.loads((run.dir / "summary.json").read_text())
     assert "calibration_ok" in s and "citation_keys" in s["meta"] and "ghgrp" in s["meta"]["citation_keys"]

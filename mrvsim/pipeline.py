@@ -126,8 +126,9 @@ def run_scored(cfg: RunConfig, root: str | Path = "runs", run_id: str | None = N
                        "citation_keys": sorted(set(pop0.citation_keys()) | set(library.citation_keys(list(cfg.policy.get("sensors", {}).keys()))) if pop0 else [])}
         run.save_json("summary", _report_json(report))
         if last is not None:
-            run.save_array("posterior_mass_p05_p50_p95", np.stack([last.post.mass_kg_yr_p05, last.post.mass_kg_yr_p50, last.post.mass_kg_yr_p95]))
-            run.save_array("posterior_intensity_p05_p50_p95", np.stack([last.post.intensity_p05, last.post.intensity_p50, last.post.intensity_p95]))
+            # rows: p05, p10, p50, p90, p95 (two-sided 90 % interval ends, one-sided 90 % bounds, median)
+            run.save_array("posterior_mass_pcts", np.stack([last.post.mass_kg_yr_p05, last.post.mass_kg_yr_p10, last.post.mass_kg_yr_p50, last.post.mass_kg_yr_p90, last.post.mass_kg_yr_p95]))
+            run.save_array("posterior_intensity_pcts", np.stack([last.post.intensity_p05, last.post.intensity_p10, last.post.intensity_p50, last.post.intensity_p90, last.post.intensity_p95]))
             run.save_array("true_mass_kg_yr", last.pop.true_mass_kg_yr())
             run.save_array("true_intensity", last.pop.true_intensity())
             run.save_array("state_mass", last.scores.states["mass"])

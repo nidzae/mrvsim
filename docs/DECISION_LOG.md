@@ -185,3 +185,16 @@ Format:
 **Alternatives rejected:** A true daily event loop (per-facility Python loops, 365× the overhead, needed only when cued sensors can themselves trigger rules; version 2 if OGI→repair style chains are added); penalty-based single-objective optimisation (hides the trade-off the PRD wants to show).
 **Docs updated:** TDD §8 note, §13.
 **Status:** active
+
+## 2026-09-30 — API and front-end conventions (Phase 8)
+**Decision:**
+1. **Endpoints.** `POST /api/run`, `GET /api/jobs/{id}`, `GET /api/run/{id}/summary|facilities|facility/{fid}|attribution`, `POST /api/run/{id}/facility/{fid}/budget`, `POST /api/run/{id}/tornado`, `GET /api/validation`, `POST /api/validation/run`, `POST /api/optimize`, `POST /api/gap-analysis`, `GET /api/quickstart`, `GET /api/references`, `GET /api/sensors`. Long operations run in a thread pool and return a job id (the PRD's `POST /run` is asynchronous because even interactive runs take a minute).
+2. **Interactive defaults (PRD N3 strategy).** 10 facilities per stratum, 2,000 posterior draws, 3 replications, 30 generated facilities per stratum: ~1–2 minutes on this laptop. All adjustable under Sensors → Advanced. This is the proposed resolution of the N3 gap: an interactive recompute estimates a stratified subsample with stratum-weighted shares; batch quality needs the full sample and R = 200.
+3. **Map recolouring is client-side.** The run persists p5, p10, p50, p90, p95 per facility and the browser applies the three-state rule at the user's (B, w_max) without a rerun; the rule mirrors `mrvsim.score.metrics.classify`.
+4. **Tornado chart** is computed on demand (one pipeline run per one-at-a-time change: each deployed sensor off, doubled frequency, full coverage; each absent core sensor added at 20 %) and cached in the run directory.
+5. **Gap analysis** goes through the API server, which holds the Anthropic credentials (`ANTHROPIC_API_KEY`, `ANTHROPIC_AUTH_TOKEN`, or an `ant auth login` profile); the browser never sees a key and no key is in code. Model `claude-opus-5-5` with the server-side refusal fallback; the system prompt carries the run's headline, slices, and tornado; a fenced YAML policy in the reply is parsed and offered with an **Apply** button. The browser-direct pattern from the artifacts documentation was not used because this is a self-hosted app, not a claude.ai artifact.
+6. **Basemap**: OpenStreetMap raster tiles (attribution shown); facility coordinates are synthetic.
+7. **Colours** follow the dataviz reference palette: status good/critical for certified/fails, a neutral for indeterminate, categorical slots for sensors, with text labels and legends so colour is never the only encoding.
+**Reason:** Direct realisation of PRD F9–F14 and CLAUDE.md Phase 8 within the measured estimator speed.
+**Docs updated:** `docs/QUICKSTART.md` rewritten against the actual controls; PRD §10 Q6 unchanged; README run instructions.
+**Status:** active
