@@ -42,9 +42,26 @@ Data obtained: Rutherford 2021 code/database (Zenodo 4903897, 91 MB), Sherwin 20
 
 Sherwin 2024 Table S10 loss rates with CIs for Permian (fall 2021: 1.89 % [1.73, 2.06]), Appalachian (0.71 % [0.61, 0.81]), DJ (1.10 % [1.0, 1.24]), Uinta (5.55 % [5.15, 5.99]), Fort Worth (1.88 %); detected-site quantiles and survival curves per basin; Cusworth persistence (Permian 0.26, Marcellus 0.60), point-source share (~40 %), duration shares; Omara national quantiles; Hajny Haynesville 0.79 % confirmed. The Permian 4.6 % intensity in TDD §9 was not found in the Hajny preprint and is excluded. V1 now scores survival curves and Cusworth-style persistence; V2 scores basin loss rates.
 
-## Validation run
+## Validation run (quick mode, fitted priors, `runs/validation/20261001T065522Z.json`) — the first run that is not refused
 
-Quick V1–V7 run against the fitted priors started 2026-10-01 (results in `runs/validation/`, see follow-up).
+| Test | Result | What it says |
+|---|---|---|
+| V1 | **fail** | Survival curves: DJ and Uinta within a factor of 2 at every scored level (pass); Permian and Appalachian deviate by up to e^1.0 and e^1.95 at one level each. Detected-site quantiles above the campaign floors run heavier than Sherwin's (Permian p50 86 vs 40 kg/h). Cusworth-style persistence computed on facility totals (0.69 Permian, 0.93 Appalachian) is far above the source-level diagnostic the fit reports (0.36); the two definitions must be reconciled before this check means anything. Five basins have no published target or too few simulated sites at quick size. |
+| V2 | **fail** | Simulated true loss rates vs Sherwin 2024 Table S10: Permian 0.71 % vs 1.89 % [1.73, 2.06]; Appalachian 0.58 % vs 0.71 % [0.61, 0.81]; DJ 0.50 % vs 1.10 % [1.00, 1.24]; Uinta 10.9 % vs 5.55 % [5.15, 5.99]. Right order of magnitude everywhere, inside the CI nowhere. FEAST cross-check: ratio 1.00 (pass). |
+| V3 | **fail** | Estimated basin intensities (two aircraft passes): Haynesville 0.79 % published inside [0.44, 1.39] (pass); Appalachian and Uinta pass; Permian 1.89 % above the interval's 1.31 %; DJ 1.10 % above 0.82 %. |
+| V4 | **fail** | All metrics stable except the certified throughput shares (0.038 vs 0.068, 2·SE 0.016): small shares with 6 facilities per stratum and 3 replications; needs the full-resolution run. |
+| V5 | pass | κ 0.92–0.96 under each single perturbation; 0.88 joint. |
+| V6 | pass | 8 % of 5 t/h × 6 h events caught by any LEO pass; mean estimate/truth 0.08. |
+| V7 | pass | κ = 0.887 (mass), 0.887 (intensity) at 3 replications. |
+
+Reading: the estimator is calibrated and robust (V5–V7); the population model is in the right range but not yet inside the published confidence intervals (V1–V3). The levers are known: per-pad rather than per-well throughput (loss rates are biased by the well-to-pad ratio), a size-dependent intermittent share (persistence vs. low-level emitting fraction), and the midstream emission share per basin (Sherwin: 18–57 %). V4 needs the full run.
+
+## Open items for Nidhi
+
+1. Confirm the relaxed TROPOMI acceptance criterion (most, not nearly all, clear passes at 10 t/h).
+2. Confirm that "interactive" means the stratified-subsample Quick mode (PRD N3).
+3. Per-pad throughput: a well-to-pad mapping (state databases or Enverus) would fix the V2 denominators.
+4. Whether to add size-dependent intermittency to the TDD (version-2 item) now that the data show the single-share model cannot match both constraints.
 
 ## Tests
 
