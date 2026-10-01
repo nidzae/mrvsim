@@ -10,7 +10,7 @@ function IntervalBar({ k, unit }) {
   const max = Math.max(...vals) * 1.15 || 1; const W = 380, H = 46, x = (v) => 10 + (v / max) * (W - 20);
   const color = { certified: "#0ca30c", fails: "#d03b3b", indeterminate: "#8d8b84" }[k.state] || "#888";
   return (
-    <svg width={W} height={H} role="img" aria-label={`interval ${fmtNum(k.p05, 3)} to ${fmtNum(k.p95, 3)} ${unit}, bar ${fmtNum(k.bar, 3)}`}>
+    <svg className="interval" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" role="img" aria-label={`interval ${fmtNum(k.p05, 3)} to ${fmtNum(k.p95, 3)} ${unit}, bar ${fmtNum(k.bar, 3)}`}>
       <line x1={x(k.p05)} x2={x(k.p95)} y1={18} y2={18} stroke={color} strokeWidth={6} strokeLinecap="round" />
       <line x1={x(k.p10)} x2={x(k.p90)} y1={18} y2={18} stroke={color} strokeWidth={12} strokeLinecap="round" opacity={0.55} />
       <circle cx={x(k.p50)} cy={18} r={5} fill="#fff" stroke={color} strokeWidth={2} />
@@ -28,16 +28,17 @@ export default function Drilldown({ runId, fid, kpi, onClose }) {
     setBusy(true); setErr(null);
     try { const j = await api.budget(runId, fid); setBudget(await waitForJob(j.job_id)); } catch (e) { setErr(String(e)); } finally { setBusy(false); }
   };
-  if (err) return <div className="drill"><button className="ghost" onClick={onClose}>close</button><p className="flagged">{err}</p></div>;
-  if (!d) return <div className="drill muted">Loading facility…</div>;
+  const stop = { onWheel: (e) => e.stopPropagation(), onTouchMove: (e) => e.stopPropagation() };
+  if (err) return <div className="drill" {...stop}><button className="ghost" onClick={onClose}>close</button><p className="flagged">{err}</p></div>;
+  if (!d) return <div className="drill muted" {...stop}>Loading facility…</div>;
   const k = kpi === "intensity" ? d.intensity : d.mass_t_yr; const unit = kpi === "intensity" ? "" : "t/yr";
   const sensors = [...new Set(d.timeline.map((t) => t.sensor))];
   const pts = d.timeline.map((t) => ({ day: t.day, y: sensors.indexOf(t.sensor), kind: !t.usable ? (t.cloud_blocked ? "cloud-out" : t.sun_blocked ? "night" : "wind-out") : t.detected ? (t.false_positive ? "false positive" : "detection") : "non-detection", r: t.reported_kg_h, sensor: t.sensor }));
   const kinds = { detection: "#2a78d6", "non-detection": "#8d8b84", "cloud-out": "#c3c2b7", "wind-out": "#eda100", night: "#e5e4df", "false positive": "#e34948" };
   const budgetRows = budget ? Object.entries(budget.shares).map(([c, s]) => ({ component: c.replace("_", " "), share: s })) : [];
   return (
-    <div className="drill">
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+    <div className="drill" {...stop}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: -12, background: "var(--surface)", padding: "4px 0", zIndex: 1 }}>
         <b>Facility #{d.id}</b><span className={`badge ${k.state}`}>{k.state}</span><button className="ghost" onClick={onClose}>close</button>
       </div>
       <div className="muted">{d.basin} · {d.facility_type} · {d.n_sources} source{d.n_sources > 1 ? "s" : ""} · posterior: {d.method}</div>
