@@ -34,7 +34,7 @@ export default function App() {
   const [policy, setPolicy] = useState(DEFAULT_POLICY);
   const [runSettings, setRunSettings] = useState({ name: "interactive", mode: "quick", seed: 20260930, replications: 3, n_draws: 2000, facilities_per_stratum: 10, n_per_stratum: 30 });
   const [busy, setBusy] = useState(false); const [pareto, setPareto] = useState(null); const [health, setHealth] = useState(null);
-  useEffect(() => { api.runs().then((r) => { setRuns(r.runs); const first = r.runs.find((x) => x.has_summary); if (first) setRunId(first.run_id); }).catch(() => {}); api.health().then(setHealth).catch(() => {}); }, []);
+  useEffect(() => { api.runs().then((r) => { setRuns(r.runs); const first = r.runs.find((x) => x.has_summary && !/\[|v4-|v7-|tornado|opt-/.test(x.name || "")); if (first) setRunId(first.run_id); else { const any = r.runs.find((x) => x.has_summary); if (any) setRunId(any.run_id); } }).catch(() => {}); api.health().then(setHealth).catch(() => {}); }, []);
   const scoring = { bar_intensity: bar, bar_mass_t_yr: barMass, w_max: wMax };
   const applyYaml = (yaml) => { try { setPolicy(parsePolicyYaml(yaml)); setTab("Map"); } catch (e) { alert(`Could not parse the proposal: ${e}`); } };
   const applyPolicy = (p) => { setPolicy({ sensors: Object.fromEntries(Object.entries(p.sensors).filter(([, s]) => s.enabled !== false).map(([k, s]) => [k, { coverage: s.coverage, frequency_per_year: s.frequency_per_year, targeting: s.targeting }])) }); setTab("Map"); };
@@ -52,7 +52,7 @@ export default function App() {
           <select value={kpi} onChange={(e) => setKpi(e.target.value)}><option value="intensity">intensity</option><option value="mass">absolute (t/yr)</option></select>
           {kpi === "intensity" ? <>bar %<input type="number" step="0.05" min="0" value={+(bar * 100).toFixed(3)} onChange={(e) => setBar(+e.target.value / 100)} /></> : <>bar t/yr<input type="number" step="5" min="0" value={barMass} onChange={(e) => setBarMass(+e.target.value)} /></>}
           precision w<input type="number" step="0.05" min="0.05" value={wMax} onChange={(e) => setWMax(+e.target.value)} />
-          <select value={runId || ""} onChange={(e) => setRunId(e.target.value)} style={{ maxWidth: 220 }}>{!runs.length && <option value="">no runs</option>}{runs.filter((r) => r.has_summary).map((r) => <option key={r.run_id} value={r.run_id}>{r.name} · {r.run_id}</option>)}</select>
+          <select value={runId || ""} onChange={(e) => setRunId(e.target.value)} style={{ maxWidth: 220 }}>{!runs.length && <option value="">no runs</option>}{runs.filter((r) => r.has_summary && !/^(v4-|v7-|tornado-|opt-)/.test(r.name || "")).map((r) => <option key={r.run_id} value={r.run_id}>{r.name} · {r.run_id}</option>)}</select>
         </div>
         <button className="help" title="Quick start" onClick={() => setHelp(true)}>?</button>
       </div>

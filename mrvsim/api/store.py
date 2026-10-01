@@ -51,8 +51,10 @@ def list_runs(root: Path = RUNS_DIR) -> list[dict[str, Any]]:
             m = json.loads(d.read_text())
         except Exception:  # noqa: BLE001
             continue
+        has_pop = (d.parent / "population" / "facilities.npz").exists() and (d.parent / "observations" / "observations.npz").exists()
         out.append({"run_id": m["run_id"], "name": m.get("name"), "status": m.get("status"), "started_utc": m.get("started_utc"),
-                    "elapsed_s": m.get("elapsed_s"), "has_summary": (d.parent / "summary.json").exists()})
+                    "elapsed_s": m.get("elapsed_s"), "has_summary": (d.parent / "summary.json").exists() and has_pop,
+                    "summary_only": (d.parent / "summary.json").exists() and not has_pop})   # validation/optimizer internal runs keep no population
     return out
 
 
@@ -61,6 +63,8 @@ def load_run(run_id: str, root: str = str(RUNS_DIR)) -> LoadedRun:
     d = Path(root) / run_id
     if not (d / "summary.json").exists():
         raise FileNotFoundError(f"run {run_id} has no summary.json (not finished?)")
+    if not (d / "population" / "facilities.npz").exists():
+        raise FileNotFoundError(f"run {run_id} kept only its summary (an internal validation/optimizer run); pick a run started from Sensors -> Run")
     manifest = json.loads((d / "manifest.json").read_text()); summary = json.loads((d / "summary.json").read_text())
     import yaml
 
