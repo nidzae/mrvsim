@@ -29,4 +29,5 @@ estimator:
 scoring:
   bar_intensity: 0.002     # B for KPI-1 (PRD section 5.3 example: 0.2 %)
   bar_mass_t_yr: 50.0      # B for KPI-2 (PRD section 5.3 example: 50 t/yr)
-  w_max: 0.30              # maximum relative half-width (PRD section 5.4)
+  w_max: 0.30              # precision grade threshold on the relative half-width (PRD section 5.4 as amended 2026-10-01; not a certification condition)
+  prior_only_ratio: 0.9    # posterior/prior interval width above which a certification is flagged prior-only (PRD section 5.4a)

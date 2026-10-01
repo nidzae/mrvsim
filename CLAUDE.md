@@ -95,7 +95,7 @@ Work in this order. Each phase ends with passing tests and a short note to the u
 ### Phase 8 — API and front end
 - Endpoints: `POST /run`, `GET /run/{id}/summary`, `GET /run/{id}/facility/{fid}`, `GET /run/{id}/attribution`, `GET /validation`, `POST /optimize`.
 - Views per PRD F9–F13:
-  - **Map:** three-state facility coloring (certified / fails / indeterminate) at the user's (B, w_max); drill-down with interval bar against the bar line, observation timeline (detections, non-detections, cloud-outs), and variance-budget bar chart.
+  - **Map:** three-state facility coloring (certified / fails / indeterminate) at the user's bar B (decision at 95 %), with a precision ring at w_max and a prior-only fade; drill-down with interval bar against the bar line, observation timeline (detections, non-detections, cloud-outs), and variance-budget bar chart.
   - **Dashboard:** headline metrics; Pareto frontier (cost vs. w at fixed B); tornado chart (one-at-a-time sensor changes); slice tables.
   - **Gap analysis panel:** chat with the Anthropic API; put the current run's summary, variance budget, tornado, and slice tables in the system prompt; the model proposes a policy YAML; "Apply" button loads it. Use the API pattern in the artifacts documentation (no API key in code).
   - **Quick start:** a "?" button on every screen opens `docs/QUICKSTART.md` rendered as Markdown.

@@ -51,7 +51,7 @@ export default function App() {
         <div className="barctl">
           <select value={kpi} onChange={(e) => setKpi(e.target.value)}><option value="intensity">intensity</option><option value="mass">absolute (t/yr)</option></select>
           {kpi === "intensity" ? <>bar %<input type="number" step="0.05" min="0" value={+(bar * 100).toFixed(3)} onChange={(e) => setBar(+e.target.value / 100)} /></> : <>bar t/yr<input type="number" step="5" min="0" value={barMass} onChange={(e) => setBarMass(+e.target.value)} /></>}
-          precision w<input type="number" step="0.05" min="0.05" value={wMax} onChange={(e) => setWMax(+e.target.value)} />
+          <span title="Precision grade only: a certified facility with w above this is drawn with a dark ring. It does not block certification.">precision w_max</span><input type="number" step="0.05" min="0.05" value={wMax} onChange={(e) => setWMax(+e.target.value)} />
           <select value={runId || ""} onChange={(e) => setRunId(e.target.value)} style={{ maxWidth: 220 }}>{!runs.length && <option value="">no runs</option>}{runs.filter((r) => r.has_summary && !/^(v4-|v7-|tornado-|opt-)/.test(r.name || "")).map((r) => <option key={r.run_id} value={r.run_id}>{r.name} · {r.run_id}</option>)}</select>
         </div>
         <button className="help" title="Quick start" onClick={() => setHelp(true)}>?</button>

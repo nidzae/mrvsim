@@ -133,6 +133,15 @@ def run_scored(cfg: RunConfig, root: str | Path = "runs", run_id: str | None = N
             run.save_array("true_intensity", last.pop.true_intensity())
             run.save_array("state_mass", last.scores.states["mass"])
             run.save_array("state_intensity", last.scores.states["intensity"])
+            # quantile grid (QGRID rows), prior summary (p05, p50, p95) and evidence counts (DECISION_LOG 2026-10-01)
+            if last.post.mass_quantiles is not None:
+                run.save_array("posterior_mass_quantiles", last.post.mass_quantiles)
+                run.save_array("posterior_intensity_quantiles", last.post.intensity_quantiles)
+            if last.post.prior_mass_pcts is not None:
+                run.save_array("prior_mass_pcts", last.post.prior_mass_pcts)
+                run.save_array("prior_intensity_pcts", last.post.prior_intensity_pcts)
+            if last.post.evidence is not None:
+                run.save_array("evidence_counts", last.post.evidence)
             last.pop.save(run.dir / "population")
             last.obs.save(run.dir / "observations")
     return report, run, last

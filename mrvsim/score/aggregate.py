@@ -66,6 +66,10 @@ def aggregate(reps: list[ReplicationScores], n_strata: int, basin_keys: list[str
             "certified": _metric([r.kpi_metrics[k]["certified_share_facilities"] for r in reps]),
             "fails": _metric([r.kpi_metrics[k]["fails_share_facilities"] for r in reps]),
             "indeterminate": _metric([r.kpi_metrics[k]["indeterminate_share_facilities"] for r in reps]),
+            # attributes, not states (PRD sections 5.4, 5.4a as amended 2026-10-01)
+            "precise": _metric([r.kpi_metrics[k]["precise_share_facilities"] for r in reps]),
+            "certified_precise": _metric([r.kpi_metrics[k]["certified_precise_share_facilities"] for r in reps]),
+            "certified_prior_only": _metric([r.kpi_metrics[k]["certified_prior_only_share_facilities"] for r in reps]),
         }
     cost_names = reps[0].cost.keys()
     return ScoreReport(

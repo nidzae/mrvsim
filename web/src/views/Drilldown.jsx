@@ -1,22 +1,27 @@
 import React, { useEffect, useState } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, ScatterChart, Scatter, ZAxis, CartesianGrid } from "recharts";
-import { api, waitForJob, classify, fmtNum, fmtPct } from "../api.js";
+import { api, waitForJob, classify, halfWidth, precision, probBelow, fmtNum, fmtPct } from "../api.js";
 
 const SENSOR_COLORS = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#4a3aa7", "#e34948"];
 
-// Interval bar against the bar line (PRD F9): p5-p95 band, p10/p90 ticks, median, truth (oracle, labelled).
+// Interval bar against the bar line (PRD F9): prior band (faint, above), posterior p5-p95 band, p10/p90 band, median, truth (oracle, labelled).
 function IntervalBar({ k, unit }) {
-  const vals = [k.p05, k.p95, k.truth, k.bar].filter(Number.isFinite);
-  const max = Math.max(...vals) * 1.15 || 1; const W = 380, H = 46, x = (v) => 10 + (v / max) * (W - 20);
+  const pr = k.prior;
+  const vals = [k.p05, k.p95, k.truth, k.bar, pr?.p95].filter(Number.isFinite);
+  const max = Math.max(...vals) * 1.15 || 1; const W = 380, H = 58, x = (v) => 10 + (Math.min(v, max) / max) * (W - 20);
   const color = { certified: "#0ca30c", fails: "#d03b3b", indeterminate: "#8d8b84" }[k.state] || "#888";
   return (
     <svg className="interval" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" role="img" aria-label={`interval ${fmtNum(k.p05, 3)} to ${fmtNum(k.p95, 3)} ${unit}, bar ${fmtNum(k.bar, 3)}`}>
-      <line x1={x(k.p05)} x2={x(k.p95)} y1={18} y2={18} stroke={color} strokeWidth={6} strokeLinecap="round" />
-      <line x1={x(k.p10)} x2={x(k.p90)} y1={18} y2={18} stroke={color} strokeWidth={12} strokeLinecap="round" opacity={0.55} />
-      <circle cx={x(k.p50)} cy={18} r={5} fill="#fff" stroke={color} strokeWidth={2} />
-      {Number.isFinite(k.bar) && <line x1={x(k.bar)} x2={x(k.bar)} y1={4} y2={34} stroke="#0b0b0b" strokeDasharray="3 3" />}
-      {Number.isFinite(k.truth) && <polygon points={`${x(k.truth) - 5},40 ${x(k.truth) + 5},40 ${x(k.truth)},31`} fill="#52514e" />}
-      <text x={x(k.bar)} y={44} fontSize={10} textAnchor="middle" fill="#52514e">bar</text>
+      {pr && <>
+        <line x1={x(pr.p05)} x2={x(pr.p95)} y1={8} y2={8} stroke="#b9b8b0" strokeWidth={4} strokeLinecap="round" strokeDasharray="2 3" />
+        <text x={x(pr.p05)} y={5} fontSize={8} fill="#8f8e86">prior</text>
+      </>}
+      <line x1={x(k.p05)} x2={x(k.p95)} y1={30} y2={30} stroke={color} strokeWidth={6} strokeLinecap="round" />
+      <line x1={x(k.p10)} x2={x(k.p90)} y1={30} y2={30} stroke={color} strokeWidth={12} strokeLinecap="round" opacity={0.55} />
+      <circle cx={x(k.p50)} cy={30} r={5} fill="#fff" stroke={color} strokeWidth={2} />
+      {Number.isFinite(k.bar) && <line x1={x(k.bar)} x2={x(k.bar)} y1={14} y2={46} stroke="#0b0b0b" strokeDasharray="3 3" />}
+      {Number.isFinite(k.truth) && <polygon points={`${x(k.truth) - 5},52 ${x(k.truth) + 5},52 ${x(k.truth)},43`} fill="#52514e" />}
+      <text x={x(k.bar)} y={56} fontSize={10} textAnchor="middle" fill="#52514e">bar</text>
     </svg>
   );
 }
@@ -31,16 +36,19 @@ export default function Drilldown({ runId, fid, kpi, bar, wMax, onClose }) {
   const stop = { onWheel: (e) => e.stopPropagation(), onTouchMove: (e) => e.stopPropagation() };
   if (err) return <div className="drill" {...stop}><button className="ghost" onClick={onClose}>close</button><p className="flagged">{err}</p></div>;
   if (!d) return <div className="drill muted" {...stop}>Loading facility…</div>;
-  // Reclassify at the live (B, w_max) from the top bar so the badge, the bar line and the map agree (PRD F9).
-  // The server's stored state used the scoring config saved with the run.
+  // Decide at the live bar from the top bar so the badge, the bar line and the map agree (PRD F9; DECISION_LOG 2026-10-01).
   const raw = kpi === "intensity" ? d.intensity : d.mass_t_yr; const unit = kpi === "intensity" ? "" : "t/yr";
-  const k = { ...raw, bar, state: classify(raw, bar, wMax) };
-  const w = k.p50 > 0 ? (k.p95 - k.p05) / (2 * k.p50) : Infinity;
+  const ev = d.evidence || null;
+  const ratio = ev ? (kpi === "intensity" ? ev.prior_ratio_intensity : ev.prior_ratio_mass) : null;
+  const nObs = ev ? ev.n_usable_snapshots + ev.n_survey_visits : null;
+  const priorOnly = ev ? ((Number.isFinite(ratio) && ratio > ev.prior_only_ratio) || (nObs === 0 && ev.cms_usable_hours === 0)) : false;
+  const k = { ...raw, bar, state: classify(raw, bar), precision: precision(raw, wMax), priorOnly };
+  const w = halfWidth(k); const pb = probBelow(raw, bar);
   const fmtK = (v) => (kpi === "intensity" ? fmtPct(v) : `${fmtNum(v, 1)} ${unit}`);
-  const reason = k.state === "fails" ? `p10 ${fmtK(k.p10)} > bar ${fmtK(bar)}: fails even at the lower 90 % bound`
-    : k.state === "certified" ? `p90 ${fmtK(k.p90)} ≤ bar ${fmtK(bar)} and w = ${fmtNum(w, 2)} ≤ ${fmtNum(wMax, 2)}`
-    : k.state === "indeterminate" ? (k.p90 > bar ? `p90 ${fmtK(k.p90)} > bar ${fmtK(bar)} but p10 ${fmtK(k.p10)} ≤ bar: interval straddles the bar`
-      : `p90 ${fmtK(k.p90)} ≤ bar ${fmtK(bar)}, but w = ${fmtNum(w, 2)} > w_max ${fmtNum(wMax, 2)}: interval too wide to certify`)
+  const probText = Number.isFinite(pb) ? (pb >= 0.995 ? "> 99 %" : pb <= 0.005 ? "< 1 %" : `${Math.round(pb * 100)} %`) : "–";
+  const decision = k.state === "certified" ? `p95 ${fmtK(k.p95)} ≤ bar ${fmtK(bar)}: at least 95 % posterior probability of being below the bar`
+    : k.state === "fails" ? `p5 ${fmtK(k.p05)} > bar ${fmtK(bar)}: at least 95 % posterior probability of being above the bar`
+    : k.state === "indeterminate" ? `interval ${fmtK(k.p05)}–${fmtK(k.p95)} straddles the bar ${fmtK(bar)}: the data cannot decide at 95 %`
     : "no posterior for this facility";
   const sensors = [...new Set(d.timeline.map((t) => t.sensor))];
   const pts = d.timeline.map((t) => ({ day: t.day, y: sensors.indexOf(t.sensor), kind: !t.usable ? (t.cloud_blocked ? "cloud-out" : t.sun_blocked ? "night" : "wind-out") : t.detected ? (t.false_positive ? "false positive" : "detection") : "non-detection", r: t.reported_kg_h, sensor: t.sensor }));
@@ -49,16 +57,31 @@ export default function Drilldown({ runId, fid, kpi, bar, wMax, onClose }) {
   return (
     <div className="drill" {...stop}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: -12, background: "var(--surface)", padding: "4px 0", zIndex: 1 }}>
-        <b>Facility #{d.id}</b><span className={`badge ${k.state}`}>{k.state}</span><button className="ghost" onClick={onClose}>close</button>
+        <b>Facility #{d.id}</b>
+        <span style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          <span className={`badge ${k.state}`}>{k.state}</span>
+          <span className={`badge ${k.precision}`} title={`relative half-width w = ${fmtNum(w, 2)} vs w_max ${fmtNum(wMax, 2)}`}>{k.precision === "precise" ? "precise" : "wide"} · w {fmtNum(w, 2)}</span>
+          {k.priorOnly && <span className="badge prior-only" title="the observations barely narrowed the prior; this certification rests on the population prior">prior-only</span>}
+        </span>
+        <button className="ghost" onClick={onClose}>close</button>
       </div>
       <div className="muted">{d.basin} · {d.facility_type} · {d.n_sources} source{d.n_sources > 1 ? "s" : ""} · posterior: {d.method}</div>
       <h3>{kpi === "intensity" ? "Methane intensity" : "Absolute emissions (t/yr)"}</h3>
+      <div className="prob"><b>{probText}</b> posterior probability of being below the bar ({fmtK(bar)})</div>
+      <div className="muted"><b className={`why ${k.state}`}>{k.state}</b> · {decision}</div>
       <IntervalBar k={k} unit={unit} />
       <table className="grid"><tbody>
-        <tr><th>p5</th><th>p10</th><th>median</th><th>p90 (cert. bound)</th><th>p95</th><th>truth</th></tr>
-        <tr>{[k.p05, k.p10, k.p50, k.p90, k.p95, k.truth].map((v, i) => <td key={i} className="num">{kpi === "intensity" ? fmtPct(v) : fmtNum(v, 1)}</td>)}</tr>
+        <tr><th></th><th>p5 (fail bound)</th><th>p10</th><th>median</th><th>p90</th><th>p95 (cert. bound)</th><th>truth</th></tr>
+        <tr><th>posterior</th>{[k.p05, k.p10, k.p50, k.p90, k.p95, k.truth].map((v, i) => <td key={i} className="num">{kpi === "intensity" ? fmtPct(v) : fmtNum(v, 1)}</td>)}</tr>
+        {k.prior && <tr><th>prior (no data)</th><td className="num">{kpi === "intensity" ? fmtPct(k.prior.p05) : fmtNum(k.prior.p05, 1)}</td><td /><td className="num">{kpi === "intensity" ? fmtPct(k.prior.p50) : fmtNum(k.prior.p50, 1)}</td><td /><td className="num">{kpi === "intensity" ? fmtPct(k.prior.p95) : fmtNum(k.prior.p95, 1)}</td><td /></tr>}
       </tbody></table>
-      <div className="muted" style={{ marginTop: 4 }}><b className={`why ${k.state}`}>{k.state}</b> · {reason} · w = (p95 − p5) / (2 · median) = {fmtNum(w, 2)}</div>
+      <div className="muted" style={{ marginTop: 4 }}>
+        <b>Precision:</b> w = (p95 − p5) / (2 · median) = {fmtNum(w, 2)} {k.precision === "precise" ? "≤" : ">"} w_max {fmtNum(wMax, 2)} ({k.precision}). Does not affect the decision.
+      </div>
+      {ev && <div className="muted" style={{ marginTop: 4 }}>
+        <b>Evidence:</b> {ev.n_usable_snapshots} usable snapshot{ev.n_usable_snapshots === 1 ? "" : "s"} · {ev.n_survey_visits} survey visit{ev.n_survey_visits === 1 ? "" : "s"} · {ev.cms_usable_hours.toLocaleString()} CMS hours · posterior interval is {Number.isFinite(ratio) ? `${Math.round(ratio * 100)} %` : "–"} as wide as the prior's (log scale; prior-only above {Math.round(ev.prior_only_ratio * 100)} %).
+        {k.priorOnly && <span className="flagged"> Prior-only: the decision rests on the population prior, not on measurements of this facility.</span>}
+      </div>}
       <h3>Observation timeline</h3>
       <div style={{ height: 40 + 22 * sensors.length }}>
         <ResponsiveContainer>

@@ -17,27 +17,33 @@ Each comes with a **90% interval**: a low and a high value. The tool is saying "
 
 ## The three colors on the map
 
-You set a **bar** (for example, 0.2% intensity) and a **precision** (for example, ±30%). Each facility is then:
+You set a **bar** (for example, 0.2% intensity). Each facility is then decided at 95 % confidence:
 
-- **Green — Certified.** The high end of the interval is below the bar, and the interval is narrow enough.
-- **Red — Fails.** The low end of the interval is above the bar.
-- **Grey — Indeterminate.** The interval straddles the bar, or is too wide. More or better sensors are needed to decide.
+- **Green — Certified.** The high end of the interval (p95) is below the bar: at least a 95 % chance the facility is below the bar.
+- **Red — Fails.** The low end of the interval (p5) is above the bar: at least a 95 % chance it is above.
+- **Grey — Indeterminate.** The interval straddles the bar. More or better sensors are needed to decide.
 
-Grey is the most common result with sparse monitoring. Turning grey into green or red is what the sensor controls are for.
+Two more things are shown on top of the colour, and neither changes the decision:
+
+- **Dark ring — wide.** The interval's relative half-width w is above your **precision w_max** (for example 0.3). The facility is decided, but its number is imprecise.
+- **Faded — prior-only.** The facility is certified, but the observations barely narrowed what the population prior already said. The certification rests on the population, not on this site.
+
+Grey is the most common result with sparse monitoring. Turning grey into green or red, and faded into solid, is what the sensor controls are for.
 
 ## Five-minute walkthrough
 
 1. **Load the default run.** Start the API (`.venv/bin/uvicorn mrvsim.api.server:app --port 8000`) and open the app. The **Sensors** panel on the left starts with the default mix (two aircraft passes per year, monthly GHGSat tasking on the top 30 % of facilities by throughput, TROPOMI everywhere). Press **Run**; the run selector in the top bar switches to it when it finishes.
-2. **Set your bar.** In the top bar, choose the KPI (**intensity** or **absolute (t/yr)**), enter the **bar** and the **precision w**. The map recolors immediately; no rerun is needed.
+2. **Set your bar.** In the top bar, choose the KPI (**intensity** or **absolute (t/yr)**), enter the **bar** and the **precision w_max** (grade only). The map recolors immediately; no rerun is needed.
 3. **Click a grey facility.** The drill-down shows:
-   - the interval as a bar against your bar line (thin band p5–p95, thick band p10–p90, circle at the median, triangle at the synthetic truth),
-   - a one-line **reason** for the colour at your current bar and precision (for example "p90 ≤ bar, but w = 0.58 > w_max 0.30: interval too wide to certify"). The badge and the bar line follow the top-bar controls, like the map,
+   - the **posterior probability of being below the bar** (for example "97 %") and the decision it implies, following the top-bar controls like the map,
+   - the interval as a bar against your bar line (faint dashed band: the prior with no data; thin band p5–p95; thick band p10–p90; circle at the median; triangle at the synthetic truth),
+   - the **precision** (w against w_max) and the **evidence** (usable snapshots, survey visits, CMS hours, and how much narrower the posterior is than the prior; "prior-only" is flagged in red),
    - the **observation timeline**: one row per sensor, with detections, non-detections, cloud-outs, wind-outs and night passes,
    - **Compute variance budget**: which error source is making the interval wide (for example, "temporal sampling 60 %" means the sensors could not tell how often the source was on).
 4. **Pick a compute mode.** Under the sensor list, **quick** (default) estimates 10 facilities per stratum with 2,000 posterior draws and 3 replications in about a minute; **full** estimates every facility of the default sample with 10,000 draws and 5 replications and takes tens of minutes; **custom** uses the Advanced settings. The panel shows the time estimate. Explore with quick runs; when a mix looks good, open **Dashboard** and press **Re-run this mix at full resolution**.
 5. **Change the sensor mix.** In **Sensors**, tick a sensor class on or off and set coverage (share of facilities), surveys or taskings per year, and targeting (random or throughput-weighted). Try adding `cms_generic` at 20 % coverage with throughput targeting. Press **Run**. Interactive runs estimate a stratified subsample (10 facilities per stratum, 2,000 posterior draws, 3 replications; change these under **Advanced**) and take about a minute.
 6. **Read the dashboard.** The headline tiles:
-   - **Certified share** — percent of facilities, and of gas throughput, that are green.
+   - **Certified share** — percent of facilities, and of gas throughput, that are green; the sub-line says how many of those are also precise and how many are prior-only.
    - **Calibration κ** — should sit between 0.85 and 0.95. If it is outside that band the tile turns red: the intervals are not trustworthy.
    - **Median interval width** — smaller is better.
    - **Completeness** — share of large emissions the sensors could see at all.
@@ -79,4 +85,4 @@ Claude will explain and can propose a sensor configuration as a small YAML block
 | Tip-and-cue | A cheap sensor's detection triggers an expensive sensor's visit |
 | Pareto frontier | The set of best trade-offs between cost and precision |
 
-Full definitions are in the PRD glossary (`docs/PRD.md` §8). Interval and certification conventions: the interval shown is the two-sided 90 % credible interval; **Certified** uses the one-sided 90 % upper bound (p90) against the bar and the interval's relative half-width against the precision; **Fails** means the one-sided 90 % lower bound (p10) is above the bar.
+Full definitions are in the PRD glossary (`docs/PRD.md` §8). Interval and certification conventions: the interval shown is the two-sided 90 % credible interval; **Certified** means its upper end (p95) is at or below the bar; **Fails** means its lower end (p5) is above the bar; **Indeterminate** means it straddles the bar. Precision (w against w_max) and evidence (posterior width as a fraction of the prior's) are shown alongside and do not change the decision.

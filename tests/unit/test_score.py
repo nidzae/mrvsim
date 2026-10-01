@@ -9,7 +9,7 @@ from mrvsim.estimate.fast import PosteriorSummary
 from mrvsim.io.config import RunConfig
 from mrvsim.io.seeds import SeedTree
 from mrvsim.pipeline import run_replication, run_scored
-from mrvsim.score import Bar, STATES, aggregate, classify, completeness_from_detection_probability, score_replication
+from mrvsim.score import Bar, STATES, aggregate, classify, completeness_from_detection_probability, precise, prior_only, score_replication
 from mrvsim.sensors import load_library
 
 LIB = load_library()
@@ -24,17 +24,51 @@ def _post(n: int, med: np.ndarray, rel_w: float, kpi_i: np.ndarray | None = None
 
 
 def test_classify_three_states_exhaustive() -> None:
-    med = np.array([10e3, 10e3, 200e3, 55e3, 40e3])          # kg/yr
-    post = _post(5, med, rel_w=0.2)
-    post.mass_kg_yr_p95[1] = 10e3 * 1.9; post.mass_kg_yr_p05[1] = 10e3 * 0.1    # wide
+    """Decision-only rule (DECISION_LOG 2026-10-01): certified iff p95 <= B, fails iff p05 > B, else straddles."""
+    med = np.array([10e3, 10e3, 200e3, 55e3, 40e3, 60e3])          # kg/yr
+    post = _post(6, med, rel_w=0.2)
+    post.mass_kg_yr_p95[1] = 10e3 * 1.9; post.mass_kg_yr_p05[1] = 10e3 * 0.1    # wide but entirely below the bar
     bar = Bar("mass", 50e3, 0.30)
     st = classify(post, bar)
-    assert STATES[st[0]] == "certified"        # p90 = 11.5 t <= 50 t, w = 0.2
-    assert STATES[st[1]] == "indeterminate"    # too wide
-    assert STATES[st[2]] == "fails"            # p10 = 170 t > 50 t
-    assert STATES[st[3]] == "indeterminate"    # p10 = 46.75 t < 50 t < p90 = 63 t: straddles
-    assert STATES[st[4]] == "certified"        # p90 = 46 t
+    assert STATES[st[0]] == "certified"        # p95 = 12 t <= 50 t
+    assert STATES[st[1]] == "certified"        # p95 = 19 t <= 50 t: width no longer vetoes (w = 0.9 > 0.3)
+    assert STATES[st[2]] == "fails"            # p05 = 160 t > 50 t
+    assert STATES[st[3]] == "indeterminate"    # p05 = 44 t < 50 t < p95 = 66 t: straddles
+    assert STATES[st[4]] == "certified"        # p95 = 48 t
+    assert STATES[st[5]] == "indeterminate"    # p05 = 48 t < 50 t: not fails at 95 %, p95 = 72 t > 50 t: not certified
     assert set(np.unique(st)) <= {0, 1, 2}
+    # precision is an attribute, reported separately
+    pr = precise(post, bar)
+    assert pr.tolist() == [True, False, True, True, True, True]
+    # unscored facility
+    post.mass_kg_yr_p50[0] = np.nan
+    assert classify(post, bar)[0] == -1
+
+
+def test_prior_only_flag_from_evidence_ratio_and_counts() -> None:
+    med = np.full(4, 10e3)
+    post = _post(4, med, rel_w=0.2)                       # posterior width 0.4 * med
+    post.prior_mass_pcts = np.stack([med * 0.5, med, med * 1.5])          # log width ln 3 vs posterior ln 1.5 -> ratio 0.37
+    post.prior_mass_pcts[:, 1] = [med[1] * 0.85, med[1], med[1] * 1.25]  # prior ln(1.47) < posterior ln(1.5) -> ratio 1.05
+    post.evidence = np.array([[3, 3, 0, 3], [0, 0, 0, 0], [0, 0, 0, 500]])  # facility 2 saw nothing; 3 has CMS hours only
+    bar = Bar("mass", 50e3, 0.30, prior_only_ratio=0.9)
+    assert prior_only(post, bar).tolist() == [False, True, True, False]
+    r = np.log(1.5) / np.log(3.0)
+    assert np.allclose(post.evidence_ratio("mass"), [r, np.log(1.5) / np.log(1.25 / 0.85), r, r])
+    # no prior summary (older runs) and no evidence: never flagged
+    post.prior_mass_pcts = None; post.evidence = None
+    assert not prior_only(post, bar).any()
+
+
+def test_prob_below_from_quantile_grid() -> None:
+    from mrvsim.estimate.fast import QGRID
+    post = _post(2, np.array([10e3, 20e3]), rel_w=0.2)
+    post.mass_quantiles = np.stack([np.linspace(5e3, 15e3, QGRID.size), np.linspace(10e3, 30e3, QGRID.size)], axis=1)
+    pb = post.prob_below(14.5e3, "mass")
+    assert abs(pb[0] - 0.95) < 1e-9 and abs(pb[1] - 0.225) < 1e-9
+    assert post.prob_below(0.0, "mass").tolist() == [0.0, 0.0] and post.prob_below(1e9, "mass").tolist() == [1.0, 1.0]
+    grid = np.array([post.prob_below(b, "mass")[0] for b in np.linspace(0, 20e3, 50)])
+    assert np.all(np.diff(grid) >= 0)
 
 
 def test_calibration_and_shares_with_weights() -> None:
@@ -53,6 +87,8 @@ def test_calibration_and_shares_with_weights() -> None:
     assert abs(m["width_median"] - 0.35) < 1e-9
     assert abs(m["bias_median"]) < 0.05
     assert abs(m["certified_share_facilities"] + m["fails_share_facilities"] + m["indeterminate_share_facilities"] - 1) < 1e-12
+    assert {"precise_share_facilities", "certified_precise_share_weighted_throughput", "certified_prior_only_share_facilities"} <= set(m)
+    assert m["certified_precise_share_facilities"] <= m["certified_share_facilities"]
     assert 0 <= m["certified_share_weighted_throughput"] <= 1
     assert rs.per_stratum_calibration["mass"].shape == (4,)
     rep = aggregate([rs, rs], 4, [])
@@ -99,8 +135,11 @@ def test_run_scored_persists_and_aggregates(tmp_path) -> None:
     report, run, last = run_scored(cfg, root=tmp_path, replications=2, n_draws=400, facilities_per_stratum=1)
     assert report.n_replications == 2
     assert report.kpi["mass"]["calibration"].n == 2 and np.isfinite(report.kpi["mass"]["calibration"].se)
-    assert set(report.state_counts["mass"]) == set(STATES)
+    assert set(report.state_counts["mass"]) >= set(STATES) and "certified_prior_only" in report.state_counts["mass"]
     assert (run.dir / "summary.json").exists() and (run.dir / "population" / "sources.npz").exists() and (run.dir / "posterior_mass_pcts.npy").exists()
+    for name in ("posterior_mass_quantiles", "posterior_intensity_quantiles", "prior_mass_pcts", "prior_intensity_pcts", "evidence_counts"):
+        assert (run.dir / f"{name}.npy").exists(), name
+    assert np.load(run.dir / "posterior_mass_quantiles.npy").shape[0] == 101 and np.load(run.dir / "evidence_counts.npy").shape[0] == 3
     import json
     s = json.loads((run.dir / "summary.json").read_text())
     assert "calibration_ok" in s and "citation_keys" in s["meta"] and "ghgrp" in s["meta"]["citation_keys"]

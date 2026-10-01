@@ -10,8 +10,9 @@ function SliceTable({ title, rows }) {
   if (!rows?.length) return null;
   return (
     <div className="panel"><h2>{title}</h2>
-      <table className="grid"><thead><tr><th>group</th><th className="num">n</th><th className="num">certified</th><th className="num">fails</th><th className="num">indeterminate</th><th className="num">cert. (thr-wtd)</th><th className="num">median w</th><th className="num">coverage</th></tr></thead>
-        <tbody>{rows.map((r) => <tr key={r.group}><td>{r.group}</td><td className="num">{r.n}</td><td className="num">{fmtPct(r.certified_share, 0)}</td><td className="num">{fmtPct(r.fails_share, 0)}</td><td className="num">{fmtPct(r.indeterminate_share, 0)}</td><td className="num">{fmtPct(r.certified_share_throughput, 0)}</td><td className="num">{fmtNum(r.width_median, 2)}</td><td className="num">{fmtPct(r.coverage, 0)}</td></tr>)}</tbody></table>
+      <table className="grid"><thead><tr><th>group</th><th className="num">n</th><th className="num">certified</th><th className="num">fails</th><th className="num">indeterminate</th><th className="num">cert. (thr-wtd)</th><th className="num">precise</th><th className="num">prior-only</th><th className="num">median w</th><th className="num">coverage</th></tr></thead>
+        <tbody>{rows.map((r) => <tr key={r.group}><td>{r.group}</td><td className="num">{r.n}</td><td className="num">{fmtPct(r.certified_share, 0)}</td><td className="num">{fmtPct(r.fails_share, 0)}</td><td className="num">{fmtPct(r.indeterminate_share, 0)}</td><td className="num">{fmtPct(r.certified_share_throughput, 0)}</td><td className="num">{fmtPct(r.precise_share, 0)}</td><td className="num">{fmtPct(r.certified_prior_only_share, 0)}</td><td className="num">{fmtNum(r.width_median, 2)}</td><td className="num">{fmtPct(r.coverage, 0)}</td></tr>)}</tbody></table>
+      <p className="muted" style={{ marginTop: 6 }}>certified = p95 ≤ bar; fails = p5 &gt; bar; indeterminate = interval straddles the bar. precise = w ≤ w_max (attribute); prior-only = certified but the data barely narrowed the prior.</p>
     </div>
   );
 }
@@ -33,8 +34,8 @@ export default function Dashboard({ runId, kpi, runSettings, pareto, onRerunFull
   return (
     <div>
       <div className="tiles">
-        <Tile label="Certified share (facilities)" value={fmtPct(k.certified_share_facilities.mean, 1)} sub={`± ${fmtPct(k.certified_share_facilities.se, 1)} MC SE`} />
-        <Tile label="Certified share (throughput)" value={fmtPct(k.certified_share_weighted_throughput.mean, 1)} sub="stratum-weighted" />
+        <Tile label="Certified share (facilities)" value={fmtPct(k.certified_share_facilities.mean, 1)} sub={`± ${fmtPct(k.certified_share_facilities.se, 1)} MC SE · precise ${fmtPct(k.certified_precise_share_facilities?.mean, 0)} · prior-only ${fmtPct(k.certified_prior_only_share_facilities?.mean, 0)}`} />
+        <Tile label="Certified share (throughput)" value={fmtPct(k.certified_share_weighted_throughput.mean, 1)} sub={`stratum-weighted · precise ${fmtPct(k.certified_precise_share_weighted_throughput?.mean, 0)} · prior-only ${fmtPct(k.certified_prior_only_share_weighted_throughput?.mean, 0)}`} />
         <Tile label="Calibration κ" value={fmtNum(cal.mean, 3)} sub={calOk ? "within 0.85–0.95" : "OUTSIDE 0.85–0.95: intervals not trustworthy"} flag={!calOk} />
         <Tile label="Median interval half-width w" value={fmtNum(k.width_median.mean, 2)} sub={`bias ${fmtPct(k.bias_median.mean, 1)}`} />
         <Tile label="Completeness C" value={fmtPct(s.summary.completeness.mean, 1)} sub="sources > 10 kg/h, Jacob 2022" />

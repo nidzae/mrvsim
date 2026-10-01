@@ -326,6 +326,8 @@ $$
 
 The 10th, 50th, and 90th percentiles of $\hat{M}_i$ and $\hat{I}_i$ across samples are the reported lower bound, median, and upper bound. *(Superseded 2026-09-30: the reported two-sided 90 % interval is the 5th and 95th percentiles; the 90th percentile remains the one-sided certification bound $\hat{K}_{U,90}$. See DECISION_LOG "two-sided 90 % credible interval".)*
 
+*(Amended 2026-10-01, DECISION_LOG "certification is the compliance decision at 95 %": the certification bound is the 95th percentile and the failure bound the 5th. The estimator persists the full posterior quantile grid (percentiles 0–100 in steps of 1, `posterior_*_quantiles`), so $P(K \le B \mid \text{data})$ is read off at any bar by interpolation; the prior's 5th/50th/95th percentiles on the same draws (`prior_*_pcts`, the posterior with no observations) and the per-facility counts of usable snapshots, survey visits and CMS hours (`evidence_counts`) are persisted for the evidence ratio of PRD §5.4a.)*
+
 **Implementation notes (Phase 4, DECISION_LOG 2026-09-30):**
 - *Estimand.* The reported $\hat{M}_i$ is the posterior predictive of the realised annual mass: each intermittent source's on-hours $H_{ij}$ is drawn per posterior sample from a lognormal with mean $\pi_{ij} T$ and renewal-reward variance $T[(1-\pi)^2 \mathrm{Var}\,D_{\text{on}} + \pi^2 \mathrm{Var}\,D_{\text{off}}]/(\mathbb{E}D_{\text{on}} + \mathbb{E}D_{\text{off}})$, and $\hat{M}_i = \sum_j \omega_{ij} q_{ij} H_{ij}$. The expression above is the expectation of this predictive and is available as the `realised=False` option. See the decision log for why this is required for calibration against $M_i = \sum_t Q_i(t)$.
 - *Sampler.* Importance sampling from the prior with $10^4$ draws, with an automatic switch to tempered sequential Monte Carlo (resample-move) when the effective sample size is below 200.
@@ -359,14 +361,18 @@ For a configuration, across all simulated facilities and $R$ Monte Carlo replica
 | **Calibration** $\kappa$ | Fraction of (facility, replication) pairs where the true KPI lies within the two-sided 90% interval $[\hat{K}_5, \hat{K}_{95}]$. Target: $0.85 \le \kappa \le 0.95$. Reported separately for KPI-1 and KPI-2 and per stratum |
 | **Width** $w$ | Median over facilities of $(\hat{K}_{95} - \hat{K}_{5}) / (2\hat{K}_{50})$ (amended 2026-09-30; originally $(\hat{K}_{U,90} - \hat{K}_{L,10})$, an 80 % interval) |
 | **Bias** | Median of $(\hat{K}_{50} - K_{\text{true}}) / K_{\text{true}}$ |
-| **Certifiable share** | Fraction of facilities (and of throughput, stratum-weighted) with $\hat{K}_{U,90} \le B$ and width $\le w_{\max}$ |
-| **Indeterminate share** | Fraction with interval straddling $B$ or width $> w_{\max}$ |
+| **Certifiable share** | Fraction of facilities (and of throughput, stratum-weighted) with $\hat{K}_{U,90} \le B$ and width $\le w_{\max}$ *(superseded 2026-10-01)*; **amended:** with $\hat{K}_{95} \le B$ (decision only) |
+| **Fails share** | Fraction with $\hat{K}_{5} > B$ (amended 2026-10-01; was $\hat{K}_{L,10} > B$) |
+| **Indeterminate share** | Fraction with interval straddling $B$ or width $> w_{\max}$ *(superseded 2026-10-01)*; **amended:** interval straddles $B$ |
+| **Precise share** | Fraction with $w \le w_{\max}$; also reported as the certified-and-precise share (facilities and throughput) (added 2026-10-01) |
+| **Prior-only share** | Fraction of certified facilities (and of certified throughput) whose evidence ratio $e > $ `prior_only_ratio` or with no usable observation (PRD §5.4a; added 2026-10-01) |
+| **Evidence ratio** $e$ | Per facility, $\ln(\hat{K}_{95}/\hat{K}_{5})$ of the posterior over the same for the prior on common random numbers (added 2026-10-01) |
 | **Completeness** $C$ | PRD §5.5, with $\bar{P}_j = 1 - \prod_k (1 - P_s(q_j, c_k))$ over the year's usable opportunities |
 | **Cost** | Sum of sensor costs for the deployment; cost per tonne detected; cost per certified MMBtu |
 
 Monte Carlo standard errors are reported for every metric.
 
-**Implementation note (Phase 5, DECISION_LOG 2026-09-30 "Scoring conventions"):** fails ⇔ p10 > B; completeness uses the realised usable opportunities with per-opportunity wind/surface factors and ignores the source state; costs are per visit scheduled / per tasking / per site-year as in each sensor YAML; with R = 1 the calibration SE is binomial over facilities. `mrvsim.pipeline.run_scored` runs the R replications and writes `runs/<id>/summary.json`.
+**Implementation note (Phase 5, DECISION_LOG 2026-09-30 "Scoring conventions"):** fails ⇔ p10 > B *(superseded 2026-10-01: fails ⇔ p5 > B, certified ⇔ p95 ≤ B)*; completeness uses the realised usable opportunities with per-opportunity wind/surface factors and ignores the source state; costs are per visit scheduled / per tasking / per site-year as in each sensor YAML; with R = 1 the calibration SE is binomial over facilities. `mrvsim.pipeline.run_scored` runs the R replications and writes `runs/<id>/summary.json`.
 
 ---
 
@@ -399,6 +405,8 @@ Objective: minimize annual cost subject to $\kappa \ge 0.85$, $w \le w_{\max}$, 
 Method: Bayesian optimization over the continuous parameters with categorical rule switches, using Optuna [optuna], with each trial being a full scoring run at reduced $R$ (default 50) and the top candidates re-scored at full $R$. The Pareto frontier is the set of non-dominated (cost, $w$) pairs across all trials. Reinforcement learning is explicitly not used in version 1; the parameter space is small enough for direct search and the resulting frontier is easier to explain.
 
 **Implementation note (Phase 7, DECISION_LOG 2026-09-30 "Policy engine conventions"):** NSGA-II with constraints κ ≥ κ_min and certified throughput share ≥ θ, objectives (cost, w); rules in §8.2 are evaluated in two passes (triggering sensors first, cued visits merged, full simulation) which is exact while cued sensors do not themselves trigger rules; the widest-interval rule runs the fast estimator monthly.
+
+*(Note 2026-10-01: the certifiable-throughput constraint θ uses the decision-only certified share of §7 as amended; $w \le w_{\max}$ remains the feasibility check on the median width, so the optimizer still searches for precise configurations even though precision no longer gates individual certifications.)*
 
 ---
 
@@ -483,6 +491,7 @@ Each limitation maps to a version-2 item in `DECISION_LOG.md`.
 | 2026-09-30 | §9: Phase 6 validation framework note |
 | 2026-09-30 | §7: Phase 5 scoring conventions note |
 | 2026-09-30 | §6.7, §7: interval is two-sided 90 % [p5, p95]; original percentiles marked superseded |
+| 2026-10-01 | §6.7 (quantile grid, prior summary, evidence counts persisted), §7 (decision-only certifiable/fails/indeterminate shares; precise, prior-only, evidence-ratio rows), §8.3 note: DECISION_LOG "certification is the compliance decision at 95 %" |
 | 2026-09-30 | §6.7 estimand (realised-mass predictive), sampler, §6.3–6.5 v1 likelihood definitions, §10 measured timings, §11 limitation 10: Phase 4 |
 | 2026-09-30 | §4.1 wind floor, §5.2 gate conventions: Phase 3 implementation notes |
 | 2026-09-30 | §4: Phase 2 note — sensor YAML blocks carry `provenance.status` (fitted / summary / assumption); POD may be specified as POD50/POD90; see DECISION_LOG "Sensor library provenance scheme" |

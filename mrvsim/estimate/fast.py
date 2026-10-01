@@ -21,7 +21,7 @@ from typing import Any
 
 import numpy as np
 
-from mrvsim.estimate.inputs import EstimatorInputs
+from mrvsim.estimate.inputs import EstimatorInputs, evidence_counts
 from mrvsim.estimate.likelihood import (
     K_MAX, SensorParams, cms_loglik, denominator_draws, enumerate_states, snapshot_d_loglik, snapshot_nd_loglik, survey_loglik,
 )
@@ -33,6 +33,16 @@ from mrvsim.population.temporal import duty_cycle, lognormal_mean
 from mrvsim.sensors.library import SensorLibrary
 
 HOURS_PER_YEAR = 8760
+QGRID = np.arange(0, 101, dtype=float)   # posterior quantile grid in percent (DECISION_LOG 2026-10-01)
+
+
+def log_width_ratio(lo: np.ndarray, hi: np.ndarray, prior_lo: np.ndarray, prior_hi: np.ndarray) -> np.ndarray:
+    """ln(hi/lo) / ln(prior_hi/prior_lo), nan where any bound is non-positive or the prior has zero log width."""
+    lo, hi, plo, phi = (np.asarray(a, dtype=float) for a in (lo, hi, prior_lo, prior_hi))
+    ok = (lo > 0) & (hi > 0) & (plo > 0) & (phi > plo)
+    out = np.full(lo.shape, np.nan)
+    out[ok] = np.log(hi[ok] / lo[ok]) / np.log(phi[ok] / plo[ok])
+    return out
 
 
 @dataclass
@@ -58,6 +68,46 @@ class PosteriorSummary:
     mass_kg_yr_p95: np.ndarray | None = None
     intensity_p05: np.ndarray | None = None
     intensity_p95: np.ndarray | None = None
+    # Posterior quantile grid (len(QGRID), n_fac) so P(K <= B | data) can be read at any bar (DECISION_LOG 2026-10-01
+    # "certification is the compliance decision at 95 %"); the five percentiles above are rows of it.
+    mass_quantiles: np.ndarray | None = None
+    intensity_quantiles: np.ndarray | None = None
+    # Prior (no-observation) p05/p50/p95 on common random numbers, for the evidence ratio (PRD section 5.4a)
+    prior_mass_pcts: np.ndarray | None = None       # (3, n_fac)
+    prior_intensity_pcts: np.ndarray | None = None  # (3, n_fac)
+    evidence: np.ndarray | None = None              # (3, n_fac) usable snapshots, survey visits, CMS usable hours
+
+    def quantiles(self, kpi: str = "mass") -> np.ndarray | None:
+        return self.mass_quantiles if kpi == "mass" else self.intensity_quantiles
+
+    def prob_below(self, B: float, kpi: str = "mass") -> np.ndarray:
+        """P(K <= B | data) per facility by linear interpolation on the quantile grid; nan where unscored."""
+        q = self.quantiles(kpi)
+        if q is None:
+            raise ValueError("posterior quantile grid not available")
+        out = np.full(self.n_fac, np.nan)
+        for i in range(self.n_fac):
+            col = q[:, i]
+            if not np.isfinite(col).all():
+                continue
+            out[i] = np.interp(B, col, QGRID / 100.0, left=0.0, right=1.0) if col[-1] > col[0] else float(B >= col[0])
+        return out
+
+    def prior_interval(self, kpi: str = "mass") -> tuple[np.ndarray, np.ndarray, np.ndarray] | None:
+        pr = self.prior_mass_pcts if kpi == "mass" else self.prior_intensity_pcts
+        return None if pr is None else (pr[0], pr[1], pr[2])
+
+    def evidence_ratio(self, kpi: str = "mass") -> np.ndarray:
+        """Posterior interval width as a fraction of the prior's, both measured as ln(p95 / p05) (PRD section 5.4a).
+
+        Log widths make the ratio scale-free: a posterior that moved far into the prior's tail is
+        judged by how much it narrowed, not by its absolute span. 1 = the data did not narrow the interval.
+        """
+        pr = self.prior_interval(kpi)
+        if pr is None:
+            return np.full(self.n_fac, np.nan)
+        lo, _, hi = self.interval(kpi)
+        return log_width_ratio(lo, hi, pr[0], pr[2])
 
     def interval(self, kpi: str = "mass") -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """(lower, median, upper) of the two-sided 90 % credible interval."""
@@ -253,6 +303,22 @@ def estimate_facility(i: int, inputs: EstimatorInputs, priors_by_stratum: list[S
     return mass, intensity, pd.mean_pi_included(), w, ess, info
 
 
+def prior_summary(i: int, inputs: EstimatorInputs, sp_h: StratumPriors, seeds: SeedTree, n_draws: int,
+                  realised: bool = True) -> tuple[np.ndarray, np.ndarray]:
+    """Prior (no-observation) p05/p50/p95 of realised mass and intensity for facility ``i``.
+
+    Uses the same seed keys as the importance-sampling path, so these are the unweighted
+    percentiles of the IS draw set (common random numbers) at no likelihood cost. The
+    posterior/prior width ratio is the facility's evidence measure (PRD section 5.4a).
+    """
+    pd = draw_prior(seeds.rng("estimate", "prior", facility=i), sp_h, n_draws)
+    G = denominator_draws(seeds.rng("estimate", "denominator", facility=i), float(inputs.g_hat_kg_yr[i]), float(inputs.sigma_g[i]), n_draws)
+    mass = pd.realised_mass_kg_yr(seeds.rng("estimate", "realisation", facility=i)) if realised else pd.mass_kg_yr()
+    inten = float(inputs.f_gas[i]) * mass / G
+    u = np.full(n_draws, 1.0 / n_draws)   # same percentile convention as the posterior so no-data runs give ratio exactly 1
+    return _weighted_percentiles(mass, u, (5, 50, 95)), _weighted_percentiles(inten, u, (5, 50, 95))
+
+
 def run_fast_estimator(inputs: EstimatorInputs, strata: StrataTable, priors: PriorSet, library: SensorLibrary, seeds: SeedTree,
                        n_draws: int = 10_000, facilities: np.ndarray | None = None, ablation: Ablation | None = None,
                        ess_warn: float = 100.0, method: str = "auto", ess_switch: float = 200.0, realised: bool = True) -> PosteriorSummary:
@@ -261,19 +327,25 @@ def run_fast_estimator(inputs: EstimatorInputs, strata: StrataTable, priors: Pri
     sparams = [SensorParams.from_sensor(library[k]) for k in inputs.sensor_keys]
     idx = np.arange(inputs.n_fac) if facilities is None else np.asarray(facilities, dtype=np.int64)
     n = inputs.n_fac
-    P = {k: np.full(n, np.nan) for k in ("m05", "m10", "m50", "m90", "m95", "i05", "i10", "i50", "i90", "i95", "p10", "p50", "p90", "ess")}
+    P = {k: np.full(n, np.nan) for k in ("p10", "p50", "p90", "ess")}
+    MQ = np.full((QGRID.size, n), np.nan); IQ = np.full((QGRID.size, n), np.nan)
+    PM = np.full((3, n), np.nan); PI = np.full((3, n), np.nan)
     n_smc = 0
     for i in idx:
         mass, inten, pim, w, ess, info = estimate_facility(int(i), inputs, priors_by_stratum, sparams, seeds, n_draws, ablation,
                                                            method=method, ess_switch=ess_switch, realised=realised)
         n_smc += info["method"] == "smc"
-        P["m05"][i], P["m10"][i], P["m50"][i], P["m90"][i], P["m95"][i] = _weighted_percentiles(mass, w, (5, 10, 50, 90, 95))
-        P["i05"][i], P["i10"][i], P["i50"][i], P["i90"][i], P["i95"][i] = _weighted_percentiles(inten, w, (5, 10, 50, 90, 95))
+        MQ[:, i] = _weighted_percentiles(mass, w, tuple(QGRID))
+        IQ[:, i] = _weighted_percentiles(inten, w, tuple(QGRID))
         P["p10"][i], P["p50"][i], P["p90"][i] = _weighted_percentiles(pim, w, (10, 50, 90))
         P["ess"][i] = ess
+        PM[:, i], PI[:, i] = prior_summary(int(i), inputs, priors_by_stratum[int(inputs.stratum_idx[i])], seeds, n_draws, realised)
     low_ess = idx[P["ess"][idx] < ess_warn]
-    return PosteriorSummary(n, P["m10"], P["m50"], P["m90"], P["i10"], P["i50"], P["i90"], P["p10"], P["p50"], P["p90"], P["ess"],
+    row = lambda Q, p: Q[int(p)]  # noqa: E731  QGRID is 0..100 in steps of 1
+    return PosteriorSummary(n, row(MQ, 10), row(MQ, 50), row(MQ, 90), row(IQ, 10), row(IQ, 50), row(IQ, 90), P["p10"], P["p50"], P["p90"], P["ess"],
                             method="fast", n_draws=n_draws,
                             meta={"n_low_ess": int(low_ess.size), "low_ess_facilities": low_ess[:50].tolist(), "ess_warn": ess_warn,
                                   "n_smc": int(n_smc), "sampler": method, "estimand": "realised" if realised else "expected"},
-                            mass_kg_yr_p05=P["m05"], mass_kg_yr_p95=P["m95"], intensity_p05=P["i05"], intensity_p95=P["i95"])
+                            mass_kg_yr_p05=row(MQ, 5), mass_kg_yr_p95=row(MQ, 95), intensity_p05=row(IQ, 5), intensity_p95=row(IQ, 95),
+                            mass_quantiles=MQ, intensity_quantiles=IQ, prior_mass_pcts=PM, prior_intensity_pcts=PI,
+                            evidence=evidence_counts(inputs))

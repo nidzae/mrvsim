@@ -6,15 +6,20 @@ standard errors by :mod:`mrvsim.score.aggregate`. Stratum weights (TDD section
 3.1) turn sample fractions into national shares of facilities (W_h^count) and
 of throughput (W_h^thr).
 
-Three-state classification at a bar (B, w_max) (PRD sections 5.3-5.4, QUICKSTART):
+Three-state classification at a bar B (PRD sections 5.3-5.4 as amended 2026-10-01;
+DECISION_LOG 2026-10-01 "certification is the compliance decision at 95 %"):
 
-* **certified**     K_U,90 = p90 <= B and w <= w_max
-* **fails**         the one-sided 90 % lower bound p10 > B (the KPI exceeds the bar with >= 90 % probability)
-* **indeterminate** otherwise (interval straddles B, or too wide)
+* **certified**     K_U,95 = p95 <= B  (the KPI is below the bar with >= 95 % posterior probability)
+* **fails**         K_L,5  = p05 > B   (the KPI exceeds the bar with >= 95 % probability; the mirror image)
+* **indeterminate** otherwise: the 90 % credible interval straddles the bar
 
-The one-sided bounds are used for both decisions so that "certified" and
-"fails" are symmetric statements at the same confidence (DECISION_LOG 2026-09-30,
-Phase 5); the two-sided [p5, p95] interval defines the width w.
+Precision and evidence are reported alongside, not as conditions of certification:
+
+* **precise**       w = (p95 - p05) / (2 p50) <= w_max  (PRD section 5.4, now an attribute)
+* **prior-only**    posterior width / prior width > prior_only_ratio, or no usable observation at all
+                    (PRD section 5.4a): the certification rests on the population prior, not on data
+
+The earlier rule (certified iff p90 <= B and w <= w_max; fails iff p10 > B) is superseded.
 """
 
 from __future__ import annotations
@@ -33,14 +38,16 @@ STATES = ("certified", "fails", "indeterminate")
 class Bar:
     kpi: str                 # "mass" (t/yr) or "intensity" (fraction)
     B: float                 # bar value in KPI units (mass: kg/yr internally; callers pass t/yr via from_config)
-    w_max: float             # maximum relative half-width
+    w_max: float             # maximum relative half-width for the "precise" grade (not a certification condition)
+    prior_only_ratio: float = 0.9   # posterior/prior width above this = "prior-only" (PRD section 5.4a)
 
     @classmethod
     def from_config(cls, scoring_cfg: dict[str, Any], kpi: str) -> "Bar":
         w = float(scoring_cfg.get("w_max", 0.30))
+        r = float(scoring_cfg.get("prior_only_ratio", 0.9))
         if kpi == "mass":
-            return cls("mass", float(scoring_cfg.get("bar_mass_t_yr", 50.0)) * 1000.0, w)
-        return cls("intensity", float(scoring_cfg.get("bar_intensity", 0.002)), w)
+            return cls("mass", float(scoring_cfg.get("bar_mass_t_yr", 50.0)) * 1000.0, w, r)
+        return cls("intensity", float(scoring_cfg.get("bar_intensity", 0.002)), w, r)
 
 
 def _bounds(post: PosteriorSummary, kpi: str) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
@@ -50,14 +57,33 @@ def _bounds(post: PosteriorSummary, kpi: str) -> tuple[np.ndarray, np.ndarray, n
 
 
 def classify(post: PosteriorSummary, bar: Bar) -> np.ndarray:
-    """Per-facility state index into STATES (0 certified, 1 fails, 2 indeterminate); -1 where no posterior."""
+    """Per-facility state index into STATES (0 certified, 1 fails, 2 indeterminate); -1 where no posterior.
+
+    Decision only: certified iff p95 <= B, fails iff p05 > B (DECISION_LOG 2026-10-01). Width does not enter.
+    """
     p05, p10, p50, p90, p95 = _bounds(post, bar.kpi)
-    w = post.relative_half_width(bar.kpi)
     out = np.full(post.n_fac, 2, dtype=np.int8)
-    out[(p90 <= bar.B) & (w <= bar.w_max)] = 0
-    out[p10 > bar.B] = 1
+    out[p95 <= bar.B] = 0
+    out[p05 > bar.B] = 1
     out[~np.isfinite(p50)] = -1
     return out
+
+
+def precise(post: PosteriorSummary, bar: Bar) -> np.ndarray:
+    """Precision grade: relative half-width w <= w_max (PRD section 5.4 as an attribute)."""
+    return post.relative_half_width(bar.kpi) <= bar.w_max
+
+
+def prior_only(post: PosteriorSummary, bar: Bar) -> np.ndarray:
+    """Evidence flag (PRD section 5.4a): the data barely narrowed the prior, or there was no usable observation.
+
+    False where the run has no prior summary (older runs) and no evidence counts.
+    """
+    ratio = post.evidence_ratio(bar.kpi)
+    flag = np.isfinite(ratio) & (ratio > bar.prior_only_ratio)
+    if post.evidence is not None:
+        flag |= post.evidence.sum(axis=0) == 0
+    return flag
 
 
 @dataclass
@@ -72,6 +98,8 @@ class ReplicationScores:
     cost: dict[str, float]
     n_scored: int
     extras: dict[str, Any] = field(default_factory=dict)
+    precise: dict[str, np.ndarray] = field(default_factory=dict)      # kpi -> per-facility bool (w <= w_max)
+    prior_only: dict[str, np.ndarray] = field(default_factory=dict)   # kpi -> per-facility bool (PRD section 5.4a)
 
 
 def score_replication(post: PosteriorSummary, truth_mass_kg_yr: np.ndarray, truth_intensity: np.ndarray,
@@ -87,6 +115,8 @@ def score_replication(post: PosteriorSummary, truth_mass_kg_yr: np.ndarray, trut
     kpi_metrics: dict[str, dict[str, float]] = {}
     per_stratum: dict[str, np.ndarray] = {}
     states: dict[str, np.ndarray] = {}
+    precise_d: dict[str, np.ndarray] = {}
+    prior_only_d: dict[str, np.ndarray] = {}
     wc = weights_count[scored] / weights_count[scored].sum()
     wt = weights_thr[scored] / weights_thr[scored].sum()
     for kpi, truth in (("mass", truth_mass_kg_yr), ("intensity", truth_intensity)):
@@ -97,6 +127,9 @@ def score_replication(post: PosteriorSummary, truth_mass_kg_yr: np.ndarray, trut
         st = classify(post, bars[kpi])
         states[kpi] = st
         s = st[scored]
+        pr = precise(post, bars[kpi]); po = prior_only(post, bars[kpi])
+        precise_d[kpi] = pr; prior_only_d[kpi] = po
+        pr, po = pr[scored], po[scored]
         m = {
             "calibration": float(covered.mean()),
             "calibration_se": float(np.sqrt(covered.mean() * (1 - covered.mean()) / max(covered.size, 1))),
@@ -110,6 +143,12 @@ def score_replication(post: PosteriorSummary, truth_mass_kg_yr: np.ndarray, trut
             "indeterminate_share_weighted_throughput": float(wt[s == 2].sum()),
             "fails_share_weighted_throughput": float(wt[s == 1].sum()),
             "certified_mmbtu": float(mmbtu_yr[scored][s == 0].sum()),
+            # precision and evidence attributes (PRD sections 5.4, 5.4a as amended 2026-10-01)
+            "precise_share_facilities": float(pr.mean()),
+            "certified_precise_share_facilities": float(((s == 0) & pr).mean()),
+            "certified_precise_share_weighted_throughput": float(wt[(s == 0) & pr].sum()),
+            "certified_prior_only_share_facilities": float(((s == 0) & po).mean()),
+            "certified_prior_only_share_weighted_throughput": float(wt[(s == 0) & po].sum()),
         }
         kpi_metrics[kpi] = m
         cal_h = np.full(n_strata, np.nan)
@@ -118,7 +157,8 @@ def score_replication(post: PosteriorSummary, truth_mass_kg_yr: np.ndarray, trut
             if sel.any():
                 cal_h[h] = covered[sel].mean()
         per_stratum[kpi] = cal_h
-    return ReplicationScores(kpi_metrics, per_stratum, states, completeness, completeness_by_basin, cost, int(scored.sum()))
+    return ReplicationScores(kpi_metrics, per_stratum, states, completeness, completeness_by_basin, cost, int(scored.sum()),
+                             precise=precise_d, prior_only=prior_only_d)
 
 
 # ---------------------------------------------------------------------------- completeness (PRD section 5.5)

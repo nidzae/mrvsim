@@ -194,3 +194,19 @@ def build_inputs(pop: Population, obs: ObservationSet, library: SensorLibrary, s
         snapshots=_snapshot_groups(obs.log, library, n), surveys=_surveys(obs.log, n), cms=_cms(obs.cms, obs.log.sensor_keys),
         meta={"wind_bin_m_s": WIND_BIN_M_S},
     )
+
+
+def evidence_counts(inputs: EstimatorInputs) -> np.ndarray:
+    """(3, n_fac) int: usable site snapshots, usable survey visits, usable CMS hours per facility (PRD section 5.4a).
+
+    Counts what the estimator actually saw; blocked opportunities (cloud, sun, wind) are not evidence.
+    """
+    n = inputs.n_fac
+    sn, sv, cm = inputs.snapshots, inputs.surveys, inputs.cms
+    snaps = np.diff(sn.d_offset).astype(np.int64)
+    for f in range(n):
+        snaps[f] += int(sn.nd_count[sn.nd_offset[f]:sn.nd_offset[f + 1]].sum())
+    visits = np.diff(sv.v_offset).astype(np.int64)
+    cms_h = np.zeros(n, dtype=np.int64)
+    np.add.at(cms_h, cm.facility, cm.n_usable.astype(np.int64))
+    return np.stack([snaps, visits, cms_h])

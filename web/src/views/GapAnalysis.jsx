@@ -3,7 +3,7 @@ import { api } from "../api.js";
 
 // Gap-analysis chat (PRD F11): the API server holds the Anthropic credentials; nothing in the browser.
 export default function GapAnalysis({ runId, onApply }) {
-  const [msgs, setMsgs] = useState([{ role: "assistant", content: "Ask about the current run: why facilities are indeterminate, which error source dominates, or what the cheapest change to reach a target is. I can propose a sensor configuration you can apply with one click." }]);
+  const [msgs, setMsgs] = useState([{ role: "assistant", content: "Ask about the current run: why facilities are indeterminate or certified only on the prior, which error source dominates, or what the cheapest change to reach a target is. I can propose a sensor configuration you can apply with one click." }]);
   const [text, setText] = useState(""); const [busy, setBusy] = useState(false); const [err, setErr] = useState(null); const [proposal, setProposal] = useState(null);
   const send = async () => {
     if (!text.trim() || !runId) return;

@@ -148,6 +148,14 @@ $$
 
 where $\hat{K}_{U,90}$ is the value below which the true KPI lies with 90% probability, given the observations. The bar $B$ is set by the user (e.g., 0.2% intensity, or 50 t/yr absolute).
 
+**Amended (2026-10-01, DECISION_LOG "certification is the compliance decision at 95 %"):** the certification bound is the **upper 95% credible bound**, and the failure statement is its mirror image:
+
+$$
+\text{Certified at bar } B \iff \hat{K}_{95} \le B, \qquad \text{Fails} \iff \hat{K}_{5} > B, \qquad \text{Indeterminate otherwise.}
+$$
+
+Equivalently, with $p = P(K \le B \mid \text{observations})$: certified iff $p \ge 0.95$, fails iff $p \le 0.05$. The tool reports $p$ itself for every facility. The 90% bound $\hat{K}_{U,90}$ above is superseded.
+
 ### 5.4 The precision requirement
 
 A bar is a pair $(B, w)$, where $w$ is the maximum permitted relative half-width of the 90% credible interval:
@@ -164,7 +172,19 @@ $$
 
 The certification bound in §5.3, $\hat{K}_{U,90}$, is unchanged: it is the one-sided 90% upper bound (90th percentile). The original formula above used the 10th and 90th percentiles, which bound only 80% of the posterior.
 
-A facility whose interval is wider than $w$ is reported as **indeterminate**, not as passing or failing.
+A facility whose interval is wider than $w$ is reported as **indeterminate**, not as passing or failing. *(Superseded 2026-10-01; see below.)*
+
+**Amended (2026-10-01, DECISION_LOG "certification is the compliance decision at 95 %"):** $w$ is a **precision attribute**, not a condition of certification. A facility is **precise** when $w \le w_{\max}$ and **wide** otherwise; both can be certified. The map draws wide facilities with a dark ring and the drill-down reports $w$ next to the decision. $w$ remains the metric the optimizer minimises (§8 of the TDD) and the axis of the Pareto frontier. Reason: $w$ is relative to the facility's own median, so a small emitter whose entire interval lies under the bar would otherwise be called indeterminate although the decision is not in doubt.
+
+### 5.4a The evidence requirement
+
+A certification should rest on measurements of the facility, not on the population prior alone. For each facility the tool reports:
+
+- the number of usable snapshots, survey visits and continuous-monitor hours the estimator saw;
+- the **evidence ratio** $e = \ln(\hat{K}_{95}/\hat{K}_{5}) \,/\, \ln(\hat{K}^{\text{prior}}_{95}/\hat{K}^{\text{prior}}_{5})$, the posterior interval's log width as a fraction of the prior's, where the prior interval is the estimator's posterior with no observations;
+- a **prior-only** flag when $e > 0.9$ (configurable) or when no usable observation exists.
+
+Prior-only certifications are counted separately in every certified-share metric and drawn faded on the map. They are not withheld: under a calibrated prior the statement is still true, but a buyer should see that it rests on the population, not on the site.
 
 ### 5.5 Secondary metric: observing system completeness
 
@@ -347,3 +367,4 @@ DOIs marked `verify` in `REFERENCES.md` must be checked against the publisher be
 | 2026-09-30 | §10: Q4 resolved (LDAR-Sim v4 has no satellite scheduler); Q6 added (scope of LDAR-Sim reuse) | Claude (Phase 0) |
 | 2026-09-30 | §10: Q6 provisional answer (native simulator) | Claude (Phase 3) |
 | 2026-09-30 | §5.4: interval defined as two-sided 90 % [p5, p95]; original w formula marked superseded | Claude (Phase 4) |
+| 2026-10-01 | §5.3: certification bound is the 95 % upper bound, fails at the 5 % lower bound, $P(K \le B)$ reported; §5.4: width is a precision attribute, no longer a certification condition; §5.4a added (evidence ratio, prior-only flag) | Nidhi / Claude |

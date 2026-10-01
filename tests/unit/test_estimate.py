@@ -104,6 +104,14 @@ def test_steady_source_20_aircraft_passes() -> None:
     assert np.all(post.ess > 30)
     # intensity interval is consistent with the noisy denominator
     assert np.all(post.intensity_p10 < post.intensity_p50) and np.all(post.intensity_p50 < post.intensity_p90)
+    # evidence (PRD section 5.4a): 20 passes narrow the interval well below the prior width; counts are recorded
+    ratio = post.evidence_ratio("mass")
+    assert np.all(np.isfinite(ratio)) and np.median(ratio) < 0.5, np.median(ratio)
+    assert post.evidence is not None and np.all(post.evidence[0] > 0) and np.all(post.evidence[0] <= 20)
+    # the quantile grid is monotone and consistent with the stored percentiles; P(K <= p95) = 0.95
+    assert np.all(np.diff(post.mass_quantiles, axis=0) >= 0)
+    assert np.allclose(post.mass_quantiles[95], post.mass_kg_yr_p95)
+    assert np.allclose([post.prob_below(post.mass_kg_yr_p95[i], "mass")[i] for i in range(3)], 0.95, atol=1e-6)
 
 
 def test_intermittent_identifiability_cms_narrows_pi() -> None:
@@ -144,6 +152,9 @@ def test_no_observations_returns_prior() -> None:
     post = run_fast_estimator(inputs, pop.strata, pop.priors, LIB, seeds, n_draws=2000)
     assert np.allclose(post.ess, 2000)                           # uniform weights
     assert np.all(post.mass_kg_yr_p90 > post.mass_kg_yr_p10 * 5)   # prior is wide
+    # with nothing observed the posterior is the prior: evidence ratio 1 on common random numbers, zero evidence counts
+    assert np.allclose(post.evidence_ratio("mass"), 1.0) and np.allclose(post.evidence_ratio("intensity"), 1.0)
+    assert np.all(post.evidence == 0)
 
 
 def test_fast_estimator_reproducible() -> None:
