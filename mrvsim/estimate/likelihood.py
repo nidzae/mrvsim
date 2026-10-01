@@ -55,14 +55,15 @@ class SensorParams:
                    s.quantification.beta, s.quantification.sigma, s.false_positive.rate_per_opportunity,
                    s.false_positive.reported_rate_quantile_max, s.spatial_scope == "site")
 
-    def q_factor(self, wind: np.ndarray | float, rho: float) -> np.ndarray:
+    def q_factor(self, wind: np.ndarray | float, rho: np.ndarray | float) -> np.ndarray:
+        """(u_ref / max(u, u_min))^gamma * phi(rho), broadcasting over wind and rho (TDD section 4.1)."""
         f = np.ones_like(np.asarray(wind, dtype=float))
         if self.gamma != 0.0:
             u = np.maximum(np.asarray(wind, dtype=float), self.u_min)
             f = f * (self.u_ref / u) ** self.gamma
         if self.phi_enabled:
             slope = (1.0 - self.phi_p10) / max(self.rho_ref - self.rho_p10, 1e-9)
-            f = f * float(np.clip(1.0 - slope * (self.rho_ref - rho), 0.0, 1.0))
+            f = f * np.clip(1.0 - slope * (self.rho_ref - np.asarray(rho, dtype=float)), 0.0, 1.0)
         return f
 
     def pod(self, q_eff: np.ndarray, a: np.ndarray | float | None = None, b: np.ndarray | float | None = None) -> np.ndarray:

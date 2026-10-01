@@ -364,6 +364,8 @@ For a configuration, across all simulated facilities and $R$ Monte Carlo replica
 
 Monte Carlo standard errors are reported for every metric.
 
+**Implementation note (Phase 5, DECISION_LOG 2026-09-30 "Scoring conventions"):** fails ⇔ p10 > B; completeness uses the realised usable opportunities with per-opportunity wind/surface factors and ignores the source state; costs are per visit scheduled / per tasking / per site-year as in each sensor YAML; with R = 1 the calibration SE is binomial over facilities. `mrvsim.pipeline.run_scored` runs the R replications and writes `runs/<id>/summary.json`.
+
 ---
 
 ## 8. Policy engine and optimizer
@@ -470,6 +472,7 @@ Each limitation maps to a version-2 item in `DECISION_LOG.md`.
 |---|---|
 | 2026-09-30 | Initial draft |
 | 2026-09-30 | §3.1, §3.4: Phase 1 implementation notes (strata cell list; stationary renewal start; hourly midpoint states) |
+| 2026-09-30 | §7: Phase 5 scoring conventions note |
 | 2026-09-30 | §6.7, §7: interval is two-sided 90 % [p5, p95]; original percentiles marked superseded |
 | 2026-09-30 | §6.7 estimand (realised-mass predictive), sampler, §6.3–6.5 v1 likelihood definitions, §10 measured timings, §11 limitation 10: Phase 4 |
 | 2026-09-30 | §4.1 wind floor, §5.2 gate conventions: Phase 3 implementation notes |

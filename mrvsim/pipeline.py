@@ -1,0 +1,147 @@
+"""End-to-end pipeline: config -> population -> observation -> estimator -> scoring (TDD section 1).
+
+``run_replication`` executes one Monte Carlo replication; ``run_scored`` loops
+over R replications, aggregates with Monte Carlo standard errors, and persists
+everything under ``runs/<id>/`` through :class:`~mrvsim.io.run.RunContext`.
+
+Interactive runs (PRD N3) use the ``estimator.interactive`` block: fewer draws,
+a per-stratum facility subsample, and fewer replications; results are scaled
+by stratum weights exactly as full runs are.
+"""
+
+from __future__ import annotations
+
+import json
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any
+
+import numpy as np
+
+from mrvsim.estimate import build_inputs, run_fast_estimator
+from mrvsim.estimate.fast import PosteriorSummary
+from mrvsim.io.config import RunConfig
+from mrvsim.io.run import RunContext
+from mrvsim.io.seeds import SeedTree
+from mrvsim.observe import DeploymentPlan, ObservationSet, build_plan, simulate_observations
+from mrvsim.population import Population, generate_population
+from mrvsim.score import (
+    Bar, ReplicationScores, ScoreReport, aggregate, completeness_from_detection_probability, cost_metrics, deployment_cost,
+    detected_mass_kg, detection_probability_once, score_replication,
+)
+from mrvsim.sensors import SensorLibrary, load_library
+
+
+@dataclass
+class ReplicationResult:
+    rep: int
+    pop: Population
+    plan: DeploymentPlan
+    obs: ObservationSet
+    post: PosteriorSummary
+    scores: ReplicationScores
+    scored_facilities: np.ndarray
+    extras: dict[str, Any] = field(default_factory=dict)
+
+
+def sensor_modes(library: SensorLibrary) -> dict[str, tuple[str, str, bool]]:
+    return {s.key: (s.schedule, s.observation_mode, bool(s.orbit.tasked) if s.orbit else False) for s in library}
+
+
+def _facility_subsample(pop: Population, per_stratum: int | None, rng: np.random.Generator) -> np.ndarray:
+    if per_stratum is None:
+        return np.arange(pop.n_facilities)
+    out = []
+    for h in range(len(pop.strata)):
+        idx = np.nonzero(pop.stratum_idx == h)[0]
+        out.append(idx if idx.size <= per_stratum else np.sort(rng.choice(idx, per_stratum, replace=False)))
+    return np.concatenate(out)
+
+
+def run_replication(cfg: RunConfig, seeds: SeedTree, rep: int, library: SensorLibrary | None = None,
+                    n_draws: int | None = None, facilities_per_stratum: int | None = None, cache_dir: Path | None = None) -> ReplicationResult:
+    library = library or load_library()
+    rs = seeds.child(rep=rep)
+    pop = generate_population(cfg.population, rs)
+    plan = build_plan(cfg.policy, rs, pop.n_facilities, pop.lon, pop.throughput.gas_mkt_m3_yr, sensor_modes(library), cfg.year)
+    obs = simulate_observations(pop, library, plan, rs, cfg.year, cache_dir=cache_dir)
+    inputs = build_inputs(pop, obs, library, rs)
+    est = cfg.estimator
+    nd = int(n_draws or est.get("n_draws", 10_000))
+    sub = _facility_subsample(pop, facilities_per_stratum, rs.rng("pipeline", "subsample"))
+    post = run_fast_estimator(inputs, pop.strata, pop.priors, library, rs, n_draws=nd, facilities=sub,
+                              method=str(est.get("sampler", "auto")), realised=bool(est.get("realised_estimand", True)))
+    # truth and scoring
+    truth_m = pop.true_mass_kg_yr(); truth_i = pop.true_intensity()
+    bars = {"mass": Bar.from_config(cfg.scoring, "mass"), "intensity": Bar.from_config(cfg.scoring, "intensity")}
+    p_once = detection_probability_once(pop, obs, library)
+    comp, comp_b = completeness_from_detection_probability(
+        pop.q_kg_h, pop.states.on_hours(), p_once, pop.src_facility, pop.basin_idx, list(pop.strata.basins), pop.constants.completeness_threshold_kg_h)
+    cost = deployment_cost(plan, obs, library, pop.n_facilities)
+    scored = np.zeros(pop.n_facilities, dtype=bool); scored[sub] = True
+    # detected mass: sources whose facility had at least one true detection by any sensor (snapshot) or per-source detection
+    det_src = np.zeros(pop.n_total_sources, dtype=bool)
+    log = obs.log
+    true_det = log.detected & ~log.oracle_false_positive
+    fac_det = np.unique(log.facility_idx[true_det & (log.source_idx < 0)])
+    for f in fac_det:
+        det_src[pop.source_offset[f]:pop.source_offset[f + 1]] |= pop.states.on_hours()[pop.source_offset[f]:pop.source_offset[f + 1]] > 0
+    det_src[log.source_idx[true_det & (log.source_idx >= 0)]] = True
+    for c in obs.cms.values():
+        for fi, f in enumerate(c.facilities):
+            if c.detected[fi].any():
+                det_src[pop.source_offset[f]:pop.source_offset[f + 1]] = True
+    dm = detected_mass_kg(pop.q_kg_h, pop.states.on_hours(), p_once, det_src)
+    pre = score_replication(post, truth_m, truth_i, pop.stratum_idx, pop.stratum_weights("count"), pop.stratum_weights("throughput"),
+                            pop.throughput.mmbtu_yr, bars, comp, comp_b, {}, len(pop.strata), scored)
+    cm = cost_metrics(cost, dm, pre.kpi_metrics["intensity"]["certified_mmbtu"])
+    cm.update({f"cost_{k}_usd": v for k, v in cost.by_sensor_usd.items()})
+    pre.cost = cm
+    pre.extras = {"n_smc": post.meta.get("n_smc"), "n_low_ess": post.meta.get("n_low_ess"), "detected_mass_kg": dm,
+                  "n_snapshot_rows": len(obs.log), "overpass_counts": obs.overpass_counts}
+    return ReplicationResult(rep, pop, plan, obs, post, pre, sub)
+
+
+def run_scored(cfg: RunConfig, root: str | Path = "runs", run_id: str | None = None, library: SensorLibrary | None = None,
+               replications: int | None = None, n_draws: int | None = None, facilities_per_stratum: int | None = None,
+               keep_last: bool = True, cache_dir: Path | None = None) -> tuple[ScoreReport, RunContext, ReplicationResult | None]:
+    """Run R replications, aggregate, persist. Returns (report, run context, last replication for drill-down)."""
+    library = library or load_library()
+    R = int(replications or cfg.replications)
+    reps: list[ReplicationScores] = []
+    last: ReplicationResult | None = None
+    with RunContext(cfg, root=root, run_id=run_id) as run:
+        for r in range(R):
+            with run.stage(f"replication_{r}"):
+                res = run_replication(cfg, run.seeds, r, library, n_draws, facilities_per_stratum, cache_dir)
+            reps.append(res.scores)
+            last = res if keep_last else None
+        pop0 = last.pop if last is not None else None
+        n_strata = len(pop0.strata) if pop0 else 0
+        basins = list(pop0.strata.basins) if pop0 else []
+        report = aggregate(reps, n_strata, basins)
+        report.meta = {"sensors": list(cfg.policy.get("sensors", {}).keys()), "n_draws": n_draws or cfg.estimator.get("n_draws", 10_000),
+                       "facilities_per_stratum": facilities_per_stratum, "replications": R,
+                       "priors_provenance": pop0.priors.provenance if pop0 else None, "strata_provenance": pop0.strata.provenance if pop0 else None,
+                       "citation_keys": sorted(set(pop0.citation_keys()) | set(library.citation_keys(list(cfg.policy.get("sensors", {}).keys()))) if pop0 else [])}
+        run.save_json("summary", _report_json(report))
+        if last is not None:
+            run.save_array("posterior_mass_p05_p50_p95", np.stack([last.post.mass_kg_yr_p05, last.post.mass_kg_yr_p50, last.post.mass_kg_yr_p95]))
+            run.save_array("posterior_intensity_p05_p50_p95", np.stack([last.post.intensity_p05, last.post.intensity_p50, last.post.intensity_p95]))
+            run.save_array("true_mass_kg_yr", last.pop.true_mass_kg_yr())
+            run.save_array("true_intensity", last.pop.true_intensity())
+            run.save_array("state_mass", last.scores.states["mass"])
+            run.save_array("state_intensity", last.scores.states["intensity"])
+            last.pop.save(run.dir / "population")
+            last.obs.save(run.dir / "observations")
+    return report, run, last
+
+
+def _report_json(report: ScoreReport) -> dict[str, Any]:
+    d = report.headline()
+    d["completeness_by_basin"] = {k: m.as_dict() for k, m in report.completeness_by_basin.items()}
+    d["per_stratum_calibration"] = {k: [None if not np.isfinite(x) else float(x) for x in v] for k, v in report.per_stratum_calibration.items()}
+    d["state_shares"] = {k: {s: m.as_dict() for s, m in v.items()} for k, v in report.state_counts.items()}
+    d["meta"] = report.meta
+    d["calibration_ok"] = report.calibration_ok()
+    return json.loads(json.dumps(d, default=lambda o: None if isinstance(o, float) and not np.isfinite(o) else (float(o) if isinstance(o, np.floating) else str(o))))

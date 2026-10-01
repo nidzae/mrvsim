@@ -149,3 +149,15 @@ Format:
 **Alternatives rejected:** Renaming the [p10, p90] interval an 80 % interval and moving the κ target to [0.75, 0.85] (contradicts the PRD's stated promise to buyers); using p95 as the certification bound (the PRD's logged decision rejected a 95 % bound for cost reasons).
 **Docs updated:** PRD §5.4 (superseded formula + amended), PRD §11; TDD §6.7, §7 (width row), §13.
 **Status:** active
+
+## 2026-09-30 — Scoring conventions (Phase 5)
+**Decision:**
+1. **Three-state rule.** Certified: p90 ≤ B and w ≤ w_max (PRD §5.3–5.4). Fails: p10 > B, i.e. the KPI exceeds the bar with ≥ 90 % probability, the mirror image of the certification statement. Indeterminate otherwise. The two-sided [p5, p95] interval defines w; the one-sided 90 % bounds define the decisions.
+2. **Completeness.** P̄_j = 1 − Π_k (1 − P_s(q_j, c_k)) over the facility's realised usable opportunities (snapshots and survey visits, with the wind and surface factors of each opportunity) and over usable CMS hours, evaluated at the source's own rate; the source's on/off state does not enter (completeness asks what the system *could* detect) [jacob2022]. Reported overall and per basin.
+3. **Cost accounting.** Campaign/survey sensors: per-visit cost × visits scheduled (weather losses are paid for); tasked satellites: per-tasking × overpasses tasked; wall-to-wall satellites and CMS: per-site-year × facilities covered. "Detected mass" for cost per tonne is the realised annual mass of sources at facilities with at least one true detection (snapshot), or sources detected per se (survey/CMS). Costs are per sample unless scaled by a national facility count.
+4. **Monte Carlo standard errors** are the standard deviation over replications divided by √R; with R = 1 the calibration SE falls back to the binomial SE over facilities.
+5. **Interactive runs** may estimate a stratified facility subsample (`facilities_per_stratum`) with fewer draws and replications; shares use stratum weights so results are national estimates with larger SEs. (Proposed path to PRD N3; see Phase 4 status note.)
+**Reason:** The PRD states the certification rule but not the failure rule or the operational definitions of completeness and cost; these are the simplest readings consistent with the text.
+**Alternatives rejected:** Fails if p5 > B (asymmetric with the certification confidence); completeness from realised detections (conflates coverage with intermittency); charging only usable opportunities (understates cost).
+**Docs updated:** TDD §7 (note), §13.
+**Status:** active
