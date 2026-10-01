@@ -396,11 +396,15 @@ Objective: minimize annual cost subject to $\kappa \ge 0.85$, $w \le w_{\max}$, 
 
 Method: Bayesian optimization over the continuous parameters with categorical rule switches, using Optuna [optuna], with each trial being a full scoring run at reduced $R$ (default 50) and the top candidates re-scored at full $R$. The Pareto frontier is the set of non-dominated (cost, $w$) pairs across all trials. Reinforcement learning is explicitly not used in version 1; the parameter space is small enough for direct search and the resulting frontier is easier to explain.
 
+**Implementation note (Phase 7, DECISION_LOG 2026-09-30 "Policy engine conventions"):** NSGA-II with constraints κ ≥ κ_min and certified throughput share ≥ θ, objectives (cost, w); rules in §8.2 are evaluated in two passes (triggering sensors first, cued visits merged, full simulation) which is exact while cued sensors do not themselves trigger rules; the widest-interval rule runs the fast estimator monthly.
+
 ---
 
 ## 9. Validation tests
 
 Each test is a pytest module with a pass/fail threshold. The tool displays results in the Validation panel.
+
+**Implementation note (Phase 6, DECISION_LOG 2026-09-30 "Validation framework conventions"):** the comparison logic lives in `mrvsim.validate.v1_rates … v7_calibration` with pytest wrappers in `tests/validation/`; published values come from `data/fitted/validation_targets.yaml` with citation keys and status; all seven refuse to run against PLACEHOLDER priors. V1 falls back to a quantile-band check when no published sample is available; V2's FEAST cross-check feeds steady sources as constant emissions and intermittent sources through FEAST's episodic model.
 
 | ID | Test | Pass criterion |
 |---|---|---|
@@ -472,6 +476,8 @@ Each limitation maps to a version-2 item in `DECISION_LOG.md`.
 |---|---|
 | 2026-09-30 | Initial draft |
 | 2026-09-30 | §3.1, §3.4: Phase 1 implementation notes (strata cell list; stationary renewal start; hourly midpoint states) |
+| 2026-09-30 | §8: Phase 7 policy engine note |
+| 2026-09-30 | §9: Phase 6 validation framework note |
 | 2026-09-30 | §7: Phase 5 scoring conventions note |
 | 2026-09-30 | §6.7, §7: interval is two-sided 90 % [p5, p95]; original percentiles marked superseded |
 | 2026-09-30 | §6.7 estimand (realised-mass predictive), sampler, §6.3–6.5 v1 likelihood definitions, §10 measured timings, §11 limitation 10: Phase 4 |

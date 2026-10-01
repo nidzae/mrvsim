@@ -193,3 +193,18 @@ def require_fitted(priors: PriorSet, what: str = "this computation") -> None:
         raise PlaceholderPriorsError(
             f"{what} requires fitted priors, but {priors.source_path} has provenance PLACEHOLDER"
         )
+
+
+def perturb_priors(priors: PriorSet, alpha: float = 0.0, mu: float = 0.0, nu_on: float = 0.0, nu_off: float = 0.0) -> PriorSet:
+    """Return a copy with additive perturbations applied to every cell (TDD section 6.2 critique; V5).
+
+    ``alpha`` shifts the Pareto tail index; ``mu`` shifts both mu_0 and mu_1 (log rate); ``nu_on`` / ``nu_off``
+    shift the duration location parameters. The result keeps the source provenance but records the perturbation.
+    """
+    from dataclasses import replace
+
+    cells = {k: replace(v, alpha=max(v.alpha + alpha, 0.2), mu_0=v.mu_0 + mu, mu_1=v.mu_1 + mu, nu_on=v.nu_on + nu_on, nu_off=v.nu_off + nu_off)
+             for k, v in priors.cells.items()}
+    return PriorSet(provenance=priors.provenance, version=f"{priors.version}+perturbed", source_path=priors.source_path,
+                    fit_provenance={"perturbation": {"alpha": alpha, "mu": mu, "nu_on": nu_on, "nu_off": nu_off}, "base": priors.fit_provenance},
+                    cells=cells, conditions=priors.conditions, citation_keys=priors.citation_keys)

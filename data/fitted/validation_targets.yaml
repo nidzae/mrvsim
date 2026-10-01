@@ -1,0 +1,86 @@
+# Published comparison values for validation tests V1-V7 (TDD section 9).
+# Every numeric target carries a citation key (docs/REFERENCES.md) and a status:
+#   ok      transcribed from the publication and checked
+#   verify  recalled or taken from the TDD text; must be checked against the paper before any public claim
+#   missing value not yet transcribed; the test reports "skipped: target missing"
+# Tests also refuse to run while configs/priors has provenance PLACEHOLDER (CLAUDE.md Phase 6), unless
+# MRVSIM_ALLOW_PLACEHOLDER_VALIDATION=1 is set, in which case results are flagged diagnostic-only.
+provenance: TRANSCRIBED_PARTIAL
+last_updated: 2026-09-30
+
+V1:
+  description: Detected-rate distribution above 10 kg/h per basin vs Cusworth 2022 / Sherwin 2024; persistence vs Cusworth 2022
+  citations: [cusworth2022, sherwin2024]
+  pass_rule: "KS p > 0.05 per basin when a target sample is provided; else all target quantiles inside the simulated 90 % bootstrap band. Persistence within published CI."
+  rate_quantiles_kg_h:          # per basin, quantiles of detected source rates above 10 kg/h; null = missing
+    permian:     {p25: null, p50: null, p75: null, p90: null, status: missing, citation: cusworth2022}
+    appalachian: {p25: null, p50: null, p75: null, p90: null, status: missing, citation: cusworth2022}
+    haynesville: {p25: null, p50: null, p75: null, p90: null, status: missing, citation: sherwin2024}
+    eagle_ford:  {p25: null, p50: null, p75: null, p90: null, status: missing, citation: sherwin2024}
+    bakken:      {p25: null, p50: null, p75: null, p90: null, status: missing, citation: sherwin2024}
+    dj:          {p25: null, p50: null, p75: null, p90: null, status: missing, citation: sherwin2024}
+    anadarko:    {p25: null, p50: null, p75: null, p90: null, status: missing, citation: sherwin2024}
+    san_juan:    {p25: null, p50: null, p75: null, p90: null, status: missing, citation: cusworth2022}
+    uinta:       {p25: null, p50: null, p75: null, p90: null, status: missing, citation: cusworth2022}
+  rate_sample_files: {}          # optional: basin -> CSV path with one detected rate (kg/h) per row, for the KS test
+  persistence:                   # share of point sources re-detected on revisit (multi-year); Cusworth 2022
+    value: null
+    ci_95: [null, null]
+    status: missing
+    citation: cusworth2022
+    note: "Duren 2019 reports mean intermittency 0.23 in California (TDD section 3.4) [duren2019]; not a US O&G basin target"
+
+V2:
+  description: Simulated basin totals vs Sherwin 2024 basin totals; FEAST 3.1 cross-check within 15 %
+  citations: [sherwin2024, kemp2016, feast-repo]
+  pass_rule: "Simulated stratum-weighted basin total inside the published 95 % CI; FEAST and MRVSim within 15 %"
+  basin_totals_t_h:              # production-segment basin methane emission rate (t/h) with 95 % CI
+    permian:     {value: null, ci_95: [null, null], status: missing, citation: sherwin2024}
+    appalachian: {value: null, ci_95: [null, null], status: missing, citation: sherwin2024}
+    haynesville: {value: null, ci_95: [null, null], status: missing, citation: sherwin2024}
+    eagle_ford:  {value: null, ci_95: [null, null], status: missing, citation: sherwin2024}
+    bakken:      {value: null, ci_95: [null, null], status: missing, citation: sherwin2024}
+    dj:          {value: null, ci_95: [null, null], status: missing, citation: sherwin2024}
+    anadarko:    {value: null, ci_95: [null, null], status: missing, citation: sherwin2024}
+    san_juan:    {value: null, ci_95: [null, null], status: missing, citation: sherwin2024}
+    uinta:       {value: null, ci_95: [null, null], status: missing, citation: sherwin2024}
+  feast_tolerance: 0.15
+
+V3:
+  description: Reproduce published measurement-informed basin intensities with the sensor mix those studies used
+  citations: [haynesville-2025]
+  pass_rule: "Published estimate inside MRVSim's throughput-weighted basin interval; boundary-sensitivity factor within +/-30 %"
+  intensities:
+    haynesville: {value: 0.0079, ci_95: [0.0063, 0.0098], status: verify, citation: haynesville-2025, source: "TDD section 9 text"}
+    permian:     {value: 0.046,  ci_95: [0.044, 0.049],   status: verify, citation: haynesville-2025, source: "TDD section 9 text"}
+  sensor_mix: {bridger_gml: {coverage: 1.0, frequency_per_year: 2}}   # aircraft campaigns as in the MII studies; TODO(verify) exact mix
+  boundary_sensitivity_factor: {value: null, tolerance: 0.30, status: missing, citation: haynesville-2025}
+
+V4:
+  description: Stratum stability, terciles -> quintiles
+  citations: []
+  pass_rule: "All headline metrics change by less than 2x Monte Carlo SE"
+  se_multiplier: 2.0
+  internal: true
+
+V5:
+  description: Prior misspecification; truth from perturbed alpha, mu, nu_on while the estimator keeps the unperturbed prior
+  citations: []
+  pass_rule: "kappa >= 0.80 under every single perturbation; report kappa under joint perturbation"
+  perturbations: {alpha: 0.3, mu: 0.3, nu_on: 0.5}
+  kappa_min: 0.80
+  internal: true
+
+V6:
+  description: Transient-event low bias; multi-hour blowdown observed by LEO satellites only (VLMR experiment)
+  citations: [vlmr-2026]
+  pass_rule: "Satellite-only mass estimate underestimates the released mass (ratio < 1) by the published order of magnitude"
+  event: {rate_t_h: 5.0, duration_h: 6, status: verify, citation: vlmr-2026, note: "Representative blowdown; replace with the VLMR release schedule"}
+  published_ratio: {value: null, range: [0.05, 0.8], status: verify, citation: vlmr-2026}
+
+V7:
+  description: Calibration on the default configuration
+  citations: []
+  pass_rule: "0.85 <= kappa <= 0.95 for both KPIs"
+  kappa_range: [0.85, 0.95]
+  internal: true

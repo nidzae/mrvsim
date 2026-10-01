@@ -161,3 +161,27 @@ Format:
 **Alternatives rejected:** Fails if p5 > B (asymmetric with the certification confidence); completeness from realised detections (conflates coverage with intermittency); charging only usable opportunities (understates cost).
 **Docs updated:** TDD §7 (note), §13.
 **Status:** active
+
+## 2026-09-30 — Validation framework conventions (Phase 6)
+**Decision:**
+1. **Refusal rule.** Every V1–V7 module first checks the priors' provenance; with PLACEHOLDER priors it returns `status: skipped` with the reason and the pytest wrapper skips. `MRVSIM_ALLOW_PLACEHOLDER_VALIDATION=1` runs the logic anyway and flags the result `diagnostic_only` (never shown as a pass in the Validation panel).
+2. **Targets file.** `data/fitted/validation_targets.yaml` holds every published comparison value with a citation key and a status (`ok` / `verify` / `missing`). Missing targets make the comparison `pass: null` and the test `skipped` when nothing remains to compare. Only the V3 intensities quoted in TDD §9 are transcribed (status `verify`); V1 quantiles, V2 basin totals, Cusworth persistence, the V3 boundary factor and the VLMR ratio are `missing` and must be transcribed from the papers.
+3. **V1 fallback.** Without a published rate *sample*, the KS test is replaced by checking that each published quantile lies inside the simulated 90 % bootstrap band of that quantile (weaker; recorded in the result). The simulated "detected rate" is the facility total at one random daytime snapshot per facility, mirroring aerial survey censoring.
+4. **V2 FEAST cross-check.** Steady sources are passed to FEAST as constant emissions; intermittent sources use FEAST's episodic components with duration E[D_on] and event rate 1/(E[D_on]+E[D_off]), so the 15 % criterion tests the agreement of the two intermittency models on annual mass. FEAST 3.1 (MIT, `vendor/feast`, branch FEAST_3.1) needs numpy aliases removed in numpy ≥ 1.24/2.0; `feast_adapter.import_feast` restores `np.bool`, `np.infty`, `np.math` before import.
+5. **V6 estimator.** The satellite-only mass estimate is mean detected snapshot rate × known event duration (zero if no pass catches the event), averaged over random event start times; the test checks direction (ratio < 1) and the published order of magnitude.
+6. **V4/V5/V7** are internal consistency tests and have no published targets; they are still refused on PLACEHOLDER priors per CLAUDE.md.
+7. `mrvsim.validate.runner.run_all(quick=…)` writes `runs/validation/<timestamp>.json` for the Validation panel (PRD F14).
+**Reason:** CLAUDE.md requires never marking a validation test passed against placeholders while still letting the machinery be exercised; the targets file makes the attribution of every compared number explicit (PRD G5).
+**Docs updated:** TDD §9 note, §13; `vendor/README.md` (FEAST).
+**Status:** active
+
+## 2026-09-30 — Policy engine conventions (Phase 7)
+**Decision:**
+1. **Policy object.** `mrvsim.policy.Policy` holds per-sensor controls (enabled, coverage, coverage basis, frequency, targeting), the validation-tier filter, and a list of tip-and-cue `Rule`s; it serialises to YAML and converts to the `policy` config section used by the observation simulator.
+2. **Rule evaluation is two-pass.** Triggering sensors (satellites, CMS) are simulated first; rules are evaluated day by day on their logs and schedule cued visits within N days (per-facility cooldown and cap); the full sensor set is then simulated with the cued visits merged. Because cued sensors never trigger rules in version 1 and every sensor's draws come from named seed streams, the triggering observations are identical in both passes and the result equals a single daily loop.
+3. **Widest-interval allocation** is evaluated monthly with the fast estimator (IS, 1,000 draws) on the observations accumulated so far; the month's visit budget goes to the facilities with the widest relative interval on mass. It is 12 estimator passes and is meant for small populations or interactive exploration.
+4. **Optimizer.** Optuna NSGA-II over per-sensor (enabled, coverage, frequency, targeting) with constraints κ ≥ κ_min and certified throughput share ≥ θ (`trial.set_constraint`), objectives (cost, w) minimised; trials at reduced R; the feasible non-dominated set is the Pareto frontier and the top-10 are re-scored at full R. Infeasible trials are kept in the record but excluded from the frontier.
+**Reason:** Direct realisation of TDD §8.1–8.3 that reuses the simulator and pipeline without a per-day Python loop over facilities.
+**Alternatives rejected:** A true daily event loop (per-facility Python loops, 365× the overhead, needed only when cued sensors can themselves trigger rules; version 2 if OGI→repair style chains are added); penalty-based single-objective optimisation (hides the trade-off the PRD wants to show).
+**Docs updated:** TDD §8 note, §13.
+**Status:** active
