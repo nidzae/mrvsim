@@ -10,7 +10,7 @@ import Validation from "./views/Validation.jsx";
 import QuickStart from "./views/QuickStart.jsx";
 
 const TABS = ["Map", "Dashboard", "Optimize", "Gap analysis", "Attribution", "Validation"];
-const DEFAULT_POLICY = { sensors: { bridger_gml: { coverage: 1.0, frequency_per_year: 2, targeting: "random" }, ghgsat_c: { coverage: 0.3, frequency_per_year: 12, targeting: "throughput" }, tropomi: { coverage: 1.0, frequency_per_year: 1, targeting: "random" } } };
+const DEFAULT_POLICY = { sensors: { bridger_gml: { coverage: 1.0, frequency_per_year: 2, targeting: "random", scheduling: "campaign", campaign_days: 5 }, ghgsat_c: { coverage: 0.3, frequency_per_year: 12, targeting: "throughput" }, tropomi: { coverage: 1.0, frequency_per_year: 1, targeting: "random" } } };
 
 // Minimal YAML reader for the policy proposals the gap-analysis model returns (sensors: {key: {coverage, frequency_per_year, targeting}}).
 function parsePolicyYaml(text) {
@@ -37,7 +37,7 @@ export default function App() {
   useEffect(() => { api.runs().then((r) => { setRuns(r.runs); const first = r.runs.find((x) => x.has_summary && !/\[|v4-|v7-|tornado|opt-/.test(x.name || "")); if (first) setRunId(first.run_id); else { const any = r.runs.find((x) => x.has_summary); if (any) setRunId(any.run_id); } }).catch(() => {}); api.health().then(setHealth).catch(() => {}); }, []);
   const scoring = { bar_intensity: bar, bar_mass_t_yr: barMass, w_max: wMax };
   const applyYaml = (yaml) => { try { setPolicy(parsePolicyYaml(yaml)); setTab("Map"); } catch (e) { alert(`Could not parse the proposal: ${e}`); } };
-  const applyPolicy = (p) => { setPolicy({ sensors: Object.fromEntries(Object.entries(p.sensors).filter(([, s]) => s.enabled !== false).map(([k, s]) => [k, { coverage: s.coverage, frequency_per_year: s.frequency_per_year, targeting: s.targeting }])) }); setTab("Map"); };
+  const applyPolicy = (p) => { setPolicy({ sensors: Object.fromEntries(Object.entries(p.sensors).filter(([, s]) => s.enabled !== false).map(([k, s]) => [k, { coverage: s.coverage, frequency_per_year: s.frequency_per_year, targeting: s.targeting, ...(s.scheduling ? { scheduling: s.scheduling, campaign_days: s.campaign_days } : {}) }])) }); setTab("Map"); };
   const onRunDone = (id) => { setRunId(id); api.runs().then((r) => setRuns(r.runs)).catch(() => {}); };
   const [fullRequest, setFullRequest] = useState(null);
   const rerunFull = (cfg) => { setPolicy({ sensors: cfg.policy.sensors }); setFullRequest({ seed: cfg.seed, scoring: cfg.scoring }); setRunSettings((r) => ({ ...r, mode: "full", seed: cfg.seed })); setTab("Map"); };

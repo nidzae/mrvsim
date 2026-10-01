@@ -100,7 +100,7 @@ def load_run(run_id: str, root: str = str(RUNS_DIR)) -> LoadedRun:
     # the last replication's plan is deterministic from config + seeds (rep = R - 1)
     R = int(summary.get("meta", {}).get("replications") or cfg.replications)
     rs = SeedTree(cfg.seed).child(rep=R - 1)
-    plan = build_plan(cfg.policy, rs, pop.n_facilities, pop.lon, pop.throughput.gas_mkt_m3_yr, sensor_modes(lib), cfg.year)
+    plan = build_plan(cfg.policy, rs, pop.n_facilities, pop.lon, pop.throughput.gas_mkt_m3_yr, sensor_modes(lib), cfg.year, basin_idx=pop.basin_idx)
     opt = lambda name: np.load(d / f"{name}.npy") if (d / f"{name}.npy").exists() else None  # noqa: E731
     return LoadedRun(run_id, d, cfg, manifest, summary, pop, np.load(d / "posterior_mass_pcts.npy"), np.load(d / "posterior_intensity_pcts.npy"),
                      np.load(d / "true_mass_kg_yr.npy"), np.load(d / "true_intensity.npy"), np.load(d / "state_mass.npy"), np.load(d / "state_intensity.npy"), obs, plan, lib,
@@ -197,6 +197,46 @@ def facility_detail(run: LoadedRun, fid: int, bar_mass_t: float | None, bar_inte
             b["prior"] = {"p05": float(pr[0, fid] * scale), "p50": float(pr[1, fid] * scale), "p95": float(pr[2, fid] * scale)}
         return b
 
+    # which sensors cover this facility, under which policy rule (PRD F9; the plan is rebuilt from config + seeds at load)
+    gas = pop.throughput.gas_mkt_m3_yr
+    order = np.argsort(-gas, kind="stable"); rank = int(np.nonzero(order == fid)[0][0]) + 1
+    n_fac = int(pop.n_facilities)
+    throughput = {"gas_mkt_m3_yr": float(gas[fid]), "mmbtu_yr": float(pop.throughput.mmbtu_yr[fid]), "rank": rank, "n_facilities": n_fac,
+                  "top_share": rank / n_fac, "throughput_class": int(pop.tclass_idx[fid]), "ghgrp_reporter": bool(pop.throughput.ghgrp_reporter[fid])}
+    monitoring = []
+    for key, spec in (run.config.policy.get("sensors") or {}).items():
+        if not spec.get("enabled", True):
+            continue
+        try:
+            sensor = run.library[key]
+        except KeyError:
+            continue
+        dep = run.plan.deployments.get(key)
+        covered = bool(dep is not None and dep.facilities.size and dep.facilities[np.searchsorted(dep.facilities, fid) % dep.facilities.size] == fid)
+        cov = float(spec.get("coverage", 1.0)); targeting = str(spec.get("targeting", "random")); freq = int(spec.get("frequency_per_year", 1))
+        tasked = bool(sensor.orbit.tasked) if sensor.orbit else False
+        if cov >= 1.0:
+            rule = "all facilities"
+        elif targeting == "random":
+            rule = f"random {cov:.0%} of facilities"
+        else:
+            n_sel = int(round(cov * n_fac))
+            rule = f"top {cov:.0%} by gas throughput (ranks 1–{n_sel} of {n_fac})"
+        if sensor.schedule in ("campaign", "survey"):
+            sched = str(spec.get("scheduling", "independent"))
+            how = (f"{freq} visit{'s' if freq != 1 else ''}/yr, regional campaign of {int(spec.get('campaign_days', 5))} days per basin" if sched == "campaign"
+                   else f"{freq} visit{'s' if freq != 1 else ''}/yr on independent dates")
+        elif sensor.schedule == "orbit":
+            how = f"{freq} tasked overpasses/yr" if tasked else "every daytime overpass"
+        else:
+            how = "continuous, every hour"
+        days = sorted(int(h) // 24 for h in dep.visit_hours[dep.visit_facility == fid]) if (covered and dep.visit_hours is not None) else []
+        reason = ("selected" if covered else "not selected") if cov < 1.0 else "covered"
+        if cov < 1.0 and targeting != "random":
+            reason += f" (rank {rank} of {n_fac})"
+        monitoring.append({"sensor": key, "schedule": sensor.schedule, "tasked": tasked, "covered": covered, "coverage": cov, "targeting": targeting,
+                           "frequency_per_year": freq, "scheduling": spec.get("scheduling", "independent") if sensor.schedule in ("campaign", "survey") else None,
+                           "rule": rule, "how": how, "reason": reason, "planned_visit_days": days})
     ev = run.evidence
     evidence = {"n_usable_snapshots": int(ev[0, fid]), "n_survey_visits": int(ev[1, fid]), "cms_usable_hours": int(ev[2, fid]),
                 "prior_ratio_mass": None if not np.isfinite(run.prior_ratio("mass")[fid]) else float(run.prior_ratio("mass")[fid]),
@@ -206,7 +246,7 @@ def facility_detail(run: LoadedRun, fid: int, bar_mass_t: float | None, bar_inte
             "facility_type": list(pop.strata.facility_types)[int(pop.ftype_idx[fid])], "n_sources": int(pop.n_sources[fid]),
             "mass_t_yr": kpi_block(run.post_mass, run.post_mass_q, run.prior_mass, run.true_mass, 1e-3, bar_mass_t),
             "intensity": kpi_block(run.post_int, run.post_int_q, run.prior_int, run.true_int, 1.0, bar_intensity),
-            "evidence": evidence, "w_max": float(run.config.scoring.get("w_max", 0.30)),
+            "evidence": evidence, "w_max": float(run.config.scoring.get("w_max", 0.30)), "throughput": throughput, "monitoring": monitoring,
             "timeline": timeline, "cms": cms, "oracle_truth_sources": truth_sources, "method": run.summary.get("meta", {}).get("sampler", "fast")}
 
 

@@ -48,7 +48,7 @@ def test_satellite_detect_rule_cues_aircraft_within_n_days() -> None:
     pol = Policy(sensors={"ghgsat_c": SensorPolicy(coverage=1.0, frequency_per_year=12), "bridger_gml": SensorPolicy(coverage=0.0, frequency_per_year=0)},
                  rules=[Rule("satellite_detect_to_aircraft", "ghgsat_c", "bridger_gml", X_kg_h=500.0, N_days=10, cooldown_days=30, max_visits_per_facility=3)])
     seeds = SeedTree(3)
-    plan = build_plan(pol.to_policy_cfg(), seeds, pop.n_facilities, pop.lon, pop.throughput.gas_mkt_m3_yr, sensor_modes(LIB), YEAR)
+    plan = build_plan(pol.to_policy_cfg(), seeds, pop.n_facilities, pop.lon, pop.throughput.gas_mkt_m3_yr, sensor_modes(LIB), YEAR, basin_idx=pop.basin_idx)
     obs, cued = simulate_with_rules(pop, LIB, plan, pol, seeds, YEAR)
     cv = cued["bridger_gml"]
     assert len(cv) > 0
@@ -70,7 +70,7 @@ def test_cms_run_length_rule() -> None:
     pol = Policy(sensors={"cms_generic": SensorPolicy(coverage=1.0), "drone_generic": SensorPolicy(coverage=0.0, frequency_per_year=0)},
                  rules=[Rule("cms_run_length_to_drone", "cms_generic", "drone_generic", H_hours=24, N_days=5, cooldown_days=60)])
     seeds = SeedTree(4)
-    plan = build_plan(pol.to_policy_cfg(), seeds, pop.n_facilities, pop.lon, pop.throughput.gas_mkt_m3_yr, sensor_modes(LIB), YEAR)
+    plan = build_plan(pol.to_policy_cfg(), seeds, pop.n_facilities, pop.lon, pop.throughput.gas_mkt_m3_yr, sensor_modes(LIB), YEAR, basin_idx=pop.basin_idx)
     obs, cued = simulate_with_rules(pop, LIB, plan, pol, seeds, YEAR)
     cv = cued["drone_generic"]
     assert len(cv) > 0
@@ -86,7 +86,7 @@ def test_budget_to_widest_interval_allocates_to_widest() -> None:
     pol = Policy(sensors={"bridger_gml": SensorPolicy(coverage=0.5, frequency_per_year=1), "tropomi": SensorPolicy(coverage=1.0)},
                  rules=[Rule("budget_to_widest_interval", "", "bridger_gml", budget_per_month=2, max_visits_per_facility=2)])
     seeds = SeedTree(5)
-    plan = build_plan(pol.to_policy_cfg(), seeds, pop.n_facilities, pop.lon, pop.throughput.gas_mkt_m3_yr, sensor_modes(LIB), YEAR)
+    plan = build_plan(pol.to_policy_cfg(), seeds, pop.n_facilities, pop.lon, pop.throughput.gas_mkt_m3_yr, sensor_modes(LIB), YEAR, basin_idx=pop.basin_idx)
     obs, cued = allocate_budget_to_widest(pol, pop, LIB, plan, seeds, YEAR, n_draws=400)
     assert len(cued) == 12 * 2
     assert max(np.bincount(np.asarray(cued.facility)).tolist()) <= 2

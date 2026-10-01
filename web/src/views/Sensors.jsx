@@ -38,7 +38,11 @@ export default function Sensors({ policy, setPolicy, runSettings, setRunSettings
             <div className="field">coverage (share of facilities)<input type="number" min="0" max="1" step="0.05" value={get(s.key).coverage} onChange={(e) => upd(s.key, { coverage: +e.target.value })} /></div>
             {(s.schedule === "campaign" || s.schedule === "survey" || s.key === "ghgsat_c" || s.key === "prisma" || s.key === "enmap" || s.key === "tanager1") && (
               <div className="field">{s.schedule === "orbit" ? "taskings / year" : "surveys / year"}<input type="number" min="0" max="52" step="1" value={get(s.key).frequency_per_year} onChange={(e) => upd(s.key, { frequency_per_year: +e.target.value })} /></div>)}
-            <div className="field">targeting<select value={get(s.key).targeting} onChange={(e) => upd(s.key, { targeting: e.target.value })}><option value="random">random</option><option value="throughput">throughput-weighted</option></select></div>
+            <div className="field">targeting<select value={get(s.key).targeting} onChange={(e) => upd(s.key, { targeting: e.target.value })}><option value="random">random</option><option value="throughput">top facilities by throughput</option></select></div>
+            {(s.schedule === "campaign" || s.schedule === "survey") && <>
+              <div className="field">scheduling<select value={get(s.key).scheduling || "independent"} onChange={(e) => upd(s.key, { scheduling: e.target.value })}><option value="independent">independent dates</option><option value="campaign">regional campaign</option></select></div>
+              {(get(s.key).scheduling || "independent") === "campaign" && <div className="field">campaign days / basin<input type="number" min="1" max="60" step="1" value={get(s.key).campaign_days ?? 5} onChange={(e) => upd(s.key, { campaign_days: +e.target.value })} /></div>}
+            </>}
           </>}
         </div>); })}
       <div className="sensor"><button className="ghost" onClick={() => setShowAdv(!showAdv)}>Advanced {showAdv ? "▴" : "▾"}</button>

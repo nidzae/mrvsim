@@ -28,7 +28,7 @@ def coverage_under(perturb: dict[str, float], n_per_stratum: int, n_draws: int, 
     pop = generate_population({"n_per_stratum": n_per_stratum}, seeds.child(rep=0), priors=truth_priors)
     policy = {"sensors": {"bridger_gml": {"coverage": 1.0, "frequency_per_year": 2}, "cms_generic": {"coverage": 0.2, "targeting": "throughput"},
                           "ghgsat_c": {"coverage": 0.3, "frequency_per_year": 12, "targeting": "throughput"}}}
-    plan = build_plan(policy, seeds, pop.n_facilities, pop.lon, pop.throughput.gas_mkt_m3_yr, sensor_modes(lib), 2024)
+    plan = build_plan(policy, seeds, pop.n_facilities, pop.lon, pop.throughput.gas_mkt_m3_yr, sensor_modes(lib), 2024, basin_idx=pop.basin_idx)
     obs = simulate_observations(pop, lib, plan, seeds.child(rep=0), 2024)
     inputs = build_inputs(pop, obs, lib, seeds)
     sub = np.arange(0, pop.n_facilities, step)

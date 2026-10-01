@@ -60,6 +60,10 @@ def test_run_summary_facility_attribution(client: TestClient) -> None:
     assert d["id"] == fid and "timeline" in d and d["mass_t_yr"]["p50"] > 0 and d["intensity"]["bar"] == 0.002
     assert len(d["intensity"]["quantiles"]) == 101 and d["intensity"]["prior"]["p95"] > d["intensity"]["prior"]["p05"]
     assert d["evidence"]["n_usable_snapshots"] >= 0 and d["w_max"] == 0.3
+    mon = {m["sensor"]: m for m in d["monitoring"]}
+    assert set(mon) == {"bridger_gml", "cms_generic"} and mon["bridger_gml"]["covered"] and mon["bridger_gml"]["rule"] == "all facilities"
+    assert len(mon["bridger_gml"]["planned_visit_days"]) == 2 and mon["cms_generic"]["rule"].startswith("top 20%")
+    assert 1 <= d["throughput"]["rank"] <= d["throughput"]["n_facilities"]
     assert any(t["sensor"] == "bridger_gml" for t in d["timeline"])
     a = client.get(f"/api/run/{run_id}/attribution").json()
     keys = {i["key"] for i in a["items"]}

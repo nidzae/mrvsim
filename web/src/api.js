@@ -48,21 +48,23 @@ export function classify(p, B) {
 export const halfWidth = (p) => (p.p50 > 0 ? (p.p95 - p.p05) / (2 * p.p50) : Infinity);
 export const precision = (p, wMax) => (halfWidth(p) <= wMax ? "precise" : "wide");
 
-// P(K <= B | data): linear interpolation on the posterior quantile grid q (percent 0..100 at equal steps),
-// falling back to the five stored percentiles for runs scored before the grid existed.
+// P(K <= B | data): linear interpolation on the posterior quantile grid q (percent 0..100 at equal steps).
+// Runs scored before the grid existed fall back to the five stored percentiles: exact inside p5-p95, a bound outside.
 export function probBelow(p, B) {
   const q = p.q && p.q.length > 2 ? p.q : p.quantiles;
-  let xs, ps;
-  if (q && q.length > 2) { xs = q; ps = q.map((_, i) => i / (q.length - 1)); }
-  else { xs = [p.p05, p.p10, p.p50, p.p90, p.p95]; ps = [0.05, 0.10, 0.50, 0.90, 0.95]; }
-  if (!xs.every(Number.isFinite)) return NaN;
-  if (B < xs[0]) return q ? 0 : NaN;
-  if (B >= xs[xs.length - 1]) return q ? 1 : NaN;
+  const exact = !!(q && q.length > 2);
+  const xs = exact ? q : [p.p05, p.p10, p.p50, p.p90, p.p95];
+  const ps = exact ? q.map((_, i) => i / (q.length - 1)) : [0.05, 0.10, 0.50, 0.90, 0.95];
+  if (!xs.every(Number.isFinite)) return { p: NaN, exact };
+  if (B < xs[0]) return { p: exact ? 0 : 0.05, exact, bound: exact ? null : "below" };
+  if (B >= xs[xs.length - 1]) return { p: exact ? 1 : 0.95, exact, bound: exact ? null : "above" };
   for (let i = 1; i < xs.length; i++) {
-    if (B < xs[i]) { const t = xs[i] > xs[i - 1] ? (B - xs[i - 1]) / (xs[i] - xs[i - 1]) : 1; return ps[i - 1] + t * (ps[i] - ps[i - 1]); }
+    if (B < xs[i]) { const t = xs[i] > xs[i - 1] ? (B - xs[i - 1]) / (xs[i] - xs[i - 1]) : 1; return { p: ps[i - 1] + t * (ps[i] - ps[i - 1]), exact }; }
   }
-  return 1;
+  return { p: 1, exact };
 }
+export const fmtProb = ({ p, exact, bound }) => (!Number.isFinite(p) ? "–" : bound === "below" ? "< 5 %" : bound === "above" ? "> 95 %"
+  : p >= 0.995 ? "> 99 %" : p <= 0.005 ? "< 1 %" : `${exact ? "" : "≈ "}${Math.round(p * 100)} %`);
 
 // Evidence (PRD 5.4a): posterior ln(p95/p05) as a fraction of the prior's, usable observation counts, prior-only flag.
 export const evidence = (p) => ({ ratio: Number.isFinite(p.prior_ratio) ? p.prior_ratio : NaN, nObs: p.n_obs ?? null, cmsH: p.cms_h ?? null, priorOnly: p.prior_only === true });

@@ -10,10 +10,17 @@ the ``policy`` config section so the observation simulator can be exercised:
         tropomi:     {coverage: 1.0}                                                # wall-to-wall: every overpass
         cms_generic: {coverage: 0.2, targeting: throughput}
 
-Targeting: ``random`` | ``throughput`` (top facilities by marketed gas) |
-``prior_risk`` (top by expected prior mass; Phase 7) | ``widest_interval``
-(adaptive; Phase 7). Coverage is the share of facilities (``coverage_basis:
-facilities``, default) or of throughput (``coverage_basis: throughput``).
+Targeting: ``random`` | ``throughput`` (top-k facilities by marketed gas; a
+cutoff, not weighted sampling) | ``prior_risk`` (top by expected prior mass;
+Phase 7) | ``widest_interval`` (adaptive; Phase 7). Coverage is the share of
+facilities (``coverage_basis: facilities``, default) or of throughput
+(``coverage_basis: throughput``).
+
+Scheduling for campaign/survey sensors (DECISION_LOG 2026-10-01 "Regional
+flight campaigns"): ``independent`` (default; each facility's visit days are
+drawn on their own) or ``campaign`` (each basin is flown in one window of
+``campaign_days`` consecutive days per slice of the year, so neighbouring
+facilities are observed together, as real aircraft campaigns do).
 """
 
 from __future__ import annotations
@@ -86,11 +93,43 @@ def campaign_hours(rng: np.random.Generator, facilities: np.ndarray, lon_deg: np
     return hour.ravel(), np.repeat(facilities, f)
 
 
+def campaign_hours_regional(rng: np.random.Generator, facilities: np.ndarray, lon_deg: np.ndarray, basin_idx: np.ndarray,
+                            frequency_per_year: int, campaign_days: int = 5, year_hours: int = HOURS_PER_YEAR) -> tuple[np.ndarray, np.ndarray]:
+    """Visit hours when a basin is flown as a campaign (TDD section 5.1 as amended 2026-10-01).
+
+    For every basin that has covered facilities and every one of the ``frequency_per_year``
+    equal slices of the year, one campaign window of ``campaign_days`` consecutive days starts
+    at a uniform day inside the slice (clipped so the window fits; a window longer than the
+    slice becomes the slice). Each covered facility in that basin is visited once per window,
+    on a uniform day within it, at a daytime local hour. Same return shape as ``campaign_hours``.
+    """
+    if frequency_per_year <= 0 or facilities.size == 0:
+        return np.array([], dtype=np.int64), np.array([], dtype=np.int64)
+    f = int(frequency_per_year); D = max(int(campaign_days), 1)
+    slice_days = 365.0 / f
+    fac_basin = basin_idx[facilities]
+    hours: list[np.ndarray] = []; facs: list[np.ndarray] = []
+    for b in np.unique(fac_basin):                       # basins in index order: reproducible for a given seed
+        members = facilities[fac_basin == b]
+        n_f = members.size
+        span = min(D, int(np.floor(slice_days)))          # window length in whole days, never longer than the slice
+        start = np.arange(f) * slice_days + rng.random(f) * max(slice_days - span, 0.0)      # (f,) window start day
+        offset = rng.integers(0, span, size=(n_f, f))                                           # day within the window
+        day = np.floor(start)[None, :] + offset
+        local_h = rng.choice(CAMPAIGN_LOCAL_HOURS, size=(n_f, f))
+        utc_offset_h = -lon_deg[members][:, None] / 15.0
+        hour = np.clip(np.round(day * 24 + local_h + utc_offset_h), 0, year_hours - 1).astype(np.int64)
+        hours.append(hour.ravel()); facs.append(np.repeat(members, f))
+    return np.concatenate(hours), np.concatenate(facs)
+
+
 def build_plan(policy_cfg: Mapping[str, Any], seeds: SeedTree, n_fac: int, lon_deg: np.ndarray,
-               throughput_score: np.ndarray, sensor_modes: Mapping[str, tuple[str, str, bool]], year: int) -> DeploymentPlan:
+               throughput_score: np.ndarray, sensor_modes: Mapping[str, tuple[str, str, bool]], year: int,
+               basin_idx: np.ndarray | None = None) -> DeploymentPlan:
     """Build a plan from the ``policy`` config section.
 
     ``sensor_modes`` maps sensor key -> (schedule, observation_mode, tasked) from the sensor library.
+    ``basin_idx`` (per facility) enables ``scheduling: campaign``; without it every sensor uses independent dates.
     """
     plan = DeploymentPlan(year=year)
     for key, spec in (policy_cfg.get("sensors") or {}).items():
@@ -108,7 +147,12 @@ def build_plan(policy_cfg: Mapping[str, Any], seeds: SeedTree, n_fac: int, lon_d
         dep = SensorDeployment(sensor_key=key, facilities=facs)
         if schedule in ("campaign", "survey"):
             freq = int(spec.get("frequency_per_year", 1))
-            dep.visit_hours, dep.visit_facility = campaign_hours(seeds.rng("policy", "dates", sensor=key), facs, lon_deg, freq)
+            scheduling = str(spec.get("scheduling", "independent"))
+            if scheduling == "campaign" and basin_idx is not None:
+                dep.visit_hours, dep.visit_facility = campaign_hours_regional(seeds.rng("policy", "dates", sensor=key), facs, lon_deg, basin_idx, freq,
+                                                                              int(spec.get("campaign_days", 5)))
+            else:
+                dep.visit_hours, dep.visit_facility = campaign_hours(seeds.rng("policy", "dates", sensor=key), facs, lon_deg, freq)
         elif schedule == "orbit" and tasked:
             dep.taskings_per_year = int(spec.get("frequency_per_year", 12))
         plan.deployments[key] = dep

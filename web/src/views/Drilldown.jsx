@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, ScatterChart, Scatter, ZAxis, CartesianGrid } from "recharts";
-import { api, waitForJob, classify, halfWidth, precision, probBelow, fmtNum, fmtPct } from "../api.js";
+import { api, waitForJob, classify, halfWidth, precision, probBelow, fmtProb, fmtNum, fmtPct } from "../api.js";
 
 const SENSOR_COLORS = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#4a3aa7", "#e34948"];
 
@@ -45,7 +45,9 @@ export default function Drilldown({ runId, fid, kpi, bar, wMax, onClose }) {
   const k = { ...raw, bar, state: classify(raw, bar), precision: precision(raw, wMax), priorOnly };
   const w = halfWidth(k); const pb = probBelow(raw, bar);
   const fmtK = (v) => (kpi === "intensity" ? fmtPct(v) : `${fmtNum(v, 1)} ${unit}`);
-  const probText = Number.isFinite(pb) ? (pb >= 0.995 ? "> 99 %" : pb <= 0.005 ? "< 1 %" : `${Math.round(pb * 100)} %`) : "–";
+  const probText = fmtProb(pb);
+  const legacy = !raw.quantiles;   // scored before the quantile grid and evidence measures existed (2026-10-01)
+  const thr = d.throughput; const mon = d.monitoring || [];
   const decision = k.state === "certified" ? `p95 ${fmtK(k.p95)} ≤ bar ${fmtK(bar)}: at least 95 % posterior probability of being below the bar`
     : k.state === "fails" ? `p5 ${fmtK(k.p05)} > bar ${fmtK(bar)}: at least 95 % posterior probability of being above the bar`
     : k.state === "indeterminate" ? `interval ${fmtK(k.p05)}–${fmtK(k.p95)} straddles the bar ${fmtK(bar)}: the data cannot decide at 95 %`
@@ -65,7 +67,9 @@ export default function Drilldown({ runId, fid, kpi, bar, wMax, onClose }) {
         </span>
         <button className="ghost" onClick={onClose}>close</button>
       </div>
-      <div className="muted">{d.basin} · {d.facility_type} · {d.n_sources} source{d.n_sources > 1 ? "s" : ""} · posterior: {d.method}</div>
+      <div className="muted">{d.basin} · {d.facility_type} · {d.n_sources} source{d.n_sources > 1 ? "s" : ""} · posterior: {d.method}
+        {thr && <> · gas throughput rank <b>{thr.rank}</b> of {thr.n_facilities} ({fmtNum(thr.gas_mkt_m3_yr / 1e6, 1)} Mm³/yr)</>}</div>
+      {legacy && <div className="muted" style={{ marginTop: 4 }}>This run was scored before the probability grid and evidence measures existed; probabilities outside p5–p95 are bounds. Re-run it to get exact values.</div>}
       <h3>{kpi === "intensity" ? "Methane intensity" : "Absolute emissions (t/yr)"}</h3>
       <div className="prob"><b>{probText}</b> posterior probability of being below the bar ({fmtK(bar)})</div>
       <div className="muted"><b className={`why ${k.state}`}>{k.state}</b> · {decision}</div>
@@ -82,6 +86,18 @@ export default function Drilldown({ runId, fid, kpi, bar, wMax, onClose }) {
         <b>Evidence:</b> {ev.n_usable_snapshots} usable snapshot{ev.n_usable_snapshots === 1 ? "" : "s"} · {ev.n_survey_visits} survey visit{ev.n_survey_visits === 1 ? "" : "s"} · {ev.cms_usable_hours.toLocaleString()} CMS hours · posterior interval is {Number.isFinite(ratio) ? `${Math.round(ratio * 100)} %` : "–"} as wide as the prior's (log scale; prior-only above {Math.round(ev.prior_only_ratio * 100)} %).
         {k.priorOnly && <span className="flagged"> Prior-only: the decision rests on the population prior, not on measurements of this facility.</span>}
       </div>}
+      {mon.length > 0 && <>
+        <h3>Monitoring at this facility</h3>
+        <table className="grid"><tbody>
+          <tr><th>sensor</th><th>policy rule</th><th>this facility</th></tr>
+          {mon.map((m) => <tr key={m.sensor} className={m.covered ? "" : "muted"}>
+            <td>{m.sensor}</td>
+            <td>{m.rule}<div className="muted">{m.how}</div></td>
+            <td><b className={m.covered ? "why certified" : "why indeterminate"}>{m.reason}</b>{m.planned_visit_days.length > 0 && <div className="muted">visit days {m.planned_visit_days.join(", ")}</div>}</td>
+          </tr>)}
+        </tbody></table>
+        <div className="muted" style={{ marginTop: 4 }}>Sensors are assigned per facility by coverage share and targeting; location plays no part. "Regional campaign" flies each basin within one window of days.</div>
+      </>}
       <h3>Observation timeline</h3>
       <div style={{ height: 40 + 22 * sensors.length }}>
         <ResponsiveContainer>

@@ -323,6 +323,9 @@ intervals. Certification is a compliance decision: certified iff p95 <= bar B (a
 the bar), fails iff p5 > B, indeterminate iff the interval straddles B. Precision (relative half-width w <= w_max) and evidence
 (posterior width as a fraction of prior width; "prior-only" when the data barely narrowed it) are reported alongside and do not
 block certification. Indeterminate and prior-only facilities are where sensor changes help.
+Policy YAML per sensor: coverage (share of facilities), frequency_per_year, targeting (random | throughput = top facilities by
+marketed gas), and for aircraft/drone/OGI sensors scheduling (independent | campaign) with campaign_days (each basin flown in one
+window of that many days). Location never affects which facilities a sensor covers.
 When you propose a configuration, end your reply with a fenced ```yaml block containing ONLY a policy of the form
 sensors: {<sensor_key>: {coverage: <0-1>, frequency_per_year: <int>, targeting: random|throughput}} using sensor keys from the list.
 Keep replies under 300 words."""

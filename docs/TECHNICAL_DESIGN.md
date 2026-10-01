@@ -229,7 +229,7 @@ For each facility, sensor, and hour, the simulator decides whether an observatio
 ### 5.1 Observation opportunities
 
 - **Satellites:** overpass times are computed by propagating public two-line orbital elements with Skyfield [skyfield] and testing whether the facility lies within the instrument swath. For tasked instruments (GHGSat, Tanager), an overpass is used only if the policy assigns tasking to that facility (§8). TROPOMI observes every daylight overpass.
-- **Aircraft:** the policy assigns each facility a list of campaign dates.
+- **Aircraft:** the policy assigns each facility a list of campaign dates. *(Amended 2026-10-01, DECISION_LOG "Regional flight campaigns": with `scheduling: campaign`, each basin is flown in one window of `campaign_days` consecutive days per slice of the year and every covered facility in the basin gets one visit inside that window; with `scheduling: independent`, the default for existing configs, each facility's dates are drawn on their own as before.)*
 - **Drone / OGI:** the policy assigns survey dates.
 - **Continuous monitors (CMS):** every hour at instrumented facilities.
 
@@ -385,7 +385,8 @@ Monte Carlo standard errors are reported for every metric.
 | Enabled | yes/no | — |
 | Coverage fraction | share of facilities, or of throughput, instrumented or surveyed | 0–1 |
 | Frequency | surveys per year (aircraft, drone, OGI); tasking priority (satellite) | 0–52 |
-| Targeting | random / throughput-weighted / prior-risk-weighted / widest-interval-first | categorical |
+| Targeting | random / throughput-weighted / prior-risk-weighted / widest-interval-first *(wording superseded 2026-10-01: `throughput` is a top-k cutoff by marketed gas, "top facilities by throughput")* | categorical |
+| Scheduling (campaign/survey sensors) | independent dates / regional campaign with `campaign_days` per basin (added 2026-10-01) | categorical, 1–60 days |
 | Validation tier filter | minimum tier | A–D |
 
 ### 8.2 Adaptive rules (tip-and-cue)
@@ -491,6 +492,7 @@ Each limitation maps to a version-2 item in `DECISION_LOG.md`.
 | 2026-09-30 | §9: Phase 6 validation framework note |
 | 2026-09-30 | §7: Phase 5 scoring conventions note |
 | 2026-09-30 | §6.7, §7: interval is two-sided 90 % [p5, p95]; original percentiles marked superseded |
+| 2026-10-01 | §5.1 aircraft scheduling (regional campaigns), §8.1 Targeting wording corrected and Scheduling row: DECISION_LOG "Regional flight campaigns" |
 | 2026-10-01 | §6.7 (quantile grid, prior summary, evidence counts persisted), §7 (decision-only certifiable/fails/indeterminate shares; precise, prior-only, evidence-ratio rows), §8.3 note: DECISION_LOG "certification is the compliance decision at 95 %" |
 | 2026-09-30 | §6.7 estimand (realised-mass predictive), sampler, §6.3–6.5 v1 likelihood definitions, §10 measured timings, §11 limitation 10: Phase 4 |
 | 2026-09-30 | §4.1 wind floor, §5.2 gate conventions: Phase 3 implementation notes |

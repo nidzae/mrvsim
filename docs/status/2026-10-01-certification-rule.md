@@ -45,3 +45,7 @@ PRD §5.3 (amended, 95 %), §5.4 (superseded as a condition), §5.4a (new), §11
 
 - Validation V4 compares the certified-share stability across seeds; its target is unchanged, its meaning is now the decision-only share. Re-run V1–V7 before quoting them.
 - The map's "wide" ring uses the top-bar w_max; the optimizer's w_max is set on its own panel. Both default to 0.3.
+
+## Addendum (later the same day): sensor assignment visible; regional flight campaigns
+
+Nidhi asked why, of three neighbouring sites, only one had GHGSat. Answer (now shown in the drill-down under "Monitoring at this facility"): sensors are assigned per facility by coverage share and targeting with no geography; `throughput` targeting is a top-k cutoff by marketed gas. The green site ranked 290 of 1,890 and so had GHGSat (top 30 %) and a continuous monitor (top 20 %); its neighbours ranked 743 and 989. Added `scheduling: campaign` with `campaign_days` for campaign/survey sensors so each basin is flown in one window per slice of the year (DECISION_LOG "Regional flight campaigns"); the UI default policy uses it for Bridger. The "throughput-weighted" label is corrected everywhere. Runs scored before the quantile grid now show "< 5 %" / "> 95 %" bounds instead of "–" and a note to re-run. Tests: `tests/unit/test_deployment.py` (window length, per-facility visit counts, fallback, policy round-trip).

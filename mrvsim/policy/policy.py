@@ -22,8 +22,14 @@ class SensorPolicy:
     coverage_basis: str = "facilities"
     frequency_per_year: int = 1           # surveys per year (aircraft, drone, OGI); taskings per facility (satellite)
     targeting: str = "random"
+    scheduling: str = "independent"       # campaign/survey sensors: independent dates | regional campaign (DECISION_LOG 2026-10-01)
+    campaign_days: int = 5                # window length of a basin campaign, days
 
     def validate(self, key: str) -> None:
+        if self.scheduling not in ("independent", "campaign"):
+            raise ValueError(f"{key}: scheduling must be independent|campaign")
+        if not 1 <= int(self.campaign_days) <= 60:
+            raise ValueError(f"{key}: campaign_days must be in [1, 60]")
         if not 0.0 <= self.coverage <= 1.0:
             raise ValueError(f"{key}: coverage must be in [0, 1]")
         if self.coverage_basis not in ("facilities", "throughput"):
@@ -115,7 +121,8 @@ class Policy:
     def to_policy_cfg(self) -> dict[str, Any]:
         """The ``policy`` config section understood by ``mrvsim.observe.build_plan``."""
         return {"sensors": {k: {"enabled": s.enabled, "coverage": s.coverage, "coverage_basis": s.coverage_basis,
-                                "frequency_per_year": s.frequency_per_year, "targeting": s.targeting}
+                                "frequency_per_year": s.frequency_per_year, "targeting": s.targeting,
+                                "scheduling": s.scheduling, "campaign_days": s.campaign_days}
                             for k, s in self.sensors.items()},
                 "rules": [asdict(r) for r in self.rules], "min_tier": self.min_tier}
 
@@ -124,7 +131,8 @@ class Policy:
         d = {"name": name, "min_tier": cfg.get("min_tier", "A"), "sensors": {}, "rules": cfg.get("rules") or []}
         for k, v in (cfg.get("sensors") or {}).items():
             d["sensors"][k] = {"enabled": v.get("enabled", True), "coverage": v.get("coverage", 1.0), "coverage_basis": v.get("coverage_basis", "facilities"),
-                               "frequency_per_year": v.get("frequency_per_year", 1), "targeting": v.get("targeting", "random")}
+                               "frequency_per_year": v.get("frequency_per_year", 1), "targeting": v.get("targeting", "random"),
+                               "scheduling": v.get("scheduling", "independent"), "campaign_days": v.get("campaign_days", 5)}
         return cls.from_dict(d)
 
     def certification_sensors(self, library) -> list[str]:  # noqa: ANN001
