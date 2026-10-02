@@ -194,11 +194,12 @@ def facility_detail(run: LoadedRun, fid: int, bar_mass_t: float | None, bar_inte
     s0, s1 = pop.source_offset[fid], pop.source_offset[fid + 1]
     truth_sources = [{"q_kg_h": float(pop.q_kg_h[j]), "intermittent": bool(pop.z[j] == 1), "pi": float(pop.pi[j]), "on_hours": int(pop.states.on_hours()[j])} for j in range(s0, s1)]
     def kpi_block(post, q, pr, truth, scale, bar):
-        b = {"p05": float(post[0, fid] * scale), "p10": float(post[1, fid] * scale), "p50": float(post[2, fid] * scale), "p90": float(post[3, fid] * scale),
-             "p95": float(post[4, fid] * scale), "truth": float(truth[fid] * scale), "bar": bar}
-        if q is not None:
+        fin = lambda x: None if not np.isfinite(x) else float(x)   # noqa: E731  unscored facilities (quick mode) have NaN posteriors; JSON has no NaN
+        b = {"p05": fin(post[0, fid] * scale), "p10": fin(post[1, fid] * scale), "p50": fin(post[2, fid] * scale), "p90": fin(post[3, fid] * scale),
+             "p95": fin(post[4, fid] * scale), "truth": fin(truth[fid] * scale), "bar": bar, "scored": bool(np.isfinite(post[2, fid]))}
+        if q is not None and np.isfinite(q[:, fid]).all():
             b["quantiles"] = [float(v * scale) for v in q[:, fid]]   # percent 0..100 in steps of 1
-        if pr is not None:
+        if pr is not None and np.isfinite(pr[:, fid]).all():
             b["prior"] = {"p05": float(pr[0, fid] * scale), "p50": float(pr[1, fid] * scale), "p95": float(pr[2, fid] * scale)}
         return b
 

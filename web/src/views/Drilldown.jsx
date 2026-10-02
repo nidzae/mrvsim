@@ -31,6 +31,10 @@ function KpiBlock({ name, raw, bar, wMax, isInt, primary }) {
   const k = { ...raw, bar, state: classify(raw, bar), precision: precision(raw, wMax) };
   const w = halfWidth(k); const pb = probBelow(raw, bar);
   const fmtK = (v) => (isInt ? fmtPct(v) : `${fmtNum(v, 1)} t/yr`);
+  const decision = k.state === "certified" ? `p95 ${fmtK(k.p95)} ≤ bar ${fmtK(bar)}: at least 95 % posterior probability of being below the bar`
+    : k.state === "fails" ? `p5 ${fmtK(k.p05)} > bar ${fmtK(bar)}: at least 95 % posterior probability of being above the bar`
+    : k.state === "indeterminate" ? `interval ${fmtK(k.p05)}–${fmtK(k.p95)} straddles the bar ${fmtK(bar)}: the data cannot decide at 95 %`
+    : "no posterior for this facility (not in the scored subsample)";
   const f = (v) => (isInt ? fmtPct(v) : fmtNum(v, 1));
   return (
     <div style={primary ? {} : { opacity: 0.92, borderTop: "1px solid var(--border)", marginTop: 10, paddingTop: 6 }}>
@@ -78,8 +82,7 @@ export default function Drilldown({ runId, fid, kpi, bar, barIntensity, barMass,
   const nObs = ev ? ev.n_usable_snapshots + ev.n_survey_visits : null;
   const priorOnly = ev ? ((Number.isFinite(ratio) && ratio > ev.prior_only_ratio) || (nObs === 0 && ev.cms_usable_hours === 0)) : false;
   const k = { ...raw, bar, state: classify(raw, bar), precision: precision(raw, wMax), priorOnly };
-  const w = halfWidth(k); const pb = probBelow(raw, bar);
-  const fmtK = (v) => (kpi === "intensity" ? fmtPct(v) : `${fmtNum(v, 1)} ${unit}`);
+  const w = halfWidth(k);
   const legacy = !raw.quantiles;   // scored before the quantile grid and evidence measures existed (2026-10-01)
   const thr = d.throughput; const mon = d.monitoring || [];
   const sensors = [...new Set(d.timeline.map((t) => t.sensor))];

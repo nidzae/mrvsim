@@ -60,6 +60,13 @@ def test_run_summary_facility_attribution(client: TestClient) -> None:
     assert d["id"] == fid and "timeline" in d and d["mass_t_yr"]["p50"] > 0 and d["intensity"]["bar"] == 0.002
     assert len(d["intensity"]["quantiles"]) == 101 and d["intensity"]["prior"]["p95"] > d["intensity"]["prior"]["p05"]
     assert d["evidence"]["n_usable_snapshots"] >= 0 and d["w_max"] == 0.3
+    # an unscored facility (outside the quick-mode subsample) must still serialise: nulls, not NaN (JSON has no NaN)
+    import numpy as np
+    from mrvsim.api import store
+    run = store.load_run(run_id, str(store.RUNS_DIR))
+    unscored = int(np.nonzero(~np.isfinite(run.post_int[2]))[0][0])
+    u = client.get(f"/api/run/{run_id}/facility/{unscored}")
+    assert u.status_code == 200 and u.json()["intensity"]["p50"] is None and u.json()["intensity"]["scored"] is False and "quantiles" not in u.json()["intensity"]
     mon = {m["sensor"]: m for m in d["monitoring"]}
     assert set(mon) == {"bridger_gml", "cms_generic"} and mon["bridger_gml"]["covered"] and mon["bridger_gml"]["rule"] == "all facilities"
     assert len(mon["bridger_gml"]["planned_visit_days"]) == 2 and mon["cms_generic"]["rule"].startswith("top 20%")
