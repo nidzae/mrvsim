@@ -33,8 +33,8 @@ Grey is the most common result with sparse monitoring. Turning grey into green o
 ## Five-minute walkthrough
 
 1. **Load the default run.** Start the API (`.venv/bin/uvicorn mrvsim.api.server:app --port 8000`) and open the app. The **Sensors** panel on the left starts with the default mix (two aircraft passes per year, monthly GHGSat tasking on the top 30 % of facilities by throughput, TROPOMI everywhere). Press **Run**; the run selector in the top bar switches to it when it finishes.
-2. **Set your bar.** In the top bar, choose the KPI (**intensity** or **absolute (t/yr)**), enter the **bar** and the **precision w_max** (grade only). The map recolors immediately; no rerun is needed.
-3. **Click a grey facility.** The drill-down shows:
+2. **Set your bar.** In the top bar, choose the KPI (**intensity** or **absolute (t/yr)**), enter the **bar** and the **precision w_max** (grade only). The map recolors immediately; no rerun is needed. **Hover a dot** to see both KPIs at once (intensity and absolute emissions, each as median and 90 % interval) with the state, precision and prior-only flag; click it for the full panel.
+3. **Click a grey facility.** The drill-down opens on the right; drag its left edge to make it wider (the width is remembered). It shows the selected KPI first and the other KPI below it, each decided at its own bar:
    - the **posterior probability of being below the bar** (for example "97 %") and the decision it implies, following the top-bar controls like the map,
    - the interval as a bar against your bar line (faint dashed band: the prior with no data; thin band p5–p95; thick band p10–p90; circle at the median; triangle at the synthetic truth),
    - **Monitoring at this facility**: every sensor in the policy, its rule, whether this site was selected and why (for throughput targeting, its rank by gas throughput), and the planned visit days,
