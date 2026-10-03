@@ -23,7 +23,7 @@ N_FAC = 24
 
 def _custom_population(seed: int, q_kg_h: float, intermittent: bool, nu_on: float = 2.0, nu_off: float = 4.5, tau: float = 1.0):
     """Population of N_FAC single-source facilities in stratum 0 with a prescribed source."""
-    base = generate_population({"n_per_stratum": 30}, SeedTree(seed))
+    base = generate_population({"n_per_stratum": 30, "leak_model": "stratum"}, SeedTree(seed))
     p = copy.copy(base)
     idx = np.arange(N_FAC)
     for name in ("stratum_idx", "basin_idx", "ftype_idx", "tclass_idx", "lat", "lon"):
@@ -120,7 +120,7 @@ def test_intermittent_identifiability_cms_narrows_pi() -> None:
     The truth's duration parameters are taken from the stratum prior (so truth lies inside the prior); the
     duty cycle is made larger than the prior median by shortening the off-period, which is what CMS must detect.
     """
-    base = generate_population({"n_per_stratum": 30}, SeedTree(202))
+    base = generate_population({"n_per_stratum": 30, "leak_model": "stratum"}, SeedTree(202))
     sp = base.priors.for_cell(base.strata.strata[0].basin, base.strata.strata[0].facility_type)
     nu_off_truth = sp.nu_off - 1.5          # ~4.5x shorter off-periods than the prior median: pi well above the prior
     pop = _custom_population(202, q_kg_h=60.0, intermittent=True, nu_on=sp.nu_on, nu_off=nu_off_truth, tau=sp.tau_on)

@@ -16,7 +16,7 @@ are reproducible.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Any
 
 import numpy as np
@@ -263,6 +263,15 @@ def make_facility_loglik(i: int, inputs: EstimatorInputs, sparams: list[SensorPa
     return loglik
 
 
+def facility_priors(i: int, inputs: EstimatorInputs, priors_by_stratum: list[StratumPriors]) -> StratumPriors:
+    """The prior of facility ``i``: its stratum's, with the equipment-model overrides where the facility is a real site."""
+    sp = priors_by_stratum[int(inputs.stratum_idx[i])]
+    ov = inputs.prior_overrides
+    if ov is None or not np.isfinite(ov["lambda_k"][i]):
+        return sp
+    return replace(sp, **{k: float(v[i]) for k, v in ov.items()})
+
+
 def estimate_facility(i: int, inputs: EstimatorInputs, priors_by_stratum: list[StratumPriors], sparams: list[SensorParams],
                       seeds: SeedTree, n_draws: int, ablation: Ablation | None = None, method: str = "auto",
                       ess_switch: float = 200.0, smc_particles: int | None = None,
@@ -276,7 +285,7 @@ def estimate_facility(i: int, inputs: EstimatorInputs, priors_by_stratum: list[S
     the expected mass sum pi q T; see ``PriorDraws.realised_mass_kg_yr``.
     """
     ab = ablation or Ablation()
-    sp_h = priors_by_stratum[int(inputs.stratum_idx[i])]
+    sp_h = facility_priors(i, inputs, priors_by_stratum)
     loglik = make_facility_loglik(i, inputs, sparams, ab)
     info: dict = {"method": "is"}
     if method in ("is", "auto"):
@@ -339,7 +348,7 @@ def run_fast_estimator(inputs: EstimatorInputs, strata: StrataTable, priors: Pri
         IQ[:, i] = _weighted_percentiles(inten, w, tuple(QGRID))
         P["p10"][i], P["p50"][i], P["p90"][i] = _weighted_percentiles(pim, w, (10, 50, 90))
         P["ess"][i] = ess
-        PM[:, i], PI[:, i] = prior_summary(int(i), inputs, priors_by_stratum[int(inputs.stratum_idx[i])], seeds, n_draws, realised)
+        PM[:, i], PI[:, i] = prior_summary(int(i), inputs, facility_priors(int(i), inputs, priors_by_stratum), seeds, n_draws, realised)
     low_ess = idx[P["ess"][idx] < ess_warn]
     row = lambda Q, p: Q[int(p)]  # noqa: E731  QGRID is 0..100 in steps of 1
     return PosteriorSummary(n, row(MQ, 10), row(MQ, 50), row(MQ, 90), row(IQ, 10), row(IQ, 50), row(IQ, 90), P["p10"], P["p50"], P["p90"], P["ess"],

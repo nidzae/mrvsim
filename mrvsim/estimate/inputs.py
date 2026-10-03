@@ -84,6 +84,8 @@ class EstimatorInputs:
     surveys: SurveyObs
     cms: CMSSummary
     meta: dict[str, Any] = field(default_factory=dict)
+    # per-facility overrides of the stratum priors (equipment-based leak model; NaN = stratum prior applies)
+    prior_overrides: dict[str, np.ndarray] | None = None
 
     def facility_has_cms(self) -> np.ndarray:
         has = np.zeros(self.n_fac, dtype=bool)
@@ -192,7 +194,7 @@ def build_inputs(pop: Population, obs: ObservationSet, library: SensorLibrary, s
         n_fac=n, year=obs.year, sensor_keys=obs.log.sensor_keys, stratum_idx=pop.stratum_idx,
         rho_surf=pop.conditions.surface_reflectance.astype(float), f_gas=pop.throughput.f_gas, g_hat_kg_yr=g_hat, sigma_g=sigma_g,
         snapshots=_snapshot_groups(obs.log, library, n), surveys=_surveys(obs.log, n), cms=_cms(obs.cms, obs.log.sensor_keys),
-        meta={"wind_bin_m_s": WIND_BIN_M_S},
+        meta={"wind_bin_m_s": WIND_BIN_M_S}, prior_overrides=pop.prior_overrides,
     )
 
 

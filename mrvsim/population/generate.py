@@ -17,6 +17,7 @@ import numpy as np
 
 from mrvsim.io.seeds import SeedTree
 from mrvsim.population.conditions import Conditions, draw_conditions
+from mrvsim.population.equipment import OVERRIDE_KEYS, load_equipment_cells, site_prior_params
 from mrvsim.population.priors import DEFAULT_PRIORS_PATH, PriorSet, load_priors
 from mrvsim.population.sources import draw_rates_kg_h, draw_source_counts, draw_source_types, rate_params_for_type
 from mrvsim.population.sites import DEFAULT_SITES_PATH
@@ -59,6 +60,10 @@ class Population:
     n_hours: int = 8760
     meta: dict[str, Any] = field(default_factory=dict)
     site_row: np.ndarray | None = None   # row of strata.sites behind each facility, -1 if none [ogim]
+    # per-facility overrides of the stratum priors from the equipment-based leak model (NaN where the stratum
+    # prior applies); public covariates only, so the estimator uses them as its prior [rutherford2021]
+    prior_overrides: dict[str, np.ndarray] | None = None
+    site_wells: np.ndarray | None = None          # wells on the real site behind each facility (0 if not a real site) [ogim]
     sites_represented: np.ndarray | None = None   # real sites each facility stands for, N_h / n_h (NaN if not a real site) [ogim]
 
     # -- derived truth ------------------------------------------------------
@@ -129,6 +134,8 @@ class Population:
         keys = set(self.priors.citation_keys) | {"ngsi", "jacob2022", "eia-heat-content", "basin-extents", "renewal-theory"}
         if self.site_row is not None and (self.site_row >= 0).any():
             keys.add("ogim")
+        if self.prior_overrides is not None:
+            keys.add("rutherford2021")
         return tuple(sorted(keys))
 
     # -- persistence --------------------------------------------------------
@@ -144,6 +151,8 @@ class Population:
             ghgrp_reporter=self.throughput.ghgrp_reporter,
             site_row=self.site_row if self.site_row is not None else np.full(self.stratum_idx.shape[0], -1, dtype=np.int64),
             sites_represented=self.sites_represented if self.sites_represented is not None else np.full(self.stratum_idx.shape[0], np.nan),
+            site_wells=self.site_wells if self.site_wells is not None else np.zeros(self.stratum_idx.shape[0], dtype=np.int64),
+            **{f"prior_{k}": v for k, v in (self.prior_overrides or {}).items()},
             p_cloud=self.conditions.p_cloud, surface_reflectance=self.conditions.surface_reflectance,
             surface_heterogeneity=self.conditions.surface_heterogeneity, wind_k=self.conditions.wind_k,
             wind_lambda=self.conditions.wind_lambda,
@@ -181,7 +190,8 @@ def load_population(directory: Path, strata: StrataTable | None = None, priors: 
                       n_sources=F["n_sources"], source_offset=F["source_offset"], throughput=thr, conditions=cond,
                       src_facility=S["src_facility"], z=S["z"], q_kg_h=S["q_kg_h"], pi=S["pi"], nu_on=S["nu_on"], tau_on=S["tau_on"], nu_off=S["nu_off"], tau_off=S["tau_off"],
                       states=states, strata=strata, priors=priors, constants=constants, n_hours=n_hours, meta={"loaded_from": str(directory)},
-                      site_row=F.get("site_row"), sites_represented=F.get("sites_represented"))
+                      site_row=F.get("site_row"), sites_represented=F.get("sites_represented"), site_wells=F.get("site_wells"),
+                      prior_overrides={k[len("prior_"):]: v for k, v in F.items() if k.startswith("prior_")} or None)
 
 
 def _facility_sites(rng: np.random.Generator, strata: StrataTable, stratum_idx: np.ndarray, basin_idx: np.ndarray,
@@ -245,7 +255,9 @@ def generate_population(
         (``ogim``: well-pad facilities are real production sites with their real production, and
         midstream facilities sit on real locations [ogim], the default; ``box``: uniform in the
         basin boxes with lognormal throughput), ``sites_path``, ``throughput_class_rule``
-        (``count`` or ``throughput``; see :func:`mrvsim.population.strata.load_strata`).
+        (``count`` or ``throughput``; see :func:`mrvsim.population.strata.load_strata`), ``leak_model``
+        (``equipment``: real sites take source hyperparameters from their well count, class and
+        productivity [rutherford2021], the default; ``stratum``: the basin x type stratum priors).
     seeds:
         Seed tree scoped to this population (e.g. ``run.seeds.child(rep=r)``).
         Streams used: ``population/source_count``, ``population/source_type``,
@@ -291,20 +303,37 @@ def generate_population(
     )}
     ghgrp_share = np.array([strata.facility_types[k].ghgrp_reporter_share for k in strata.facility_types])[ftype_idx]
 
+    # Per-facility source hyperparameters: the stratum's, overridden for real sites by the equipment-based
+    # model, which conditions on the site's well count, class and productivity (TDD sections 3.2-3.4 as
+    # amended 2026-10-03) [rutherford2021]. The same overrides are the estimator's prior (prior_overrides).
+    FP = {k: P[k][stratum_idx].astype(float) for k in ("lambda_k", "p_intermittent", "mu_0", "sigma_0", "mu_1", "sigma_1", "q_tail", "nu_off")}
+    prior_overrides: dict[str, np.ndarray] | None = None
+    equipment = load_equipment_cells() if str(population_cfg.get("leak_model", "equipment")) == "equipment" else None
+    real = site_row >= 0
+    if equipment is not None and real.any():
+        sites = strata.sites
+        rows = site_row[real]
+        cls, bin_ = equipment.classify(sites.gas_m3_yr[rows], sites.oil_bbl_yr[rows], sites.n_wells[rows])
+        base = {k: P[k][stratum_idx[real]] for k in ("nu_on", "tau_on", "nu_off", "tau_off", "sigma_nu_on", "sigma_nu_off")}
+        ov = site_prior_params(equipment, cls, bin_, sites.n_wells[rows], base)
+        prior_overrides = {k: np.full(n_fac, np.nan) for k in OVERRIDE_KEYS}
+        for k in OVERRIDE_KEYS:
+            FP[k][real] = ov[k]; prior_overrides[k][real] = ov[k]
+
     # --- sources ------------------------------------------------------------
-    K = draw_source_counts(seeds.rng("population", "source_count"), P["lambda_k"][stratum_idx])
+    K = draw_source_counts(seeds.rng("population", "source_count"), FP["lambda_k"])
     source_offset = np.concatenate([[0], np.cumsum(K)])
     src_facility = np.repeat(np.arange(n_fac), K)
     src_stratum = stratum_idx[src_facility]
-    z = draw_source_types(seeds.rng("population", "source_type"), P["p_intermittent"][src_stratum])
-    mu, sigma = rate_params_for_type(z, P["mu_0"][src_stratum], P["sigma_0"][src_stratum], P["mu_1"][src_stratum], P["sigma_1"][src_stratum])
-    q = draw_rates_kg_h(seeds.rng("population", "rates"), mu, sigma, P["q_tail"][src_stratum], P["alpha"][src_stratum])
+    z = draw_source_types(seeds.rng("population", "source_type"), FP["p_intermittent"][src_facility])
+    mu, sigma = rate_params_for_type(z, FP["mu_0"][src_facility], FP["sigma_0"][src_facility], FP["mu_1"][src_facility], FP["sigma_1"][src_facility])
+    q = draw_rates_kg_h(seeds.rng("population", "rates"), mu, sigma, FP["q_tail"][src_facility], P["alpha"][src_stratum])
 
     # Per-source duration location parameters: stratum value plus between-source spread, so that duty
     # cycles vary across sources (DECISION_LOG 2026-09-30, Phase 4). tau (within-source spread) stays per stratum.
     rng_dur = seeds.rng("population", "durations")
     nu_on = P["nu_on"][src_stratum] + rng_dur.normal(0.0, 1.0, size=src_stratum.shape) * P["sigma_nu_on"][src_stratum]
-    nu_off = P["nu_off"][src_stratum] + rng_dur.normal(0.0, 1.0, size=src_stratum.shape) * P["sigma_nu_off"][src_stratum]
+    nu_off = FP["nu_off"][src_facility] + rng_dur.normal(0.0, 1.0, size=src_stratum.shape) * P["sigma_nu_off"][src_stratum]
     tau_on, tau_off = P["tau_on"][src_stratum], P["tau_off"][src_stratum]
     pi = np.where(z == 1, duty_cycle(nu_on, tau_on, nu_off, tau_off), 1.0)
 
@@ -335,7 +364,8 @@ def generate_population(
         n_sources=K, source_offset=source_offset, throughput=throughput, conditions=conditions,
         src_facility=src_facility, z=z, q_kg_h=q, pi=pi, nu_on=nu_on, tau_on=tau_on, nu_off=nu_off, tau_off=tau_off,
         states=states, strata=strata, priors=priors, constants=constants, n_hours=n_hours, site_row=site_row,
-        sites_represented=sites_represented,
+        sites_represented=sites_represented, prior_overrides=prior_overrides,
+        site_wells=np.where(real, strata.sites.n_wells[site_row], 0) if strata.sites is not None and len(strata.sites) else None,
         meta={"n_per_stratum": n_per, "n_strata": len(strata), "priors_provenance": priors.provenance,
               "strata_provenance": strata.provenance, "seed_tree": seeds.describe()},
     )

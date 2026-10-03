@@ -1,0 +1,1140 @@
+# Per-well equipment emission parameters by well class and productivity bin (provenance FITTED).
+# Produced by data/scripts/fit_equipment_priors.py from the component-based model of [rutherford2021]
+# (100 uncertainty realizations). Method and caveats in the script docstring; DECISION_LOG 2026-10-03.
+provenance: FITTED
+version: '2026-10-03'
+citation_keys:
+- rutherford2021
+units: kg CH4 per hour, annual average, per emitting equipment category on one well
+classes:
+  drygas: no oil
+  gaswoil: gas-to-oil ratio > 100 Mscf/bbl
+  oilwgas: gas-to-oil ratio < 100 Mscf/bbl
+  oilonly: no gas
+gas_bin_edges_mscf_per_well_day:
+- 1.0
+- 5.0
+- 10.0
+- 20.0
+- 50.0
+- 100.0
+- 500.0
+- 1000.0
+- 10000.0
+oil_bin_edges_bbl_per_well_day:
+- 0.5
+- 1.0
+- 10.0
+gor_cutoff_mscf_per_bbl: 100.0
+steady_categories:
+- wells
+- header
+- heater
+- separator
+- meter
+- tank_leaks
+- recip_compressor
+- dehydrator
+- chemical_injection_pump
+- pneumatic_controller
+episodic_categories:
+- tank_vents
+- liquids_unloading
+- tank_flashing
+excluded_categories:
+- completions
+- workovers
+- flare_methane
+cells:
+  drygas:
+  - bin: 0
+    wells_represented: 38226.00000000001
+    rows_per_realization: 1500.0
+    excluded_mean_kg_h: 0.003158560718351215
+    steady:
+      emitters_per_well: 2.894835893894208
+      mean_kg_h: 0.02694987828951323
+      median_kg_h: 0.004457555562425222
+      sigma: 1.8970388744452915
+      sd_across_realizations:
+        emitters_per_well: 0.2568075285237996
+        mean_kg_h: 0.0027175506378112582
+        median_kg_h: 0.0010912344373226381
+      ln_quantile_error:
+        p75: -0.6886464479583381
+        p90: -0.5661679567973462
+        p95: -0.32640729641034255
+        p99: 0.5331446743855107
+    episodic:
+      emitters_per_well: 0.2623767320671794
+      mean_kg_h: 0.05421351012807414
+      median_kg_h: 0.027796076897384673
+      sigma: 1.1558851584830818
+      sd_across_realizations:
+        emitters_per_well: 0.010840645943891109
+        mean_kg_h: 0.003015270693428768
+        median_kg_h: 0.0031304765427419977
+      ln_quantile_error:
+        p75: -0.33421671603519554
+        p90: -0.15524005606727825
+        p95: 0.10015514035271604
+        p99: 0.639534445560546
+  - bin: 1
+    wells_represented: 65140.0
+    rows_per_realization: 1500.0
+    excluded_mean_kg_h: 0.004664764531409475
+    steady:
+      emitters_per_well: 3.1100804808105624
+      mean_kg_h: 0.11615989761083717
+      median_kg_h: 0.01117015339499812
+      sigma: 2.164126763326819
+      sd_across_realizations:
+        emitters_per_well: 0.2342941026373899
+        mean_kg_h: 0.012253342436157338
+        median_kg_h: 0.006694574389196099
+      ln_quantile_error:
+        p75: -0.8231517700612454
+        p90: -0.7650968630995976
+        p95: -0.5174264737367278
+        p99: 0.2865322861662679
+    episodic:
+      emitters_per_well: 0.30330560884249314
+      mean_kg_h: 0.2108192727721831
+      median_kg_h: 0.07613919264744765
+      sigma: 1.427191712370834
+      sd_across_realizations:
+        emitters_per_well: 0.010955050347076788
+        mean_kg_h: 0.017363249234233703
+        median_kg_h: 0.009300116307468662
+      ln_quantile_error:
+        p75: -0.2916981351515219
+        p90: -0.32504102736438023
+        p95: -0.16407329149286626
+        p99: 0.4743676677302854
+  - bin: 2
+    wells_represented: 43156.00000000001
+    rows_per_realization: 1500.0
+    excluded_mean_kg_h: 0.010180593270834546
+    steady:
+      emitters_per_well: 3.154477293539716
+      mean_kg_h: 0.18416533159861434
+      median_kg_h: 0.013948402416608661
+      sigma: 2.2717697576369473
+      sd_across_realizations:
+        emitters_per_well: 0.22693761413055533
+        mean_kg_h: 0.019856227153608474
+        median_kg_h: 0.008047453938316445
+      ln_quantile_error:
+        p75: -0.7854318714512458
+        p90: -0.7129948925306951
+        p95: -0.5865494264617596
+        p99: 0.09523397692472166
+    episodic:
+      emitters_per_well: 0.31943605616831955
+      mean_kg_h: 0.37563741433878084
+      median_kg_h: 0.09245043041040345
+      sigma: 1.6744860352594402
+      sd_across_realizations:
+        emitters_per_well: 0.013482454495625929
+        mean_kg_h: 0.0442742901513093
+        median_kg_h: 0.012014707201886708
+      ln_quantile_error:
+        p75: -0.28661635790262324
+        p90: -0.3105890769375915
+        p95: -0.21533021977881403
+        p99: 0.24578086047743852
+  - bin: 3
+    wells_represented: 44523.99999999999
+    rows_per_realization: 1500.0
+    excluded_mean_kg_h: 0.0057008594966907866
+    steady:
+      emitters_per_well: 3.1485290827418932
+      mean_kg_h: 0.21804020909041114
+      median_kg_h: 0.014764119571053048
+      sigma: 2.3205514892757644
+      sd_across_realizations:
+        emitters_per_well: 0.22730045157190834
+        mean_kg_h: 0.018564510178569627
+        median_kg_h: 0.008234230738538902
+      ln_quantile_error:
+        p75: -0.7615567888204953
+        p90: -0.6863257673955617
+        p95: -0.5692095167057799
+        p99: 0.026133451764253655
+    episodic:
+      emitters_per_well: 0.33031422603539684
+      mean_kg_h: 0.5370210441669085
+      median_kg_h: 0.10327988283459526
+      sigma: 1.8158164389829192
+      sd_across_realizations:
+        emitters_per_well: 0.015481787303954954
+        mean_kg_h: 0.06806971134281059
+        median_kg_h: 0.015102069076706939
+      ln_quantile_error:
+        p75: -0.27574350365722816
+        p90: -0.2889949684655546
+        p95: -0.33651969239333096
+        p99: 0.1822280760012636
+  - bin: 4
+    wells_represented: 57149.99999999999
+    rows_per_realization: 1500.0
+    excluded_mean_kg_h: 0.005581943720115946
+    steady:
+      emitters_per_well: 3.1621584976377957
+      mean_kg_h: 0.2331197418897808
+      median_kg_h: 0.014667101277152197
+      sigma: 2.35199713346046
+      sd_across_realizations:
+        emitters_per_well: 0.22832968056970743
+        mean_kg_h: 0.02434749249701363
+        median_kg_h: 0.008347329663135295
+      ln_quantile_error:
+        p75: -0.7439241401931861
+        p90: -0.6525201809996546
+        p95: -0.5421191567823681
+        p99: -0.0013434890349995642
+    episodic:
+      emitters_per_well: 0.33255703027121614
+      mean_kg_h: 0.7779069601961247
+      median_kg_h: 0.1080416188978977
+      sigma: 1.9870029771152766
+      sd_across_realizations:
+        emitters_per_well: 0.012080868986812727
+        mean_kg_h: 0.1226918951242987
+        median_kg_h: 0.018188356957243922
+      ln_quantile_error:
+        p75: -0.19887169995275772
+        p90: -0.21256267610444993
+        p95: -0.33260424103399555
+        p99: -0.06687331883040418
+  - bin: 5
+    wells_represented: 27869.000000000004
+    rows_per_realization: 1500.0
+    excluded_mean_kg_h: 0.007179064405483796
+    steady:
+      emitters_per_well: 3.166510857224872
+      mean_kg_h: 0.2718296063642533
+      median_kg_h: 0.014800432786146657
+      sigma: 2.412682739257691
+      sd_across_realizations:
+        emitters_per_well: 0.23128117931181882
+        mean_kg_h: 0.03892599749269401
+        median_kg_h: 0.008447244403430167
+      ln_quantile_error:
+        p75: -0.7082632133807568
+        p90: -0.5923805521919713
+        p95: -0.4894862387932973
+        p99: 0.07629804259051828
+    episodic:
+      emitters_per_well: 0.33240916645735397
+      mean_kg_h: 0.884596575904211
+      median_kg_h: 0.11351279056120686
+      sigma: 2.026433404729128
+      sd_across_realizations:
+        emitters_per_well: 0.01192167603409983
+        mean_kg_h: 0.13393332133578548
+        median_kg_h: 0.016340783252810052
+      ln_quantile_error:
+        p75: -0.16210511953738635
+        p90: -0.1881050538786008
+        p95: -0.30266950439980866
+        p99: -0.1674255445491203
+  - bin: 6
+    wells_represented: 31430.999999999996
+    rows_per_realization: 1500.0
+    excluded_mean_kg_h: 0.01950860596023318
+    steady:
+      emitters_per_well: 3.169459599121887
+      mean_kg_h: 0.27494237146160677
+      median_kg_h: 0.014602404040071702
+      sigma: 2.422963203165318
+      sd_across_realizations:
+        emitters_per_well: 0.2352295763433091
+        mean_kg_h: 0.03508302526016107
+        median_kg_h: 0.008254946191606938
+      ln_quantile_error:
+        p75: -0.7039624256099191
+        p90: -0.5934637246095782
+        p95: -0.46262632281778054
+        p99: 0.07633731582487888
+    episodic:
+      emitters_per_well: 0.33192888740415527
+      mean_kg_h: 0.9121112488172245
+      median_kg_h: 0.11194124924253941
+      sigma: 2.0483104221071895
+      sd_across_realizations:
+        emitters_per_well: 0.011943699534023688
+        mean_kg_h: 0.1409989907827192
+        median_kg_h: 0.0196409941331052
+      ln_quantile_error:
+        p75: -0.1682054272402084
+        p90: -0.21544855582548272
+        p95: -0.3097762698117404
+        p99: -0.17076924316598452
+  - bin: 7
+    wells_represented: 6728.000000000001
+    rows_per_realization: 1480.0
+    excluded_mean_kg_h: 0.052357813774515795
+    steady:
+      emitters_per_well: 3.1589375
+      mean_kg_h: 0.2737153536502387
+      median_kg_h: 0.014533415979041429
+      sigma: 2.423071671581673
+      sd_across_realizations:
+        emitters_per_well: 0.23497047958137235
+        mean_kg_h: 0.03860705029585006
+        median_kg_h: 0.00848927425575716
+      ln_quantile_error:
+        p75: -0.7255054638378564
+        p90: -0.598475645282501
+        p95: -0.4818396630884621
+        p99: 0.06292226763410878
+    episodic:
+      emitters_per_well: 0.33258002675386433
+      mean_kg_h: 0.9104542491940946
+      median_kg_h: 0.11069229474662301
+      sigma: 2.0528952323142327
+      sd_across_realizations:
+        emitters_per_well: 0.013704844437525647
+        mean_kg_h: 0.1599211865727962
+        median_kg_h: 0.016998089054320417
+      ln_quantile_error:
+        p75: -0.15598883613683034
+        p90: -0.2126583336946809
+        p95: -0.3216816812176176
+        p99: -0.13204616451913062
+  - bin: 8
+    wells_represented: 5876.0
+    rows_per_realization: 1419.0
+    excluded_mean_kg_h: 0.16510870557847174
+    steady:
+      emitters_per_well: 3.1709211878829136
+      mean_kg_h: 0.2766179491134635
+      median_kg_h: 0.014435503952714732
+      sigma: 2.4302043472551964
+      sd_across_realizations:
+        emitters_per_well: 0.23376163785729356
+        mean_kg_h: 0.03933703057008754
+        median_kg_h: 0.00804815367417568
+      ln_quantile_error:
+        p75: -0.7156723355993975
+        p90: -0.5999596219288189
+        p95: -0.48197771602587103
+        p99: 0.07764190760713059
+    episodic:
+      emitters_per_well: 0.3295845405037441
+      mean_kg_h: 0.9070448055789015
+      median_kg_h: 0.11336388202172447
+      sigma: 2.0394062904580665
+      sd_across_realizations:
+        emitters_per_well: 0.013952119234295486
+        mean_kg_h: 0.17251328741933342
+        median_kg_h: 0.01812588036709645
+      ln_quantile_error:
+        p75: -0.15687695783369116
+        p90: -0.24341548807240954
+        p95: -0.3086895659861548
+        p99: -0.10117518852543729
+  - bin: 9
+    wells_represented: 89.0
+    rows_per_realization: 89.0
+    excluded_mean_kg_h: 0.9820004806763998
+    steady:
+      emitters_per_well: 3.1750561797752805
+      mean_kg_h: 0.28264532374259577
+      median_kg_h: 0.014891833041666665
+      sigma: 2.4262645750101597
+      sd_across_realizations:
+        emitters_per_well: 0.24997748499380795
+        mean_kg_h: 0.09038674706808306
+        median_kg_h: 0.009557426837904236
+      ln_quantile_error:
+        p75: -0.7021845998830013
+        p90: -0.6028010131423196
+        p95: -0.46819038616553776
+        p99: 0.15922174892858806
+    episodic:
+      emitters_per_well: 0.341685393258427
+      mean_kg_h: 0.8196813864684351
+      median_kg_h: 0.11104580784458332
+      sigma: 1.9994863901503166
+      sd_across_realizations:
+        emitters_per_well: 0.037319987875685474
+        mean_kg_h: 0.42133265925902436
+        median_kg_h: 0.05680883423440952
+      ln_quantile_error:
+        p75: -0.10687959452532425
+        p90: -0.19243117289827213
+        p95: -0.19880418033037972
+        p99: 0.40231825921598463
+  gaswoil:
+  - bin: 0
+    wells_represented: 402.0
+    rows_per_realization: 402.0
+    excluded_mean_kg_h: 0.0054442221957463725
+    steady:
+      emitters_per_well: 2.856542288557214
+      mean_kg_h: 0.04167411761831578
+      median_kg_h: 0.005030863822916665
+      sigma: 2.0563504331419713
+      sd_across_realizations:
+        emitters_per_well: 0.20919888892912045
+        mean_kg_h: 0.0035403439141056025
+        median_kg_h: 0.0014798072066733751
+      ln_quantile_error:
+        p75: -0.7847829893841134
+        p90: -0.7374893616728627
+        p95: -0.4266553194929967
+        p99: 0.5819192298445585
+    episodic:
+      emitters_per_well: 0.11368159203980101
+      mean_kg_h: 0.0324133642471444
+      median_kg_h: 0.006085760416666668
+      sigma: 1.8289992510234223
+      sd_across_realizations:
+        emitters_per_well: 0.014433578097453739
+        mean_kg_h: 0.0091115820293373
+        median_kg_h: 0.0024689689130616746
+      ln_quantile_error:
+        p75: -0.15201400206224647
+        p90: -0.16726342783625703
+        p95: -0.23775092296194328
+        p99: 0.4327741751469009
+  - bin: 1
+    wells_represented: 2881.9999999999995
+    rows_per_realization: 1005.0
+    excluded_mean_kg_h: 0.0050709313853911754
+    steady:
+      emitters_per_well: 3.1143967800138794
+      mean_kg_h: 0.12253162584075036
+      median_kg_h: 0.011421197994414593
+      sigma: 2.178484824311891
+      sd_across_realizations:
+        emitters_per_well: 0.23452185628015457
+        mean_kg_h: 0.0117190814013297
+        median_kg_h: 0.006632271653212571
+      ln_quantile_error:
+        p75: -0.8319696558001429
+        p90: -0.7566997200990419
+        p95: -0.5311671924552349
+        p99: 0.25407266637148035
+    episodic:
+      emitters_per_well: 0.3042077515614158
+      mean_kg_h: 0.2219399357953632
+      median_kg_h: 0.07779840094849559
+      sigma: 1.4479543557531298
+      sd_across_realizations:
+        emitters_per_well: 0.012256583682702191
+        mean_kg_h: 0.020564622711134396
+        median_kg_h: 0.010154318415393982
+      ln_quantile_error:
+        p75: -0.2815455508719352
+        p90: -0.33037531510710827
+        p95: -0.1688775562884693
+        p99: 0.4679057216135765
+  - bin: 2
+    wells_represented: 3908.0
+    rows_per_realization: 1184.0
+    excluded_mean_kg_h: 0.011257706174309979
+    steady:
+      emitters_per_well: 3.152279099283521
+      mean_kg_h: 0.18629259025447792
+      median_kg_h: 0.01364450163903251
+      sigma: 2.286474086217271
+      sd_across_realizations:
+        emitters_per_well: 0.22374666933795145
+        mean_kg_h: 0.019299789556409905
+        median_kg_h: 0.008086058223968117
+      ln_quantile_error:
+        p75: -0.8003432261939336
+        p90: -0.7308832134185742
+        p95: -0.5947112963844251
+        p99: 0.09144903980900695
+    episodic:
+      emitters_per_well: 0.32076348004094163
+      mean_kg_h: 0.39502092823820517
+      median_kg_h: 0.09578683170409855
+      sigma: 1.6833380688181059
+      sd_across_realizations:
+        emitters_per_well: 0.013828973848223522
+        mean_kg_h: 0.04371006628388654
+        median_kg_h: 0.01264497263145033
+      ln_quantile_error:
+        p75: -0.2822393869463805
+        p90: -0.272950397046025
+        p95: -0.2395066586495256
+        p99: 0.24426307629426647
+  - bin: 3
+    wells_represented: 9386.0
+    rows_per_realization: 1500.0
+    excluded_mean_kg_h: 0.007128433146531103
+    steady:
+      emitters_per_well: 3.164593185595568
+      mean_kg_h: 0.21731641227980547
+      median_kg_h: 0.01429973024640558
+      sigma: 2.33285822090371
+      sd_across_realizations:
+        emitters_per_well: 0.2266452090648569
+        mean_kg_h: 0.023026833005060178
+        median_kg_h: 0.008624138188906538
+      ln_quantile_error:
+        p75: -0.7759707362584503
+        p90: -0.6929479892992524
+        p95: -0.56923154819295
+        p99: 0.015575596141596043
+    episodic:
+      emitters_per_well: 0.32479282761559775
+      mean_kg_h: 0.5384620655268726
+      median_kg_h: 0.10416338079405174
+      sigma: 1.8125983635529115
+      sd_across_realizations:
+        emitters_per_well: 0.012407064281756293
+        mean_kg_h: 0.05955316169999245
+        median_kg_h: 0.015051627517159494
+      ln_quantile_error:
+        p75: -0.26540469357259655
+        p90: -0.2325208602031655
+        p95: -0.34866089910138515
+        p99: 0.15613552006728285
+  - bin: 4
+    wells_represented: 30939.0
+    rows_per_realization: 1500.0
+    excluded_mean_kg_h: 0.006895768877211422
+    steady:
+      emitters_per_well: 3.153220529428876
+      mean_kg_h: 0.23470577789034164
+      median_kg_h: 0.014799574361716718
+      sigma: 2.351056911151154
+      sd_across_realizations:
+        emitters_per_well: 0.235325268475187
+        mean_kg_h: 0.021731711706610406
+        median_kg_h: 0.008089170534059487
+      ln_quantile_error:
+        p75: -0.7530218294574601
+        p90: -0.6519943963047298
+        p95: -0.5400563234482879
+        p99: 0.007385006376918923
+    episodic:
+      emitters_per_well: 0.33050572610620904
+      mean_kg_h: 0.8491562187649636
+      median_kg_h: 0.11592166754904738
+      sigma: 1.9956595347848523
+      sd_across_realizations:
+        emitters_per_well: 0.012611816477988006
+        mean_kg_h: 0.14627702458129488
+        median_kg_h: 0.019280952358353278
+      ln_quantile_error:
+        p75: -0.16909698183339508
+        p90: -0.22785990905822015
+        p95: -0.32966641152499376
+        p99: -0.0813597760869287
+  - bin: 5
+    wells_represented: 29917.000000000004
+    rows_per_realization: 1500.0
+    excluded_mean_kg_h: 0.008416859374068934
+    steady:
+      emitters_per_well: 3.156472990607347
+      mean_kg_h: 0.2700027812934483
+      median_kg_h: 0.014393738163130191
+      sigma: 2.4214206564772756
+      sd_across_realizations:
+        emitters_per_well: 0.23647725149006554
+        mean_kg_h: 0.03952779044484557
+        median_kg_h: 0.008303897842961785
+      ln_quantile_error:
+        p75: -0.7229843744807813
+        p90: -0.5967388853118427
+        p95: -0.47022431990326347
+        p99: 0.05758416219834604
+    episodic:
+      emitters_per_well: 0.33096465086739973
+      mean_kg_h: 0.9236888744783347
+      median_kg_h: 0.11685587018252874
+      sigma: 2.0334374848408965
+      sd_across_realizations:
+        emitters_per_well: 0.014468419169232442
+        mean_kg_h: 0.15741635633273757
+        median_kg_h: 0.017682182949303155
+      ln_quantile_error:
+        p75: -0.14150167953203052
+        p90: -0.1962046492826954
+        p95: -0.32707772243166716
+        p99: -0.13144693514648575
+  - bin: 6
+    wells_represented: 30032.0
+    rows_per_realization: 1500.0
+    excluded_mean_kg_h: 0.02070301163981144
+    steady:
+      emitters_per_well: 3.168160121870005
+      mean_kg_h: 0.27160456151610757
+      median_kg_h: 0.014720277843316094
+      sigma: 2.414589489819724
+      sd_across_realizations:
+        emitters_per_well: 0.22591976742590772
+        mean_kg_h: 0.03269043624676894
+        median_kg_h: 0.00823133674570127
+      ln_quantile_error:
+        p75: -0.7116846556436944
+        p90: -0.5956991871061273
+        p95: -0.4734237025149744
+        p99: 0.06190126834513666
+    episodic:
+      emitters_per_well: 0.33595848295151837
+      mean_kg_h: 0.9236663055009763
+      median_kg_h: 0.11229455283434922
+      sigma: 2.0529128135875636
+      sd_across_realizations:
+        emitters_per_well: 0.014405607218960366
+        mean_kg_h: 0.16380066826060707
+        median_kg_h: 0.017328824234475803
+      ln_quantile_error:
+        p75: -0.16721022506539632
+        p90: -0.23038566209680725
+        p95: -0.3305225647066925
+        p99: -0.11036639569615836
+  - bin: 7
+    wells_represented: 3096.0
+    rows_per_realization: 1042.0
+    excluded_mean_kg_h: 0.06780461291233413
+    steady:
+      emitters_per_well: 3.165237726098191
+      mean_kg_h: 0.27499458407156796
+      median_kg_h: 0.014911135301807961
+      sigma: 2.414391490069691
+      sd_across_realizations:
+        emitters_per_well: 0.23506181290567577
+        mean_kg_h: 0.04161311321327367
+        median_kg_h: 0.008409058308365849
+      ln_quantile_error:
+        p75: -0.6935634629302507
+        p90: -0.5734163155053236
+        p95: -0.4506185139559469
+        p99: 0.06608710623023606
+    episodic:
+      emitters_per_well: 0.34577170542635655
+      mean_kg_h: 0.9965591727568281
+      median_kg_h: 0.12716191641935032
+      sigma: 2.029210344750193
+      sd_across_realizations:
+        emitters_per_well: 0.015944549331631957
+        mean_kg_h: 0.16229004047753678
+        median_kg_h: 0.02087462062744047
+      ln_quantile_error:
+        p75: -0.1651174388792541
+        p90: -0.30155848578990685
+        p95: -0.3159223620044811
+        p99: -0.06799593686272995
+  - bin: 8
+    wells_represented: 2685.9999999999995
+    rows_per_realization: 971.0
+    excluded_mean_kg_h: 0.1859623570624781
+    steady:
+      emitters_per_well: 3.1676438198064045
+      mean_kg_h: 0.27018015174573373
+      median_kg_h: 0.014545011238863734
+      sigma: 2.4173708447589446
+      sd_across_realizations:
+        emitters_per_well: 0.23322902518838406
+        mean_kg_h: 0.03529607974936223
+        median_kg_h: 0.00798314055882813
+      ln_quantile_error:
+        p75: -0.707874212109369
+        p90: -0.5821681489711941
+        p95: -0.45780252169547486
+        p99: 0.09836201015425398
+    episodic:
+      emitters_per_well: 0.3779411020104245
+      mean_kg_h: 1.1687943919847346
+      median_kg_h: 0.14822731459854163
+      sigma: 2.032230822233171
+      sd_across_realizations:
+        emitters_per_well: 0.015949236300330516
+        mean_kg_h: 0.1794399199123988
+        median_kg_h: 0.01992564297984577
+      ln_quantile_error:
+        p75: -0.28831170376880416
+        p90: -0.5026452273509242
+        p95: -0.2885706257758599
+        p99: 0.0075619327117012755
+  - bin: 9
+    wells_represented: 24.0
+    rows_per_realization: 24.0
+    excluded_mean_kg_h: 0.9645210097523785
+    steady:
+      emitters_per_well: 3.1808333333333336
+      mean_kg_h: 0.2600904337806951
+      median_kg_h: 0.015271209122916669
+      sigma: 2.3812014168376834
+      sd_across_realizations:
+        emitters_per_well: 0.2923104967104212
+        mean_kg_h: 0.1517889216376633
+        median_kg_h: 0.012068565708521122
+      ln_quantile_error:
+        p75: -0.6432468384583655
+        p90: -0.6033744227266282
+        p95: -0.45277510455702236
+        p99: 0.12937588171398373
+    episodic:
+      emitters_per_well: 0.6445833333333334
+      mean_kg_h: 2.7044132756428203
+      median_kg_h: 0.4496007273449074
+      sigma: 1.894349676153443
+      sd_across_realizations:
+        emitters_per_well: 0.12215548568271238
+        mean_kg_h: 1.007189381155362
+        median_kg_h: 0.15235543109758298
+      ln_quantile_error:
+        p75: -0.5581316450303893
+        p90: -0.32920283862320876
+        p95: -0.007124136376388436
+        p99: 0.829605021287276
+  oilwgas:
+  - bin: 0
+    wells_represented: 65606.0
+    rows_per_realization: 500.0
+    excluded_mean_kg_h: 0.0009612546815033333
+    steady:
+      emitters_per_well: 2.25404
+      mean_kg_h: 0.022561812559964024
+      median_kg_h: 0.003373872354166692
+      sigma: 1.9494602412778552
+      sd_across_realizations:
+        emitters_per_well: 0.24655984255266702
+        mean_kg_h: 0.0026344495926537985
+        median_kg_h: 0.0009803148837388138
+      ln_quantile_error:
+        p75: -0.7410340747228503
+        p90: -0.6367576643171975
+        p95: -0.3571060279212091
+        p99: 0.6256146078183228
+    episodic:
+      emitters_per_well: 0.19238
+      mean_kg_h: 0.01646139147886538
+      median_kg_h: 0.005428333333333337
+      sigma: 1.4895540128551177
+      sd_across_realizations:
+        emitters_per_well: 0.020809273379574274
+        mean_kg_h: 0.002536461900500065
+        median_kg_h: 1.6666491151678418e-17
+      ln_quantile_error:
+        p75: -0.30553474492094734
+        p90: 0.13871114974352788
+        p95: 0.10381873370154002
+        p99: 0.2892479503633193
+  - bin: 1
+    wells_represented: 89163.0
+    rows_per_realization: 500.0
+    excluded_mean_kg_h: 0.005054200905049999
+    steady:
+      emitters_per_well: 2.4121799999999998
+      mean_kg_h: 0.08734116784093546
+      median_kg_h: 0.008145595460416502
+      sigma: 2.1782307372319294
+      sd_across_realizations:
+        emitters_per_well: 0.23712948259369082
+        mean_kg_h: 0.011339948973477813
+        median_kg_h: 0.004953231399799934
+      ln_quantile_error:
+        p75: -0.8207638611113094
+        p90: -0.745788311928976
+        p95: -0.5144912866672743
+        p99: 0.264040889672008
+    episodic:
+      emitters_per_well: 0.27265999999999996
+      mean_kg_h: 0.23125603934616623
+      median_kg_h: 0.023354776270416874
+      sigma: 2.1413659088302954
+      sd_across_realizations:
+        emitters_per_well: 0.022620371617663847
+        mean_kg_h: 0.03430551875434471
+        median_kg_h: 0.009550923342645446
+      ln_quantile_error:
+        p75: -1.276967959511545
+        p90: -0.8790535621032793
+        p95: -0.33021237728191616
+        p99: 0.9970067997647495
+  - bin: 2
+    wells_represented: 38948.0
+    rows_per_realization: 500.0
+    excluded_mean_kg_h: 0.014998389958976668
+    steady:
+      emitters_per_well: 2.44282
+      mean_kg_h: 0.13486565728597427
+      median_kg_h: 0.00972731288333298
+      sigma: 2.2931818340042285
+      sd_across_realizations:
+        emitters_per_well: 0.2374526589712679
+        mean_kg_h: 0.0187489646695951
+        median_kg_h: 0.005864423679726581
+      ln_quantile_error:
+        p75: -0.7826044137557838
+        p90: -0.7104577558439559
+        p95: -0.5912406249145848
+        p99: 0.03332396200696919
+    episodic:
+      emitters_per_well: 0.31376000000000004
+      mean_kg_h: 0.5038900690954619
+      median_kg_h: 0.05680024776437511
+      sigma: 2.08941017497278
+      sd_across_realizations:
+        emitters_per_well: 0.020642762323963244
+        mean_kg_h: 0.06649596722136954
+        median_kg_h: 0.05198842741005509
+      ln_quantile_error:
+        p75: -1.3893807583842175
+        p90: -0.7413263252446215
+        p95: -0.3327929598615593
+        p99: 0.778964500860497
+  - bin: 3
+    wells_represented: 44409.99999999999
+    rows_per_realization: 500.0
+    excluded_mean_kg_h: 0.036842904206050006
+    steady:
+      emitters_per_well: 2.449420000000001
+      mean_kg_h: 0.15767548026240116
+      median_kg_h: 0.009612301012500166
+      sigma: 2.3653732748716805
+      sd_across_realizations:
+        emitters_per_well: 0.2324432017078625
+        mean_kg_h: 0.01901712154989501
+        median_kg_h: 0.006169792232556189
+      ln_quantile_error:
+        p75: -0.7774498093156835
+        p90: -0.6991733408831605
+        p95: -0.5594597280480433
+        p99: 0.027287694587950315
+    episodic:
+      emitters_per_well: 0.3410600000000001
+      mean_kg_h: 0.8535950661098504
+      median_kg_h: 0.1299383499489592
+      sigma: 1.9403076112122173
+      sd_across_realizations:
+        emitters_per_well: 0.02373158829131087
+        mean_kg_h: 0.11392125535144178
+        median_kg_h: 0.1025862506523919
+      ln_quantile_error:
+        p75: -1.013688798250492
+        p90: -0.7260898672951174
+        p95: -0.4311978432394205
+        p99: 0.609209504196852
+  - bin: 4
+    wells_represented: 54343.0
+    rows_per_realization: 500.0
+    excluded_mean_kg_h: 0.0593135127702725
+    steady:
+      emitters_per_well: 2.46376
+      mean_kg_h: 0.17741766238610118
+      median_kg_h: 0.010213339474999507
+      sigma: 2.3894819396134412
+      sd_across_realizations:
+        emitters_per_well: 0.24308194237143724
+        mean_kg_h: 0.02513423067651149
+        median_kg_h: 0.00688008101420622
+      ln_quantile_error:
+        p75: -0.7349477293878769
+        p90: -0.6563954945882088
+        p95: -0.5276565092440876
+        p99: 0.033486246746629256
+    episodic:
+      emitters_per_well: 0.37504000000000004
+      mean_kg_h: 1.2786959571111887
+      median_kg_h: 0.23527920737125158
+      sigma: 1.8400125699181347
+      sd_across_realizations:
+        emitters_per_well: 0.02642539335831
+        mean_kg_h: 0.17867349867389418
+        median_kg_h: 0.1204249547063671
+      ln_quantile_error:
+        p75: -0.5883470777770701
+        p90: -0.583717923436804
+        p95: -0.2874155666693671
+        p99: 0.43247628115417913
+  - bin: 5
+    wells_represented: 32774.99999999999
+    rows_per_realization: 500.0
+    excluded_mean_kg_h: 0.11463520692738667
+    steady:
+      emitters_per_well: 2.4515800000000003
+      mean_kg_h: 0.20797112840339085
+      median_kg_h: 0.010403704927083236
+      sigma: 2.4475445975987227
+      sd_across_realizations:
+        emitters_per_well: 0.23776200561303176
+        mean_kg_h: 0.041932126102751974
+        median_kg_h: 0.006626670874163979
+      ln_quantile_error:
+        p75: -0.6957166273107431
+        p90: -0.575991671995913
+        p95: -0.4374872606999202
+        p99: 0.1106772517508054
+    episodic:
+      emitters_per_well: 0.46872000000000014
+      mean_kg_h: 1.9649178021415818
+      median_kg_h: 0.44733320070666266
+      sigma: 1.7204080679168032
+      sd_across_realizations:
+        emitters_per_well: 0.026720430650373408
+        mean_kg_h: 0.23977311507944013
+        median_kg_h: 0.10808973423660999
+      ln_quantile_error:
+        p75: -0.31978458334578297
+        p90: -0.3018354623851056
+        p95: -0.021267032046458682
+        p99: 0.1808197243288722
+  - bin: 6
+    wells_represented: 42848.0
+    rows_per_realization: 500.0
+    excluded_mean_kg_h: 0.19250117541763495
+    steady:
+      emitters_per_well: 2.4577599999999995
+      mean_kg_h: 0.2212824656979694
+      median_kg_h: 0.010122046881249043
+      sigma: 2.4838373965864826
+      sd_across_realizations:
+        emitters_per_well: 0.24277324998667152
+        mean_kg_h: 0.047505332186155415
+        median_kg_h: 0.006569379063390568
+      ln_quantile_error:
+        p75: -0.6769166540501536
+        p90: -0.5507864141370848
+        p95: -0.39998873891315223
+        p99: 0.1273825753058084
+    episodic:
+      emitters_per_well: 0.6934600000000002
+      mean_kg_h: 2.4349409168300307
+      median_kg_h: 0.8534518902312535
+      sigma: 1.448025274687543
+      sd_across_realizations:
+        emitters_per_well: 0.030742797464765548
+        mean_kg_h: 0.23728830705847845
+        median_kg_h: 0.1762747877781233
+      ln_quantile_error:
+        p75: -0.3964867711433279
+        p90: -0.11602571980105772
+        p95: 0.16273485370465252
+        p99: 0.018945111423236804
+  - bin: 7
+    wells_represented: 7280.0
+    rows_per_realization: 500.0
+    excluded_mean_kg_h: 0.2579817384235833
+    steady:
+      emitters_per_well: 2.4572599999999993
+      mean_kg_h: 0.22257474633215302
+      median_kg_h: 0.009973905193749546
+      sigma: 2.492103842950054
+      sd_across_realizations:
+        emitters_per_well: 0.2364586631822555
+        mean_kg_h: 0.050276865364975
+        median_kg_h: 0.006144826865022339
+      ln_quantile_error:
+        p75: -0.684507221151089
+        p90: -0.5429468841102288
+        p95: -0.3987154433193899
+        p99: 0.11302280872331075
+    episodic:
+      emitters_per_well: 0.82652
+      mean_kg_h: 3.6410172115708224
+      median_kg_h: 1.2125564775375126
+      sigma: 1.4829242557729518
+      sd_across_realizations:
+        emitters_per_well: 0.0277137168386
+        mean_kg_h: 0.275540942992784
+        median_kg_h: 0.24067684990703275
+      ln_quantile_error:
+        p75: -0.49018889987687375
+        p90: -0.1356034620477891
+        p95: 0.2575727809069286
+        p99: 0.026284191935934387
+  - bin: 8
+    wells_represented: 4464.0
+    rows_per_realization: 500.0
+    excluded_mean_kg_h: 0.7925523412760836
+    steady:
+      emitters_per_well: 2.46362
+      mean_kg_h: 0.22193452196372818
+      median_kg_h: 0.009840910808333556
+      sigma: 2.496330957086697
+      sd_across_realizations:
+        emitters_per_well: 0.24059433060484173
+        mean_kg_h: 0.05140519911618644
+        median_kg_h: 0.006481111202616444
+      ln_quantile_error:
+        p75: -0.719852990355496
+        p90: -0.5755776190573851
+        p95: -0.4186267441249168
+        p99: 0.12610264559610615
+    episodic:
+      emitters_per_well: 0.8255599999999998
+      mean_kg_h: 4.062041850590513
+      median_kg_h: 1.2713851028728902
+      sigma: 1.524190819884649
+      sd_across_realizations:
+        emitters_per_well: 0.030320283573205507
+        mean_kg_h: 0.332752278357656
+        median_kg_h: 0.26204473186977045
+      ln_quantile_error:
+        p75: -0.5165710433034313
+        p90: -0.15462215706920282
+        p95: 0.24550820967986745
+        p99: 0.04751022732848053
+  - bin: 9
+    wells_represented: 348.0
+    rows_per_realization: 348.0
+    excluded_mean_kg_h: 1.0204544026966667
+    steady:
+      emitters_per_well: 2.4629310344827586
+      mean_kg_h: 0.22320231670188462
+      median_kg_h: 0.010103435268749999
+      sigma: 2.48805269972547
+      sd_across_realizations:
+        emitters_per_well: 0.2349549427983225
+        mean_kg_h: 0.053484956982522855
+        median_kg_h: 0.006196010884621476
+      ln_quantile_error:
+        p75: -0.6751201240559979
+        p90: -0.5458633143413765
+        p95: -0.4161041004822723
+        p99: 0.12663537497496985
+    episodic:
+      emitters_per_well: 0.8202298850574712
+      mean_kg_h: 7.323108957342762
+      median_kg_h: 1.8891237848000002
+      sigma: 1.646160285698875
+      sd_across_realizations:
+        emitters_per_well: 0.032817891916574374
+        mean_kg_h: 0.6805553994119822
+        median_kg_h: 0.43695162067855176
+      ln_quantile_error:
+        p75: -0.5874690166021218
+        p90: -0.21415008501642543
+        p95: 0.22376804623169266
+        p99: 0.1324269437503611
+  oilonly:
+  - bin: 0
+    wells_represented: 114460.00000000001
+    rows_per_realization: 500.0
+    excluded_mean_kg_h: 0.00041629422626083325
+    steady:
+      emitters_per_well: 2.1758599999999997
+      mean_kg_h: 0.01096161362667686
+      median_kg_h: 0.0024813384666666867
+      sigma: 1.7237177150010325
+      sd_across_realizations:
+        emitters_per_well: 0.2433288094224551
+        mean_kg_h: 0.0011480680066433247
+        median_kg_h: 0.0003725826123469262
+      ln_quantile_error:
+        p75: -0.4159745356619928
+        p90: -0.49040665811543155
+        p95: -0.21309693893499201
+        p99: 0.5985204134090533
+    episodic:
+      emitters_per_well: 0.17871999999999996
+      mean_kg_h: 0.010555715667879573
+      median_kg_h: 0.005428333333333335
+      sigma: 1.1532868963316563
+      sd_across_realizations:
+        emitters_per_well: 0.01987744267436652
+        mean_kg_h: 0.00160353393154718
+        median_kg_h: 1.7434626923745965e-18
+      ln_quantile_error:
+        p75: -0.08718459377988319
+        p90: -0.13764906024229992
+        p95: 0.16135987418390285
+        p99: 0.5894091560785167
+  - bin: 1
+    wells_represented: 27149.0
+    rows_per_realization: 500.0
+    excluded_mean_kg_h: 0.0020325674663816667
+    steady:
+      emitters_per_well: 2.33192
+      mean_kg_h: 0.03965710515890124
+      median_kg_h: 0.004788898722916808
+      sigma: 2.0561953485464963
+      sd_across_realizations:
+        emitters_per_well: 0.2398042838346608
+        mean_kg_h: 0.0048186553561582295
+        median_kg_h: 0.0020628738425610047
+      ln_quantile_error:
+        p75: -0.8057310959420712
+        p90: -0.7599781661677804
+        p95: -0.4144372693729765
+        p99: 0.5934036668397614
+    episodic:
+      emitters_per_well: 0.20746000000000003
+      mean_kg_h: 0.034714320519168416
+      median_kg_h: 0.0055997333333333375
+      sigma: 1.9102006802086842
+      sd_across_realizations:
+        emitters_per_well: 0.02012858663692014
+        mean_kg_h: 0.005967224229397576
+        median_kg_h: 0.0012723679224936548
+      ln_quantile_error:
+        p75: -0.2448744088226836
+        p90: -0.42325156342611486
+        p95: -0.44373562539926703
+        p99: 0.44377409724761013
+  - bin: 2
+    wells_represented: 45205.0
+    rows_per_realization: 500.0
+    excluded_mean_kg_h: 0.006001863081497499
+    steady:
+      emitters_per_well: 2.4199
+      mean_kg_h: 0.09294437826035173
+      median_kg_h: 0.008045020660416173
+      sigma: 2.212215126275311
+      sd_across_realizations:
+        emitters_per_well: 0.23741169543919513
+        mean_kg_h: 0.01244914424867052
+        median_kg_h: 0.005096155819104152
+      ln_quantile_error:
+        p75: -0.825990180951946
+        p90: -0.7755687152582854
+        p95: -0.541487972802453
+        p99: 0.24047545060778774
+    episodic:
+      emitters_per_well: 0.27976
+      mean_kg_h: 0.2617888109517354
+      median_kg_h: 0.0239661666666667
+      sigma: 2.186730436114037
+      sd_across_realizations:
+        emitters_per_well: 0.01972391257516437
+        mean_kg_h: 0.03383152114937455
+        median_kg_h: 0.004898400267408608
+      ln_quantile_error:
+        p75: -1.3489888566500232
+        p90: -0.886534224585257
+        p95: -0.2957314728247086
+        p99: 1.0333970433173258
+  - bin: 3
+    wells_represented: 4759.0
+    rows_per_realization: 500.0
+    excluded_mean_kg_h: 0.055094714562927506
+    steady:
+      emitters_per_well: 2.45344
+      mean_kg_h: 0.16891393214543837
+      median_kg_h: 0.01025224740624983
+      sigma: 2.367231449290278
+      sd_across_realizations:
+        emitters_per_well: 0.23657489983580934
+        mean_kg_h: 0.02345976393790899
+        median_kg_h: 0.006888384703520993
+      ln_quantile_error:
+        p75: -0.7507289878337211
+        p90: -0.6611546722015976
+        p95: -0.5450192843373535
+        p99: 0.03137572355621794
+    episodic:
+      emitters_per_well: 0.55548
+      mean_kg_h: 1.558058032212744
+      median_kg_h: 0.5513613206322878
+      sigma: 1.441391775377895
+      sd_across_realizations:
+        emitters_per_well: 0.028937578239089642
+        mean_kg_h: 0.13691925629253318
+        median_kg_h: 0.11339900109825186
+      ln_quantile_error:
+        p75: -0.3553802400417443
+        p90: -0.38588148910041276
+        p95: -0.06119023209331005
+        p99: 0.690247207029211

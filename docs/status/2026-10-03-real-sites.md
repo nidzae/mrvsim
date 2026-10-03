@@ -46,6 +46,8 @@ DECISION_LOG 2026-10-03 "Well-pad facilities are real production sites…"; TDD 
 
 - The Chrome extension was not connected, so the new map layer and tooltip were checked through the API and MapLibre's style validator, not by eye.
 
+**Superseded in part:** the V2 and V3 rows below were produced with a weighting error; see `2026-10-03-equipment-leak-model.md`.
+
 ## Validation on the real-site population (quick mode, `runs/validation/20261003T172540Z.json`)
 
 | Test | Before today's change | Real sites | What changed |

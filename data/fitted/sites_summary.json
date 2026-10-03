@@ -9,13 +9,116 @@
     "doi": "10.5281/zenodo.22835235",
     "production_year": 2022
   },
-  "built_utc": "2026-10-03T16:42:03+00:00",
-  "method": "Build the real-site table ``data/fitted/sites.npz`` from the OGIM database [ogim].\n\nReads ``data/raw/ogim/OGIM_v3.0.gpkg`` (``fetch_ogim.py``) and writes\n\n- ``data/fitted/sites.npz``: every onshore US production site with reported 2022 production\n  (lat, lon, gas Mcf/yr, oil bbl/yr, wells per site, cell index), plus a location pool per\n  midstream cell; and\n- ``data/fitted/site_density.json``: site counts per 0.1-degree cell, for the map's background layer; and\n- ``data/fitted/sites_summary.json``: counts and volumes per cell, the method, and its caveats.\n  ``fit_strata_weights.py`` reads the summary so that well-pad stratum weights come from the full\n  site population rather than from GHGRP reporters only.\n\nMethod and caveats (all recorded in the summary):\n\n- **Production records.** ``Oil_and_Natural_Gas_Production`` holds one record per reporting entity for\n  production year 2022 in 20 states (wells in 14, leases or reporting units in TX, OK, KS, LA, KY, MI).\n  Records with no oil, condensate, or gas in the year are dropped; -999 means \"not reported\" and is\n  read as zero. Condensate is added to oil. Gas is the reported produced volume and is used as\n  marketed gas (no separate sales volume in the table). States without production records in OGIM\n  (for example AL, IL, IN, NE, TN, VA) are absent.\n- **Sites.** Well-level records closer than ``LINK_M`` to each other are merged into one site\n  (single-linkage); 50 m is an assumption standing in for a pad footprint, TODO(verify) [ogim].\n  In old dense fields this chains many wells into one site. Lease-level records are one site each at\n  the location OGIM gives for the lease.\n- **Basin.** Point-in-polygon against the basin and play outlines in ``Oil_and_Natural_Gas_Basins``\n  (EIA sedimentary basins and tight-oil/shale-gas plays, as carried by OGIM); everything else is ``other``.\n- **Facility type.** Energy share of gas at the site: > 0.8 gas-dominant, < 0.2 oil-dominant, else\n  mixed, with the heat contents in ``configs/constants.yaml`` [eia-heat-content] (same rule as\n  ``fit_strata_weights.py``).\n- **Cells.** ``configs/strata.yaml`` lists the basin x type cells. Sites whose (basin, type) is not a\n  listed cell are folded into the listed well-pad cell of the same basin with the most sites; they\n  keep their own location and production.\n- **Midstream pools.** Locations only: gathering compressor stations, transmission (booster and\n  transmission) compressor stations, gas processing plants, and underground storage fields.\n\nRun:\n\n    .venv/bin/python data/scripts/build_sites.py",
+  "built_utc": "2026-10-03T20:37:26+00:00",
+  "method": "Build the real-site table ``data/fitted/sites.npz`` from the OGIM database [ogim].\n\nReads ``data/raw/ogim/OGIM_v3.0.gpkg`` (``fetch_ogim.py``) and writes\n\n- ``data/fitted/sites.npz``: every onshore US production site with reported 2022 production\n  (lat, lon, gas Mcf/yr, oil bbl/yr, wells per site, cell index), plus a location pool per\n  midstream cell; and\n- ``data/fitted/site_density.json``: site counts per 0.1-degree cell, for the map's background layer; and\n- ``data/fitted/sites_summary.json``: counts and volumes per cell, the method, and its caveats.\n  ``fit_strata_weights.py`` reads the summary so that well-pad stratum weights come from the full\n  site population rather than from GHGRP reporters only.\n\nMethod and caveats (all recorded in the summary):\n\n- **Production records.** ``Oil_and_Natural_Gas_Production`` holds one record per reporting entity for\n  production year 2022 in 20 states (wells in 14, leases or reporting units in TX, OK, KS, LA, KY, MI).\n  Records with no oil, condensate, or gas in the year are dropped; -999 means \"not reported\" and is\n  read as zero. Condensate is added to oil. Gas is the reported produced volume and is used as\n  marketed gas (no separate sales volume in the table). States without production records in OGIM\n  (for example AL, IL, IN, NE, TN, VA) are absent.\n- **Sites.** Well-level records closer than ``LINK_M`` to each other are merged into one site\n  (single-linkage); 50 m is an assumption standing in for a pad footprint, TODO(verify) [ogim].\n  In old dense fields this chains many wells into one site. Lease-level records are one site each at\n  the location OGIM gives for the lease.\n- **Wells per lease.** Texas gas records (6-digit ids, condensate but no crude) are single gas wells.\n  For Texas oil leases (5-digit ids) and for the lease or unit records of OK, KS, LA, KY and MI the\n  well count is not in the production table. It is estimated by assigning every producing well of\n  the state in ``Oil_and_Natural_Gas_Wells`` (Texas: oil-type wells that are not plugged, shut in,\n  permitted or injecting) to a production record: the nearest record of the same operator among the\n  ``LEASE_K`` nearest within ``LEASE_RADIUS_KM``, else the nearest record within that radius. A record\n  with no assigned well counts one. This is an MRVSim estimate, TODO(verify) [ogim].\n- **Basin.** Point-in-polygon against the basin and play outlines in ``Oil_and_Natural_Gas_Basins``\n  (EIA sedimentary basins and tight-oil/shale-gas plays, as carried by OGIM); everything else is ``other``.\n- **Facility type.** Energy share of gas at the site: > 0.8 gas-dominant, < 0.2 oil-dominant, else\n  mixed, with the heat contents in ``configs/constants.yaml`` [eia-heat-content] (same rule as\n  ``fit_strata_weights.py``).\n- **Cells.** ``configs/strata.yaml`` lists the basin x type cells. Sites whose (basin, type) is not a\n  listed cell are folded into the listed well-pad cell of the same basin with the most sites; they\n  keep their own location and production.\n- **Midstream pools.** Locations only: gathering compressor stations, transmission (booster and\n  transmission) compressor stations, gas processing plants, and underground storage fields.\n\nRun:\n\n    .venv/bin/python data/scripts/build_sites.py",
   "link_distance_m": 50.0,
   "n_production_records": 869455,
   "n_records_with_production": 679866,
   "n_sites": 577007,
   "largest_site_wells": 554,
+  "wells_per_site_by_state": {
+    "ALASKA": {
+      "sites": 499,
+      "wells": 2074,
+      "mean": 4.156312625250501
+    },
+    "ARKANSAS": {
+      "sites": 6943,
+      "wells": 10392,
+      "mean": 1.4967593259397955
+    },
+    "CALIFORNIA": {
+      "sites": 23089,
+      "wells": 46927,
+      "mean": 2.032439689895621
+    },
+    "COLORADO": {
+      "sites": 19512,
+      "wells": 40272,
+      "mean": 2.063960639606396
+    },
+    "KANSAS": {
+      "sites": 34543,
+      "wells": 77367,
+      "mean": 2.2397301913557017
+    },
+    "KENTUCKY": {
+      "sites": 5439,
+      "wells": 34354,
+      "mean": 6.316234601948888
+    },
+    "LOUISIANA": {
+      "sites": 8731,
+      "wells": 27434,
+      "mean": 3.1421372122322757
+    },
+    "MICHIGAN": {
+      "sites": 2379,
+      "wells": 12561,
+      "mean": 5.279949558638084
+    },
+    "MISSISSIPPI": {
+      "sites": 2727,
+      "wells": 2898,
+      "mean": 1.0627062706270627
+    },
+    "MONTANA": {
+      "sites": 9098,
+      "wells": 9320,
+      "mean": 1.0244009672455485
+    },
+    "NEW MEXICO": {
+      "sites": 45879,
+      "wells": 52501,
+      "mean": 1.1443361886701977
+    },
+    "NEW YORK": {
+      "sites": 10284,
+      "wells": 10365,
+      "mean": 1.0078763127187864
+    },
+    "NORTH DAKOTA": {
+      "sites": 9627,
+      "wells": 18742,
+      "mean": 1.9468162459748624
+    },
+    "OHIO": {
+      "sites": 36715,
+      "wells": 49394,
+      "mean": 1.345335693858096
+    },
+    "OKLAHOMA": {
+      "sites": 52691,
+      "wells": 151961,
+      "mean": 2.884002960657418
+    },
+    "PENNSYLVANIA": {
+      "sites": 71579,
+      "wells": 80813,
+      "mean": 1.1290043169085906
+    },
+    "TEXAS": {
+      "sites": 153926,
+      "wells": 346177,
+      "mean": 2.2489832776788847
+    },
+    "UTAH": {
+      "sites": 9222,
+      "wells": 12370,
+      "mean": 1.3413576230752549
+    },
+    "WEST VIRGINIA": {
+      "sites": 51090,
+      "wells": 55061,
+      "mean": 1.077725582305735
+    },
+    "WYOMING": {
+      "sites": 23034,
+      "wells": 31028,
+      "mean": 1.3470521837284015
+    }
+  },
+  "lease_radius_km": 2.0,
   "records_by_state_and_entity": {
     "ALASKA/WELL": 2074,
     "ARKANSAS/WELL": 10392,
@@ -63,7 +166,7 @@
       "n_sites": 18611,
       "gas_mcf_yr": 1520575193.0,
       "oil_bbl_yr": 27678329.0,
-      "n_wells": 18611,
+      "n_wells": 32113,
       "median_boe_d": 9.209737928715185,
       "share_under_15_boe_d": 0.6279082263177691
     },
@@ -71,7 +174,7 @@
       "n_sites": 6239,
       "gas_mcf_yr": 609542238.0,
       "oil_bbl_yr": 78966474.0,
-      "n_wells": 6239,
+      "n_wells": 10882,
       "median_boe_d": 25.934924179185877,
       "share_under_15_boe_d": 0.36608430838275363
     },
@@ -79,7 +182,7 @@
       "n_sites": 133421,
       "gas_mcf_yr": 12353254387.08,
       "oil_bbl_yr": 16200443.0,
-      "n_wells": 156162,
+      "n_wells": 164221,
       "median_boe_d": 0.5089700420956957,
       "share_under_15_boe_d": 0.9671865748270512
     },
@@ -87,7 +190,7 @@
       "n_sites": 23325,
       "gas_mcf_yr": 246722574.61,
       "oil_bbl_yr": 25007098.62,
-      "n_wells": 25890,
+      "n_wells": 26015,
       "median_boe_d": 0.29235954958384736,
       "share_under_15_boe_d": 0.9920257234726688
     },
@@ -95,7 +198,7 @@
       "n_sites": 16943,
       "gas_mcf_yr": 826135.8,
       "oil_bbl_yr": 2160361.34,
-      "n_wells": 17602,
+      "n_wells": 27580,
       "median_boe_d": 0.12602739726027398,
       "share_under_15_boe_d": 0.9985244643805702
     },
@@ -119,7 +222,7 @@
       "n_sites": 6088,
       "gas_mcf_yr": 1106364375.0,
       "oil_bbl_yr": 5735645.0,
-      "n_wells": 6088,
+      "n_wells": 6300,
       "median_boe_d": 13.751084850613518,
       "share_under_15_boe_d": 0.5133048620236531
     },
@@ -127,7 +230,7 @@
       "n_sites": 13198,
       "gas_mcf_yr": 1173664644.0,
       "oil_bbl_yr": 365636364.0,
-      "n_wells": 13198,
+      "n_wells": 29542,
       "median_boe_d": 37.10642427254431,
       "share_under_15_boe_d": 0.2681466888922564
     },
@@ -135,7 +238,7 @@
       "n_sites": 17474,
       "gas_mcf_yr": 5543301127.0,
       "oil_bbl_yr": 8102151.0,
-      "n_wells": 17474,
+      "n_wells": 31079,
       "median_boe_d": 8.564399746802573,
       "share_under_15_boe_d": 0.6583495478997368
     },
@@ -143,7 +246,7 @@
       "n_sites": 123364,
       "gas_mcf_yr": 8304972826.4,
       "oil_bbl_yr": 70467637.56,
-      "n_wells": 134589,
+      "n_wells": 181859,
       "median_boe_d": 5.138639848081543,
       "share_under_15_boe_d": 0.7542962290457508
     },
@@ -151,7 +254,7 @@
       "n_sites": 16080,
       "gas_mcf_yr": 973620075.8,
       "oil_bbl_yr": 172827460.06,
-      "n_wells": 18947,
+      "n_wells": 35040,
       "median_boe_d": 9.204791798844381,
       "share_under_15_boe_d": 0.6291666666666667
     },
@@ -159,7 +262,7 @@
       "n_sites": 80321,
       "gas_mcf_yr": 106277390.001,
       "oil_bbl_yr": 359000795.41,
-      "n_wells": 103553,
+      "n_wells": 265816,
       "median_boe_d": 2.589041095890411,
       "share_under_15_boe_d": 0.8511846217054071
     },
@@ -167,7 +270,7 @@
       "n_sites": 22959,
       "gas_mcf_yr": 923215619.0,
       "oil_bbl_yr": 17974982.0,
-      "n_wells": 23176,
+      "n_wells": 27431,
       "median_boe_d": 1.904914733831072,
       "share_under_15_boe_d": 0.8774336861361558
     },
@@ -175,7 +278,7 @@
       "n_sites": 30156,
       "gas_mcf_yr": 6248663283.0,
       "oil_bbl_yr": 1518571084.0,
-      "n_wells": 34360,
+      "n_wells": 75066,
       "median_boe_d": 46.58664798247095,
       "share_under_15_boe_d": 0.36321130123358536
     },
@@ -183,7 +286,7 @@
       "n_sites": 19923,
       "gas_mcf_yr": 378748667.0,
       "oil_bbl_yr": 422060137.0,
-      "n_wells": 20281,
+      "n_wells": 75371,
       "median_boe_d": 4.242179612940337,
       "share_under_15_boe_d": 0.7282035837976208
     },

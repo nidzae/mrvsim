@@ -9,7 +9,7 @@ import numpy as np
 
 from mrvsim.io.seeds import SeedTree
 from mrvsim.population import generate_population
-from mrvsim.validate.common import default_priors, finish, guard_placeholder, weighted_basin_total_t_h
+from mrvsim.validate.common import basin_loss_rate, default_priors, finish, guard_placeholder, weighted_basin_total_t_h
 from mrvsim.validate.results import ValidationResult
 from mrvsim.validate.targets import load_targets, target_missing, worst_status
 
@@ -27,15 +27,15 @@ def run(targets: dict[str, Any] | None = None, n_per_stratum: int = 100, seed: i
     truth = pop.true_mass_kg_yr()
     compared: dict[str, Any] = {}; verdicts = []; statuses = []
     # basin loss rates: sample emissions over sample marketed methane (stratum-weighted), vs Sherwin 2024 Table S10
-    w = pop.stratum_weights("throughput")
     for basin, blk in (tg.get("loss_rates_by_basin") or {}).items():
         statuses.append(blk)
         if basin not in pop.strata.basins:
             continue
-        sel = pop.basin_idx == list(pop.strata.basins).index(basin)
-        lr = float((w[sel] * truth[sel]).sum() / (w[sel] * pop.throughput.g_ch4_kg_yr[sel]).sum())
+        # Corrected 2026-10-03: the previous ratio used throughput weights on both sums, which weights emissions by gas.
+        lr, how = basin_loss_rate(pop, truth, basin)
         lo, hi = blk["ci_95"]; ok = bool(lo <= lr <= hi)
-        compared[f"loss_rate_{basin}"] = {"sim_true_loss_rate": lr, "published": blk["value"], "published_ci": blk["ci_95"], "campaign": blk.get("campaign"), "pass": ok}
+        compared[f"loss_rate_{basin}"] = {"sim_true_loss_rate": lr, "published": blk["value"], "published_ci": blk["ci_95"], "campaign": blk.get("campaign"), "pass": ok,
+                                          "estimator": how, "note": "published value is production + midstream; the simulated value covers well pads only when the site table is used"}
         verdicts.append(ok)
     for basin, blk in tg["basin_totals_t_h"].items():
         statuses.append(blk)

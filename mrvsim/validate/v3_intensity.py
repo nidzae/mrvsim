@@ -26,7 +26,9 @@ def basin_intensity_interval(res, basin_key: str) -> tuple[float, float, float, 
     pop, post = res.pop, res.post
     bi = list(pop.strata.basins).index(basin_key)
     sel = (pop.basin_idx == bi) & np.isfinite(post.intensity_p50)
-    g = pop.throughput.g_ch4_kg_yr[sel] * pop.stratum_weights("throughput")[sel]
+    # Corrected 2026-10-03: count weights expand each facility to the sites it stands for; throughput weights
+    # already carry the facility's own gas and would weight by gas twice.
+    g = pop.throughput.g_ch4_kg_yr[sel] * pop.stratum_weights("count")[sel]
     w = g / g.sum()
     lo = float((w * post.intensity_p05[sel]).sum()); med = float((w * post.intensity_p50[sel]).sum()); hi = float((w * post.intensity_p95[sel]).sum())
     truth = float((w * pop.true_intensity()[sel]).sum())

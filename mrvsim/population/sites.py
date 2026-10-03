@@ -28,6 +28,7 @@ class SiteTable:
     lon: np.ndarray
     gas_m3_yr: np.ndarray                   # reported produced gas, used as marketed gas V_gas,mkt [ogim]
     oil_bbl_yr: np.ndarray
+    n_wells: np.ndarray                     # wells behind the site (estimated for lease-level records) [ogim]
     pools: Mapping[str, np.ndarray] = field(default_factory=dict)   # midstream "<basin>/<type>" -> (N, 2) lat, lon
     source_path: str = ""
 
@@ -65,10 +66,10 @@ def load_sites(path: str | Path | None = DEFAULT_SITES_PATH) -> SiteTable | None
         pools = {k[len("pool:"):]: z[k] for k in z.files if k.startswith("pool:")}
         if "cell_idx" not in z.files:           # a pools-only file
             e = np.array([], dtype=np.float64)
-            return SiteTable((), np.array([], dtype=np.int64), e, e, e, e, pools, str(path))
+            return SiteTable((), np.array([], dtype=np.int64), e, e, e, e, np.array([], dtype=np.int64), pools, str(path))
         return SiteTable(
             cell_keys=tuple(str(k) for k in z["cell_keys"]), cell_idx=z["cell_idx"].astype(np.int64),
             lat=z["lat"].astype(np.float64), lon=z["lon"].astype(np.float64),
             gas_m3_yr=z["gas_mcf_yr"].astype(np.float64) * M3_PER_MCF, oil_bbl_yr=z["oil_bbl_yr"].astype(np.float64),
-            pools=pools, source_path=str(path),
+            n_wells=z["n_wells"].astype(np.int64), pools=pools, source_path=str(path),
         )

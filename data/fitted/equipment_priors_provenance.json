@@ -1,0 +1,29 @@
+{
+  "fitted_utc": "2026-10-03T20:38:44+00:00",
+  "script": "data/scripts/fit_equipment_priors.py",
+  "source": "data/raw/rutherford2021/JSRuthe-O-G_Methane_Supporting_Code-ed1b142/5_Processing_Results/5a_OPGEE_Processing/Set 21",
+  "n_realizations": 100,
+  "method": "Fit per-well equipment emission parameters by well class and productivity bin [rutherford2021].\n\nReads the 100 uncertainty realizations of Rutherford et al.'s component-based model\n(``5_Processing_Results/5a_OPGEE_Processing/Set 21/Equip{k}out.csv``): each row is one simulated well\nwith its tranche (well class x productivity bin), its sampling weight, and its annual-average methane\nemission in kg/day for each of 16 equipment categories (column map in ``mat_extend.m``). Writes\n``configs/priors/equipment_cells_<date>.yaml`` and ``data/fitted/equipment_priors_provenance.json``.\n\nMethod (all recorded in the output):\n\n- **Classes and bins** follow ``tranche_data.m``: dry gas (no oil), gas with oil (gas-to-oil ratio above\n  100 Mscf/bbl), oil with gas (ratio below 100), oil only (no gas). Gas classes and oil-with-gas are binned\n  by gas per well per day (<1, 1-5, 5-10, 10-20, 20-50, 50-100, 100-500, 500-1,000, 1,000-10,000,\n  >10,000 Mscf/d); oil-only wells by four bins with edges 0.5, 1 and 10. The oil-only bin variable is read\n  here as oil in bbl/d per well, which is an interpretation of the script, TODO(verify) [rutherford2021].\n  The three tranches per gas bin (liquids-unloading variants) are pooled with their sampling weights.\n- **Steady categories**: wellhead, header, heater, separator, meter, tank leaks, reciprocating compressor,\n  dehydrator, chemical injection pump, pneumatic controller. **Episodic categories**: tank vents, liquids\n  unloading, tank flashing. **Excluded from routine emissions** (reported, not modelled): completions,\n  workovers, flare methane.\n- Per cell and group: the expected number of emitting categories per well, and a lognormal for the\n  emission of one emitting category fitted to its **mean and median** (mu = ln median,\n  sigma = sqrt(2 ln(mean / median))). Matching the mean keeps emitted mass exact; a maximum-likelihood\n  fit on logs would not, because the data are bounded resamples of measured leaks with a log-sd near 3.\n  Quantile errors of that fit (p75, p90, p95, p99) are recorded per cell as goodness of fit.\n- Each quantity is computed per realization; the file stores the mean over realizations and the\n  standard deviation across them (parameter uncertainty).\n\nRun:\n\n    .venv/bin/python data/scripts/fit_equipment_priors.py",
+  "national_tg_per_year_by_category": {
+    "wells": 0.7558578128601715,
+    "header": 0.16586539445730403,
+    "heater": 0.07731321335635748,
+    "separator": 0.5206722482759936,
+    "meter": 0.3413179015407672,
+    "tank_leaks": 0.1513512479053806,
+    "tank_vents": 1.1837791644459883,
+    "recip_compressor": 0.06549517840960548,
+    "dehydrator": 0.01601452622921839,
+    "chemical_injection_pump": 0.24884492410813,
+    "pneumatic_controller": 1.2869496106534783,
+    "liquids_unloading": 0.24438225260531346,
+    "completions": 0.043156411083993484,
+    "workovers": 0.00403332591048294,
+    "tank_flashing": 1.0789311555851926,
+    "flare_methane": 0.21541205492009688
+  },
+  "national_wells": 1005219.0,
+  "national_tg_per_year_modelled": 6.136774630432901,
+  "national_tg_per_year_excluded": 0.26260179191457333,
+  "output": "configs/priors/equipment_cells_2026-10-03.yaml"
+}

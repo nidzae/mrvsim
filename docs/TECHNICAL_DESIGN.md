@@ -136,6 +136,22 @@ The state path $S_{ij}(t)$ is generated for every hour and stored, so that the o
 - Lognormal durations are lighter-tailed than some observed event distributions. If rare multi-week events are under-represented, $\pi$ is biased low. V1 checks the simulated persistence against [cusworth2022].
 - No diurnal or seasonal structure in version 1. This matters most for sun-synchronous satellites, which always observe at the same local time. Flagged for version 2 (`DECISION_LOG.md`).
 
+### 3.4a Equipment-based hyperparameters for real sites (added 2026-10-03)
+
+DECISION_LOG 2026-10-03 "Equipment-based leak model". For a facility that is a real production site, the hyperparameters of §3.2–3.4 are no longer the stratum's. They follow from the site's public covariates: well count $n$, well class $c$ (dry gas, gas with oil, oil with gas, oil only; gas-to-oil ratio cut at 100 Mscf/bbl) and per-well productivity bin $b$, with per-well numbers fitted to the component-based model of [rutherford2021] (`configs/priors/equipment_cells_<date>.yaml`): $k^s_{cb}$, $k^e_{cb}$ emitting steady and episodic equipment categories per well, and for one emitting category a lognormal matched to its mean $m$ and median (so $\sigma = \sqrt{2\ln(m/\text{median})}$). Midstream facilities and `leak_model: stratum` keep §3.2–3.4 unchanged; those equations are not superseded.
+
+With $N_s = n k^s$, $N_e = n k^e$:
+
+$$
+\lambda + 1 = \min(N_s + N_e,\ 4), \qquad p = \frac{N_e}{N_s + N_e}, \qquad g = \frac{N_s + N_e}{\lambda + 1}
+$$
+
+- **Steady source** = sum of $g$ emitters, moment-matched to a lognormal (Fenton–Wilkinson): $\sigma_0^2 = \ln\!\big(1 + (e^{\sigma_s^2} - 1)/g\big)$, $\mu_0 = \ln(g\,m_s) - \sigma_0^2/2$.
+- **Intermittent source** = $g$ pooled episodic emitters: the stratum's $\nu_{off}$ is shifted so the duty cycle is $g$ times the stratum's (capped at 0.5); $\sigma_1 = \sigma_e$ and $\mu_1 = \ln(g\,m_e / \mathbb{E}[\pi]) - \sigma_1^2/2$, where $m_e$ is the annual-average emission of one episodic emitter and $\mathbb{E}[\pi]$ is taken over the between-source spread of §3.4.
+- The Pareto splice of §3.3 is switched off for these sites ($q_{tail}$ set very high). An aerial-survey tail on top of the equipment model is not yet added.
+
+Expected site emission is exactly $n\,(k^s m_s + k^e m_e)$. The cap of 4 expected sources keeps the estimator's $K_{max} = 8$ from binding (§11 item 7). The estimator uses the same per-facility hyperparameters as its prior (§6.2): they depend only on public covariates. Durations ($\nu_{on}$, $\tau$) remain the stratum's and are not fitted to event data, TODO(verify). Completions, workovers and flare methane in [rutherford2021] are excluded from routine emissions.
+
 ### 3.5 Throughput and denominator
 
 $$
@@ -423,6 +439,8 @@ Each test is a pytest module with a pass/fail threshold. The tool displays resul
 
 | ID | Test | Pass criterion |
 |---|---|---|
+**Correction (2026-10-03):** V2's basin loss rate and V3's basin intensity weighted facilities by throughput weights, which since the real-site change carry each facility's own gas; emissions were therefore weighted by gas. V2 now expands the count-weighted mean well-pad emission to the basin's sites and divides by the basin's gas from the site table; V3 weights by count weight × $G_i$. V2's simulated value covers well pads only, while the published values are production plus midstream.
+
 | **V1** | Simulated detected-rate distribution above 10 kg/h per basin vs. [cusworth2022] and [sherwin2024]; simulated persistence vs. [cusworth2022] | Kolmogorov–Smirnov p > 0.05 per basin; persistence within published CI |
 | **V2** | Simulated basin totals vs. [sherwin2024] basin totals; cross-check with FEAST 3.1 using the same population | Within published 95% CI; FEAST and MRVSim within 15% |
 | **V3** | Reproduce published measurement-informed basin intensities using the sensor mix those studies used: Haynesville 0.79% [0.63, 0.98] and Permian 4.6% [4.4, 4.9] [haynesville-2025]; reproduce the reported sensitivity to basin boundary definition | Published estimate inside MRVSim interval; boundary-sensitivity factor within ±30% |
@@ -499,6 +517,7 @@ Each limitation maps to a version-2 item in `DECISION_LOG.md`.
 | 2026-10-01 | §4 table (field of view and pointing), §5.1 satellites (field of regard, scene footprint, incidental capture): DECISION_LOG "Incidental capture" |
 | 2026-10-01 | §5.1 aircraft scheduling (regional campaigns), §8.1 Targeting wording corrected and Scheduling row: DECISION_LOG "Regional flight campaigns" |
 | 2026-10-03 | §3.1 (real production sites, 75 strata, site-based weights, class rule), §3.5 (real production as throughput): DECISION_LOG "Well-pad facilities are real production sites" |
+| 2026-10-03 | §3.4a added (equipment-based hyperparameters for real sites; Pareto splice off for them); §9 note (V2, V3 weighting corrected): DECISION_LOG "Equipment-based leak model" |
 | 2026-10-01 | §6.7 (quantile grid, prior summary, evidence counts persisted), §7 (decision-only certifiable/fails/indeterminate shares; precise, prior-only, evidence-ratio rows), §8.3 note: DECISION_LOG "certification is the compliance decision at 95 %" |
 | 2026-09-30 | §6.7 estimand (realised-mass predictive), sampler, §6.3–6.5 v1 likelihood definitions, §10 measured timings, §11 limitation 10: Phase 4 |
 | 2026-09-30 | §4.1 wind floor, §5.2 gate conventions: Phase 3 implementation notes |

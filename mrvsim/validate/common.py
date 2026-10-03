@@ -55,3 +55,28 @@ def weighted_basin_total_t_h(pop, mass_kg_yr: np.ndarray, basin_key: str, scale_
     w = pop.stratum_weights("count")[sel]
     total_kg_yr = (w * mass_kg_yr[sel]).sum() / w.sum() * sel.sum() if scale_to_national is None else (w * mass_kg_yr[sel]).sum() * scale_to_national
     return float(total_kg_yr / 1000.0 / 8760.0)
+
+
+def basin_loss_rate(pop, mass_kg_yr: np.ndarray, basin_key: str) -> tuple[float, str]:
+    """Basin loss rate: emitted methane over marketed methane, and the estimator used.
+
+    With the real site table [ogim] the rate is for well pads: the count-weighted mean site emission expanded to
+    the basin's sites, over the basin's gas from the full table (the sampled gas is far noisier than the sampled
+    emissions). Without it: count-weighted sample emissions over count-weighted sample gas, all facility types.
+    Throughput weights must not be used here: they weight each facility by its own gas, which would weight
+    emissions by gas as well.
+    """
+    bi = list(pop.strata.basins).index(basin_key)
+    wc = pop.stratum_weights("count")
+    sites = pop.strata.sites
+    if sites is not None and len(sites) and pop.site_row is not None:
+        sel = (pop.basin_idx == bi) & (pop.site_row >= 0)
+        in_basin = np.array([k.split("/")[0] == basin_key for k in sites.cell_keys])[sites.cell_idx]
+        c = pop.constants
+        g_basin = float(sites.gas_m3_yr[in_basin].sum()) * c.rho_ch4_kg_per_m3 * c.x_ch4_default
+        if sel.any() and g_basin > 0:
+            mean_mass = float((wc[sel] * mass_kg_yr[sel]).sum() / wc[sel].sum())
+            return mean_mass * int(in_basin.sum()) / g_basin, "well pads, expanded to the basin's sites over the basin's gas [ogim]"
+    sel = pop.basin_idx == bi
+    return float((wc[sel] * mass_kg_yr[sel]).sum() / (wc[sel] * pop.throughput.g_ch4_kg_yr[sel]).sum()), "count-weighted sample ratio, all facility types"
+

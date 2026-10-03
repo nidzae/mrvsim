@@ -112,7 +112,8 @@ export default function Drilldown({ runId, fid, kpi, bar, barIntensity, barMass,
       <div className="muted">{d.basin} · {d.facility_type} · {d.n_sources} source{d.n_sources > 1 ? "s" : ""} · posterior: {d.method}
         {thr && <> · gas throughput rank <b>{thr.rank}</b> of {thr.n_facilities} ({fmtNum(thr.gas_mkt_m3_yr / 1e6, thr.gas_mkt_m3_yr < 1e5 ? 3 : 1)} Mm³/yr)</>}
         {thr?.real_site && <div className="muted">Real production site (location and 2022 production from OGIM): {fmtNum(thr.boe_d, thr.boe_d < 10 ? 1 : 0)} boe/d, {fmtNum(thr.oil_bbl_yr, 0)} bbl oil/yr.
-          Stands for {fmtNum(thr.sites_represented, 0)} sites of its basin, type and size class. Emissions are simulated, not measured at this site.</div>}</div>
+          Stands for {fmtNum(thr.sites_represented, 0)} sites of its basin, type and size class. Emissions are simulated, not measured at this site.
+          {thr.n_wells ? <> Leak model inputs: {thr.n_wells} well{thr.n_wells === 1 ? "" : "s"}, class {({ drygas: "dry gas", gaswoil: "gas with oil", oilwgas: "oil with gas", oilonly: "oil only" })[thr.well_class]}, productivity bin {thr.productivity_bin + 1}.</> : null}</div>}</div>
       {legacy && <div className="muted" style={{ marginTop: 4 }}>This run was scored before the probability grid and evidence measures existed; probabilities outside p5–p95 are bounds. Re-run it to get exact values.</div>}
       <KpiBlock name={kpi === "intensity" ? "Methane intensity" : "Absolute emissions (t/yr)"} raw={raw} bar={bar} wMax={wMax} isInt={kpi === "intensity"} primary />
       {ev && <div className="muted" style={{ marginTop: 4 }}>

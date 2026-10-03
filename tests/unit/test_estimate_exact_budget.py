@@ -40,7 +40,7 @@ def test_variance_budget_shares_sum_to_one() -> None:
     from mrvsim.population import generate_population
 
     seeds = SeedTree(4)
-    pop = generate_population({"n_per_stratum": 30}, seeds.child(rep=0))
+    pop = generate_population({"n_per_stratum": 30, "leak_model": "stratum"}, seeds.child(rep=0))
     plan = _plan(pop, aircraft_visits=6, cms=True)
     obs = simulate_observations(pop, LIB, plan, seeds, YEAR)
     # a facility with at least one intermittent source and a non-trivial true mass

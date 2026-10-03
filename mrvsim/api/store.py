@@ -220,6 +220,13 @@ def facility_detail(run: LoadedRun, fid: int, bar_mass_t: float | None, bar_inte
     throughput = {"gas_mkt_m3_yr": float(gas[fid]), "mmbtu_yr": float(pop.throughput.mmbtu_yr[fid]), "rank": rank, "n_facilities": n_fac,
                   "top_share": rank / n_fac, "throughput_class": int(pop.tclass_idx[fid]), "ghgrp_reporter": bool(pop.throughput.ghgrp_reporter[fid])}
     if pop.sites_represented is not None and np.isfinite(pop.sites_represented[fid]):
+        if pop.site_wells is not None and pop.prior_overrides is not None and np.isfinite(pop.prior_overrides["lambda_k"][fid]):
+            from mrvsim.population.equipment import CLASSES, load_equipment_cells
+            eq = load_equipment_cells()
+            if eq is not None:
+                c, b = eq.classify(gas[fid:fid + 1], pop.throughput.oil_bbl_yr[fid:fid + 1], pop.site_wells[fid:fid + 1])
+                throughput.update({"n_wells": int(pop.site_wells[fid]), "well_class": CLASSES[int(c[0])], "productivity_bin": int(b[0]),
+                                   "expected_sources": float(pop.prior_overrides["lambda_k"][fid] + 1.0)})
         throughput.update({"real_site": True, "sites_represented": float(pop.sites_represented[fid]), "boe_d": float(_boe_per_day(pop)[fid]),
                            "oil_bbl_yr": float(pop.throughput.oil_bbl_yr[fid])})
     monitoring = []
