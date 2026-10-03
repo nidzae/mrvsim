@@ -20,7 +20,7 @@ python3.11 -m venv .venv
 
 On Windows use `py -3.11 -m venv .venv` and `.venv\Scripts\pip`, `.venv\Scripts\uvicorn`.
 
-Open http://127.0.0.1:8000. The run selector starts empty (runs are stored locally in `runs/`, not in the repository): press **Run** under Sensors in Quick mode. The first run takes a few minutes because the satellite overpasses are computed and cached; later Quick runs take about 2 minutes. The **?** button on every screen opens the user guide (`docs/QUICKSTART.md`).
+Open http://127.0.0.1:8000. The run selector starts empty (runs are stored locally in `runs/`, not in the repository): press **Run** in the Sensors panel (quick mode is the default). A quick run takes about 2 minutes; the first one also computes and caches the satellite overpasses. The **?** button on every screen opens the user guide (`docs/QUICKSTART.md`).
 
 The Gap-analysis chat is optional and needs your own key: `export ANTHROPIC_API_KEY=...` before starting the server (never put a key in code). Everything else works without it.
 
