@@ -7,26 +7,35 @@ An Observing System Simulation Experiment for US onshore oil and gas: synthetic 
 - Decisions: `docs/DECISION_LOG.md` · Citations: `docs/REFERENCES.md` · User guide: `docs/QUICKSTART.md`
 - Build log: `docs/status/`
 
-## Setup
+## Run it in 5 minutes
+
+You need Python 3.11 or newer and git. Node.js is not needed: the built front end is committed in `web/dist`.
 
 ```bash
+git clone https://github.com/nidzae/mrvsim && cd mrvsim
 python3.11 -m venv .venv
+.venv/bin/pip install -e .
+.venv/bin/uvicorn mrvsim.api.server:app --port 8000
+```
+
+On Windows use `py -3.11 -m venv .venv` and `.venv\Scripts\pip`, `.venv\Scripts\uvicorn`.
+
+Open http://127.0.0.1:8000. The run selector starts empty (runs are stored locally in `runs/`, not in the repository): press **Run** under Sensors in Quick mode. The first run takes a few minutes because the satellite overpasses are computed and cached; later Quick runs take about 2 minutes. The **?** button on every screen opens the user guide (`docs/QUICKSTART.md`).
+
+The Gap-analysis chat is optional and needs your own key: `export ANTHROPIC_API_KEY=...` before starting the server (never put a key in code). Everything else works without it.
+
+## Development
+
+```bash
 .venv/bin/pip install -e ".[dev]"
-git submodule update --init --depth 50      # LDAR-Sim v4 (MIT) into vendor/ldar_sim
-.venv/bin/python -m pytest tests -q
+git submodule update --init --depth 50      # LDAR-Sim v4 and FEAST 3.1 (both MIT) into vendor/; needed for validation V2 only
+.venv/bin/python -m pytest tests/unit -q    # about 15 minutes
+(cd web && npm install && npm run build)    # rebuild web/dist after front-end changes and commit it (or `npm run dev` for live reload on :5173)
 ```
 
 Every run takes a seed and writes `runs/<id>/` with its config, seed, git SHA, and elapsed time (PRD N4). Two runs with the same config and seed are byte-identical.
 
-## Run the app
-
-```bash
-.venv/bin/uvicorn mrvsim.api.server:app --port 8000        # API + built front end at http://127.0.0.1:8000
-cd web && npm install && npm run build                      # rebuild the front end after changes (or `npm run dev` for live reload on :5173)
-export ANTHROPIC_API_KEY=...                                # optional: enables the Gap-analysis chat (never put a key in code)
-```
-
-Validation: `MRVSIM_ALLOW_PLACEHOLDER_VALIDATION=1 .venv/bin/python -m mrvsim.validate.runner --quick` (diagnostic only until priors are fitted).
+Validation: `.venv/bin/python -m mrvsim.validate.runner --quick` writes `runs/validation/<timestamp>.json` for the Validation panel (refused against PLACEHOLDER priors unless `MRVSIM_ALLOW_PLACEHOLDER_VALIDATION=1`, which marks the results diagnostic only).
 
 ## Conventions (2026-10-01)
 
