@@ -25,6 +25,7 @@ from pydantic import BaseModel, Field
 from mrvsim.api import store
 from mrvsim.api.jobs import JobRegistry
 from mrvsim.io.config import RunConfig, load_config
+from mrvsim.population import load_strata
 from mrvsim.sensors import load_library
 
 _REPO = Path(__file__).resolve().parents[2]
@@ -32,6 +33,7 @@ app = FastAPI(title="MRVSim API", version="0.1")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 JOBS = JobRegistry(workers=2)
 LIB = load_library()
+STRATA = load_strata()
 DEFAULT_POLICY = {"sensors": {"bridger_gml": {"coverage": 1.0, "frequency_per_year": 2}, "ghgsat_c": {"coverage": 0.3, "frequency_per_year": 12, "targeting": "throughput"},
                               "tropomi": {"coverage": 1.0}}}
 
@@ -66,10 +68,11 @@ class RunRequest(BaseModel):
         return self
 
 
-def estimate_seconds(req: RunRequest, n_strata: int = 63) -> dict[str, Any]:
+def estimate_seconds(req: RunRequest) -> dict[str, Any]:
     r = req.resolved()
-    n_fac_total = r.n_per_stratum * n_strata
-    n_est = n_fac_total if r.facilities_per_stratum is None else min(r.facilities_per_stratum, r.n_per_stratum) * n_strata
+    sizes = STRATA.sizes(r.n_per_stratum, min(r.n_per_stratum, 30))      # strata of real sites can be smaller than n_per_stratum
+    n_fac_total = int(sizes.sum())
+    n_est = n_fac_total if r.facilities_per_stratum is None else int(np.minimum(sizes, r.facilities_per_stratum).sum())
     ms = np.interp(r.n_draws, sorted(_MS_PER_FAC), [_MS_PER_FAC[k] for k in sorted(_MS_PER_FAC)])
     per_rep = n_est * ms / 1000.0 + _OBS_S_PER_KFAC * n_fac_total / 1000.0 * len(r.policy.get("sensors", {}))
     sats = sum(1 for k in r.policy.get("sensors", {}) if LIB[k].schedule == "orbit") if r.policy.get("sensors") else 0
@@ -255,6 +258,15 @@ def tornado(run_id: str, req: RunRequest) -> dict[str, Any]:
 @app.get("/api/run/{run_id}/attribution")
 def attribution(run_id: str) -> dict[str, Any]:
     return store.attribution(store.load_run(run_id, str(store.RUNS_DIR)))
+
+
+@app.get("/api/sites/density")
+def sites_density() -> dict[str, Any]:
+    """Counts of real production sites per 0.1-degree cell [ogim], for the map's background layer."""
+    path = _REPO / "data" / "fitted" / "site_density.json"
+    if not path.exists():
+        return {"cell_deg": None, "n_sites": 0, "cells": []}
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
 @app.get("/api/references")

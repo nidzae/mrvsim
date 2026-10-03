@@ -23,7 +23,7 @@ def pop():
 
 def test_shapes_and_csr(pop) -> None:
     n_fac = pop.n_facilities
-    assert n_fac == 30 * len(pop.strata)
+    assert n_fac == pop.strata.sizes(30).sum()          # strata of real sites are capped at their site count
     assert pop.source_offset.shape == (n_fac + 1,)
     assert pop.source_offset[-1] == pop.n_total_sources
     assert np.all(pop.n_sources >= 1)
@@ -68,7 +68,9 @@ def test_rate_at_pairs_matches_matrix(pop) -> None:
     np.testing.assert_allclose(q_pairs, q_mat[fac, np.arange(4)])
 
 
-def test_coordinates_inside_basin_box(pop) -> None:
+def test_coordinates_inside_basin_box() -> None:
+    pop = generate_population({"n_per_stratum": 30, "site_locations": "box"}, SeedTree(2024))
+    assert pop.n_facilities == 30 * len(pop.strata) and not (pop.site_row >= 0).any()
     keys = list(pop.strata.basins)
     for bi, k in enumerate(keys):
         sel = pop.basin_idx == bi
@@ -80,13 +82,15 @@ def test_coordinates_inside_basin_box(pop) -> None:
 
 
 def test_throughput_classes_are_ordered(pop) -> None:
-    """Within a basin x type cell, tercile t1 < t2 < t3 in marketed gas (quantile truncation)."""
+    """Within a basin x type cell, class t1 < t2 < t3: in produced energy for real sites, in marketed gas otherwise."""
+    c = pop.constants
+    energy = pop.throughput.gas_mkt_m3_yr * c.gas_hhv_mj_per_m3 + pop.throughput.oil_bbl_yr * c.oil_mj_per_bbl
     for s_lo, s_hi in zip(pop.strata.strata[:-1], pop.strata.strata[1:]):
         if (s_lo.basin, s_lo.facility_type) != (s_hi.basin, s_hi.facility_type):
             continue
-        lo = pop.throughput.gas_mkt_m3_yr[pop.stratum_idx == s_lo.index]
-        hi = pop.throughput.gas_mkt_m3_yr[pop.stratum_idx == s_hi.index]
-        assert lo.max() <= hi.min()
+        size = energy if pop.strata.rows_of(s_lo.index) is not None else pop.throughput.gas_mkt_m3_yr
+        lo, hi = size[pop.stratum_idx == s_lo.index], size[pop.stratum_idx == s_hi.index]
+        assert lo.max() <= hi.min() * (1 + 1e-9)
 
 
 def test_stratum_weights_sum_to_one(pop) -> None:
@@ -126,3 +130,61 @@ def test_population_byte_identical_across_runs(tmp_path: Path) -> None:
 def test_memory_footprint_of_states(pop) -> None:
     """TDD section 10: bit-packed states are ~1/8 of a bool array."""
     assert pop.states.nbytes() <= pop.n_total_sources * pop.n_hours / 8 + pop.n_total_sources
+
+
+def test_well_pads_are_real_sites(pop) -> None:
+    """Well-pad facilities are distinct real sites with the site's location and production [ogim]."""
+    sites = pop.strata.sites
+    assert sites is not None and len(sites) > 500_000
+    real = pop.site_row >= 0
+    wp = np.isin(pop.ftype_idx, [list(pop.strata.facility_types).index(k) for k in ("wp_oil", "wp_mixed", "wp_gas")])
+    np.testing.assert_array_equal(real, wp)
+    rows = pop.site_row[real]
+    assert np.unique(rows).size == rows.size
+    np.testing.assert_array_equal(pop.lat[real], sites.lat[rows])
+    np.testing.assert_array_equal(pop.throughput.oil_bbl_yr[real], sites.oil_bbl_yr[rows])
+    np.testing.assert_allclose(pop.throughput.gas_mkt_m3_yr[real], np.maximum(sites.gas_m3_yr[rows], 1.0))
+    assert np.isfinite(pop.true_intensity()).all()          # sites reporting no gas still have a finite intensity
+
+
+def test_weights_reproduce_the_site_population() -> None:
+    """Weighted sample shares match the full site table: small sites are neither over- nor under-weighted."""
+    pop = generate_population({"n_per_stratum": 100}, SeedTree(7))
+    sites, c = pop.strata.sites, pop.constants
+    boe_d = lambda gas, oil: (oil + gas * c.gas_hhv_mj_per_m3 / c.oil_mj_per_bbl) / 365.0
+    small_all = boe_d(sites.gas_m3_yr, sites.oil_bbl_yr) < 15.0
+    real = pop.site_row >= 0
+    small = boe_d(pop.throughput.gas_mkt_m3_yr, pop.throughput.oil_bbl_yr)[real] < 15.0
+    wc, wt = pop.stratum_weights("count")[real], pop.stratum_weights("throughput")[real]
+    assert abs(wc[small].sum() / wc.sum() - small_all.mean()) < 0.05
+    assert abs(wt[small].sum() / wt.sum() - sites.gas_m3_yr[small_all].sum() / sites.gas_m3_yr.sum()) < 0.03
+    assert pop.stratum_weights("count").sum() == pytest.approx(1.0) and pop.stratum_weights("throughput").sum() == pytest.approx(1.0)
+
+
+def test_midstream_locations_from_pool(tmp_path: Path) -> None:
+    """A midstream cell with a location pool sits on pool points; a file without a site table keeps lognormal throughput."""
+    strata = load_strata(sites=None)
+    rng = np.random.default_rng(0)
+    pool = np.column_stack([rng.uniform(31.0, 32.0, 500), rng.uniform(-103.0, -102.0, 500)]).astype(np.float32)
+    path = tmp_path / "sites.npz"
+    np.savez(path, **{"pool:other/processing": pool})
+    cfg = {"n_per_stratum": 30, "sites_path": str(path)}
+    pop = generate_population(cfg, SeedTree(2024))
+    b, f = strata.basin_index()["other"], strata.facility_type_index()["processing"]
+    cell = (pop.basin_idx == b) & (pop.ftype_idx == f)
+    pts = np.column_stack([pop.lat[cell], pop.lon[cell]])
+    pool_set = {tuple(r) for r in pool.astype(float)}
+    assert all(tuple(r) in pool_set for r in pts)
+    box = generate_population({"n_per_stratum": 30, "site_locations": "box"}, SeedTree(2024))
+    np.testing.assert_array_equal(pop.lat[~cell], box.lat[~cell])     # cells without a pool keep the box draw
+    np.testing.assert_array_equal(pop.throughput.gas_mkt_m3_yr, box.throughput.gas_mkt_m3_yr)
+
+
+def test_saved_population_keeps_its_strata(tmp_path: Path, pop) -> None:
+    from mrvsim.population import load_population
+    from mrvsim.population.strata import load_saved_strata
+    pop.save(tmp_path / "population")
+    back = load_population(tmp_path / "population")
+    assert [t.key for t in back.strata.strata] == [t.key for t in pop.strata.strata]
+    np.testing.assert_allclose(back.stratum_weights("throughput"), pop.stratum_weights("throughput"))
+    assert len(load_saved_strata(tmp_path / "missing")) == 63        # runs saved before 2026-10-03

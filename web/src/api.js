@@ -17,6 +17,7 @@ export const api = {
   tornado: (runId, body) => fetch(`/api/run/${runId}/tornado`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).then(J),
   attribution: (runId) => fetch(`/api/run/${runId}/attribution`).then(J),
   references: () => fetch("/api/references").then(J),
+  siteDensity: () => fetch("/api/sites/density").then(J),
   quickstart: () => fetch("/api/quickstart").then(J),
   validation: () => fetch("/api/validation").then(J),
   runValidation: (quick, allow) => fetch(`/api/validation/run?quick=${quick}&allow_placeholder=${allow}`, { method: "POST" }).then(J),

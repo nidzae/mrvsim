@@ -13,6 +13,8 @@ replications: 200          # R in TDD section 7; interactive recompute uses 20 (
 population:
   n_per_stratum: 100       # TDD section 3.1 (default 100, minimum 30)
   min_per_stratum: 30
+  site_locations: ogim     # ogim = well-pad facilities are real production sites with their real production, midstream on real locations [ogim] (data/fitted/sites.npz); box = uniform in the basin boxes with lognormal throughput [basin-extents]
+  throughput_class_rule: count   # count = classes with equal numbers of sites (TDD section 3.1); throughput = classes with equal shares of produced energy (DECISION_LOG 2026-10-03)
   priors_dir: configs/priors
 
 sensors:

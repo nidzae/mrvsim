@@ -1,13 +1,8 @@
+# LEGACY cell list (63 strata) kept so that runs saved before 2026-10-03 still load (they have no
+# population/strata.json). Not used for new runs; see configs/strata.yaml and DECISION_LOG 2026-10-03.
 # Stratification table (TDD section 3.1): basin x facility type x throughput class.
 #
 # provenance: PLACEHOLDER applies to the weights written *in this file*. When
-# data/fitted/strata_weights.json exists (written by data/scripts/fit_strata_weights.py),
-# load_strata() replaces weight_count / weight_throughput with the fitted values: well-pad
-# cells from the OGIM site table [ogim], midstream cells from GHGRP Subpart W RY2023 [ghgrp].
-# Well-pad facilities are real sites from data/fitted/sites.npz [ogim]; their basin comes from
-# the EIA outlines carried by OGIM. The boxes below are only used for cells without real
-# locations and for `population.site_locations: box` [basin-extents].
-provenance: PLACEHOLDER applies to the weights written *in this file*. When
 # data/fitted/strata_weights.json exists (written by data/scripts/fit_strata_weights.py
 # from GHGRP Subpart W RY2023 [ghgrp]), load_strata() replaces weight_count /
 # weight_throughput with the fitted values and reports provenance FITTED. Basin extents
@@ -16,7 +11,7 @@ provenance: PLACEHOLDER applies to the weights written *in this file*. When
 # assets") [basin-extents]. State production data [state-production-data] would refine
 # well-pad counts, which GHGRP only gives as producing-well counts per operator-basin.
 provenance: PLACEHOLDER
-intended_sources: [ogim, ghgrp, sherwin2024, cusworth2022]
+intended_sources: [ghgrp, state-production-data, sherwin2024, cusworth2022]
 
 basins:
   permian:      {name: Permian,      lat: [30.8, 33.0], lon: [-104.5, -101.5]}
@@ -42,32 +37,25 @@ facility_types:
 throughput_classes: [t1, t2, t3]     # terciles within basin x type (TDD section 3.1); V4 swaps in quintiles
 
 # Basin x facility-type cells that exist in the default sample. Each cell is expanded
-# into one stratum per throughput class: 25 cells x 3 = 75 strata.
-# Well-pad cells (2026-10-03): every basin x type combination holding at least 1 % of US
-# production sites or 1 % of US gas in the OGIM site table [ogim] (data/fitted/sites_summary.json);
-# sites of smaller combinations are folded into the basin's largest listed well-pad cell by
-# data/scripts/build_sites.py and keep their own location and production.
+# into one stratum per throughput class. ~21 cells x 3 = 63 strata, matching the
+# TDD section 10 budget of ~60 strata x 100 facilities.
 # weight_count / weight_throughput: relative national shares (PLACEHOLDER, equal
-# within facility type; normalised at load time; replaced by data/fitted/strata_weights.json).
+# within facility type; normalised at load time).
 cells:
   - {basin: permian,     facility_type: wp_oil,    weight_count: 1, weight_throughput: 1}
   - {basin: permian,     facility_type: wp_mixed,  weight_count: 1, weight_throughput: 1}
   - {basin: permian,     facility_type: wp_gas,    weight_count: 1, weight_throughput: 1}
-  - {basin: appalachian, facility_type: wp_oil,    weight_count: 1, weight_throughput: 1}
-  - {basin: appalachian, facility_type: wp_mixed,  weight_count: 1, weight_throughput: 1}
   - {basin: appalachian, facility_type: wp_gas,    weight_count: 1, weight_throughput: 1}
   - {basin: haynesville, facility_type: wp_gas,    weight_count: 1, weight_throughput: 1}
+  - {basin: eagle_ford,  facility_type: wp_oil,    weight_count: 1, weight_throughput: 1}
   - {basin: eagle_ford,  facility_type: wp_mixed,  weight_count: 1, weight_throughput: 1}
-  - {basin: eagle_ford,  facility_type: wp_gas,    weight_count: 1, weight_throughput: 1}
-  - {basin: bakken,      facility_type: wp_mixed,  weight_count: 1, weight_throughput: 1}
+  - {basin: bakken,      facility_type: wp_oil,    weight_count: 1, weight_throughput: 1}
   - {basin: dj,          facility_type: wp_mixed,  weight_count: 1, weight_throughput: 1}
   - {basin: anadarko,    facility_type: wp_mixed,  weight_count: 1, weight_throughput: 1}
   - {basin: anadarko,    facility_type: wp_gas,    weight_count: 1, weight_throughput: 1}
   - {basin: san_juan,    facility_type: wp_gas,    weight_count: 1, weight_throughput: 1}
-  - {basin: uinta,       facility_type: wp_gas,    weight_count: 1, weight_throughput: 1}
-  - {basin: other,       facility_type: wp_oil,    weight_count: 1, weight_throughput: 1}
+  - {basin: uinta,       facility_type: wp_mixed,  weight_count: 1, weight_throughput: 1}
   - {basin: other,       facility_type: wp_mixed,  weight_count: 1, weight_throughput: 1}
-  - {basin: other,       facility_type: wp_gas,    weight_count: 1, weight_throughput: 1}
   - {basin: permian,     facility_type: gathering, weight_count: 1, weight_throughput: 1}
   - {basin: appalachian, facility_type: gathering, weight_count: 1, weight_throughput: 1}
   - {basin: haynesville, facility_type: gathering, weight_count: 1, weight_throughput: 1}

@@ -1,0 +1,216 @@
+{
+  "provenance": "FITTED",
+  "citation_keys": [
+    "ogim",
+    "eia-heat-content"
+  ],
+  "source": {
+    "file": "OGIM_v3.0.gpkg",
+    "doi": "10.5281/zenodo.22835235",
+    "production_year": 2022
+  },
+  "built_utc": "2026-10-03T16:42:03+00:00",
+  "method": "Build the real-site table ``data/fitted/sites.npz`` from the OGIM database [ogim].\n\nReads ``data/raw/ogim/OGIM_v3.0.gpkg`` (``fetch_ogim.py``) and writes\n\n- ``data/fitted/sites.npz``: every onshore US production site with reported 2022 production\n  (lat, lon, gas Mcf/yr, oil bbl/yr, wells per site, cell index), plus a location pool per\n  midstream cell; and\n- ``data/fitted/site_density.json``: site counts per 0.1-degree cell, for the map's background layer; and\n- ``data/fitted/sites_summary.json``: counts and volumes per cell, the method, and its caveats.\n  ``fit_strata_weights.py`` reads the summary so that well-pad stratum weights come from the full\n  site population rather than from GHGRP reporters only.\n\nMethod and caveats (all recorded in the summary):\n\n- **Production records.** ``Oil_and_Natural_Gas_Production`` holds one record per reporting entity for\n  production year 2022 in 20 states (wells in 14, leases or reporting units in TX, OK, KS, LA, KY, MI).\n  Records with no oil, condensate, or gas in the year are dropped; -999 means \"not reported\" and is\n  read as zero. Condensate is added to oil. Gas is the reported produced volume and is used as\n  marketed gas (no separate sales volume in the table). States without production records in OGIM\n  (for example AL, IL, IN, NE, TN, VA) are absent.\n- **Sites.** Well-level records closer than ``LINK_M`` to each other are merged into one site\n  (single-linkage); 50 m is an assumption standing in for a pad footprint, TODO(verify) [ogim].\n  In old dense fields this chains many wells into one site. Lease-level records are one site each at\n  the location OGIM gives for the lease.\n- **Basin.** Point-in-polygon against the basin and play outlines in ``Oil_and_Natural_Gas_Basins``\n  (EIA sedimentary basins and tight-oil/shale-gas plays, as carried by OGIM); everything else is ``other``.\n- **Facility type.** Energy share of gas at the site: > 0.8 gas-dominant, < 0.2 oil-dominant, else\n  mixed, with the heat contents in ``configs/constants.yaml`` [eia-heat-content] (same rule as\n  ``fit_strata_weights.py``).\n- **Cells.** ``configs/strata.yaml`` lists the basin x type cells. Sites whose (basin, type) is not a\n  listed cell are folded into the listed well-pad cell of the same basin with the most sites; they\n  keep their own location and production.\n- **Midstream pools.** Locations only: gathering compressor stations, transmission (booster and\n  transmission) compressor stations, gas processing plants, and underground storage fields.\n\nRun:\n\n    .venv/bin/python data/scripts/build_sites.py",
+  "link_distance_m": 50.0,
+  "n_production_records": 869455,
+  "n_records_with_production": 679866,
+  "n_sites": 577007,
+  "largest_site_wells": 554,
+  "records_by_state_and_entity": {
+    "ALASKA/WELL": 2074,
+    "ARKANSAS/WELL": 10392,
+    "CALIFORNIA/WELL": 46927,
+    "COLORADO/WELL": 40272,
+    "KANSAS/LEASE": 34543,
+    "KENTUCKY/LEASE": 5439,
+    "LOUISIANA/LEASE": 8731,
+    "MICHIGAN/PRODUCTION REPORTING UNIT": 2379,
+    "MISSISSIPPI/WELL": 2898,
+    "MONTANA/WELL": 9320,
+    "NEW MEXICO/WELL": 52501,
+    "NEW YORK/WELL": 10365,
+    "NORTH DAKOTA/WELL": 18742,
+    "OHIO/WELL": 49394,
+    "OKLAHOMA/LEASE": 52691,
+    "PENNSYLVANIA/WELL": 80813,
+    "TEXAS/LEASE": 153926,
+    "UTAH/WELL": 12370,
+    "WEST VIRGINIA/WELL": 55061,
+    "WYOMING/WELL": 31028
+  },
+  "sites_with_zero_gas": 88921,
+  "under_15_boe_d": {
+    "share_of_sites": 0.7743250948428702,
+    "share_of_gas": 0.04216825460240416,
+    "share_of_oil": 0.04066736421312723
+  },
+  "folded_cells": {
+    "anadarko/wp_oil": "anadarko/wp_gas (1759 sites)",
+    "bakken/wp_gas": "bakken/wp_mixed (51 sites)",
+    "bakken/wp_oil": "bakken/wp_mixed (3779 sites)",
+    "dj/wp_gas": "dj/wp_mixed (1975 sites)",
+    "dj/wp_oil": "dj/wp_mixed (737 sites)",
+    "eagle_ford/wp_oil": "eagle_ford/wp_mixed (3795 sites)",
+    "haynesville/wp_mixed": "haynesville/wp_gas (780 sites)",
+    "haynesville/wp_oil": "haynesville/wp_gas (1954 sites)",
+    "san_juan/wp_mixed": "san_juan/wp_gas (653 sites)",
+    "san_juan/wp_oil": "san_juan/wp_gas (301 sites)",
+    "uinta/wp_mixed": "uinta/wp_gas (1794 sites)",
+    "uinta/wp_oil": "uinta/wp_gas (2397 sites)"
+  },
+  "cells": {
+    "anadarko/wp_gas": {
+      "n_sites": 18611,
+      "gas_mcf_yr": 1520575193.0,
+      "oil_bbl_yr": 27678329.0,
+      "n_wells": 18611,
+      "median_boe_d": 9.209737928715185,
+      "share_under_15_boe_d": 0.6279082263177691
+    },
+    "anadarko/wp_mixed": {
+      "n_sites": 6239,
+      "gas_mcf_yr": 609542238.0,
+      "oil_bbl_yr": 78966474.0,
+      "n_wells": 6239,
+      "median_boe_d": 25.934924179185877,
+      "share_under_15_boe_d": 0.36608430838275363
+    },
+    "appalachian/wp_gas": {
+      "n_sites": 133421,
+      "gas_mcf_yr": 12353254387.08,
+      "oil_bbl_yr": 16200443.0,
+      "n_wells": 156162,
+      "median_boe_d": 0.5089700420956957,
+      "share_under_15_boe_d": 0.9671865748270512
+    },
+    "appalachian/wp_mixed": {
+      "n_sites": 23325,
+      "gas_mcf_yr": 246722574.61,
+      "oil_bbl_yr": 25007098.62,
+      "n_wells": 25890,
+      "median_boe_d": 0.29235954958384736,
+      "share_under_15_boe_d": 0.9920257234726688
+    },
+    "appalachian/wp_oil": {
+      "n_sites": 16943,
+      "gas_mcf_yr": 826135.8,
+      "oil_bbl_yr": 2160361.34,
+      "n_wells": 17602,
+      "median_boe_d": 0.12602739726027398,
+      "share_under_15_boe_d": 0.9985244643805702
+    },
+    "bakken/wp_mixed": {
+      "n_sites": 9810,
+      "gas_mcf_yr": 1054228501.0,
+      "oil_bbl_yr": 371899895.0,
+      "n_wells": 19035,
+      "median_boe_d": 34.32416007311562,
+      "share_under_15_boe_d": 0.2452599388379205
+    },
+    "dj/wp_mixed": {
+      "n_sites": 5596,
+      "gas_mcf_yr": 1066677810.0,
+      "oil_bbl_yr": 161762106.0,
+      "n_wells": 14538,
+      "median_boe_d": 3.785841166902552,
+      "share_under_15_boe_d": 0.6517155110793423
+    },
+    "eagle_ford/wp_gas": {
+      "n_sites": 6088,
+      "gas_mcf_yr": 1106364375.0,
+      "oil_bbl_yr": 5735645.0,
+      "n_wells": 6088,
+      "median_boe_d": 13.751084850613518,
+      "share_under_15_boe_d": 0.5133048620236531
+    },
+    "eagle_ford/wp_mixed": {
+      "n_sites": 13198,
+      "gas_mcf_yr": 1173664644.0,
+      "oil_bbl_yr": 365636364.0,
+      "n_wells": 13198,
+      "median_boe_d": 37.10642427254431,
+      "share_under_15_boe_d": 0.2681466888922564
+    },
+    "haynesville/wp_gas": {
+      "n_sites": 17474,
+      "gas_mcf_yr": 5543301127.0,
+      "oil_bbl_yr": 8102151.0,
+      "n_wells": 17474,
+      "median_boe_d": 8.564399746802573,
+      "share_under_15_boe_d": 0.6583495478997368
+    },
+    "other/wp_gas": {
+      "n_sites": 123364,
+      "gas_mcf_yr": 8304972826.4,
+      "oil_bbl_yr": 70467637.56,
+      "n_wells": 134589,
+      "median_boe_d": 5.138639848081543,
+      "share_under_15_boe_d": 0.7542962290457508
+    },
+    "other/wp_mixed": {
+      "n_sites": 16080,
+      "gas_mcf_yr": 973620075.8,
+      "oil_bbl_yr": 172827460.06,
+      "n_wells": 18947,
+      "median_boe_d": 9.204791798844381,
+      "share_under_15_boe_d": 0.6291666666666667
+    },
+    "other/wp_oil": {
+      "n_sites": 80321,
+      "gas_mcf_yr": 106277390.001,
+      "oil_bbl_yr": 359000795.41,
+      "n_wells": 103553,
+      "median_boe_d": 2.589041095890411,
+      "share_under_15_boe_d": 0.8511846217054071
+    },
+    "permian/wp_gas": {
+      "n_sites": 22959,
+      "gas_mcf_yr": 923215619.0,
+      "oil_bbl_yr": 17974982.0,
+      "n_wells": 23176,
+      "median_boe_d": 1.904914733831072,
+      "share_under_15_boe_d": 0.8774336861361558
+    },
+    "permian/wp_mixed": {
+      "n_sites": 30156,
+      "gas_mcf_yr": 6248663283.0,
+      "oil_bbl_yr": 1518571084.0,
+      "n_wells": 34360,
+      "median_boe_d": 46.58664798247095,
+      "share_under_15_boe_d": 0.36321130123358536
+    },
+    "permian/wp_oil": {
+      "n_sites": 19923,
+      "gas_mcf_yr": 378748667.0,
+      "oil_bbl_yr": 422060137.0,
+      "n_wells": 20281,
+      "median_boe_d": 4.242179612940337,
+      "share_under_15_boe_d": 0.7282035837976208
+    },
+    "san_juan/wp_gas": {
+      "n_sites": 21009,
+      "gas_mcf_yr": 735984820.0,
+      "oil_bbl_yr": 10298143.0,
+      "n_wells": 23537,
+      "median_boe_d": 9.610068638057522,
+      "share_under_15_boe_d": 0.6696177828549669
+    },
+    "uinta/wp_gas": {
+      "n_sites": 12490,
+      "gas_mcf_yr": 723065390.0,
+      "oil_bbl_yr": 44948573.0,
+      "n_wells": 26586,
+      "median_boe_d": 8.5935115341427,
+      "share_under_15_boe_d": 0.6635708566853483
+    }
+  },
+  "midstream_pools": {
+    "permian/gathering": 181,
+    "appalachian/gathering": 183,
+    "haynesville/gathering": 197,
+    "other/gathering": 1650,
+    "other/transmission": 2004,
+    "other/processing": 478,
+    "other/storage": 411
+  }
+}

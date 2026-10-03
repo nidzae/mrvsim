@@ -23,6 +23,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=7.4", "httpx>=0.24"]
+data = ["requests>=2.31", "shapely>=2.0"]   # data/scripts only (fetching and rebuilding fitted tables)
 
 [tool.setuptools.packages.find]
 include = ["mrvsim*"]

@@ -75,6 +75,8 @@ Each stratum $h$ has a weight $W_h$ equal to its share of national facility coun
 
 **Implementation note (Phase 1):** only basin × type cells that exist in the US population are enumerated (`configs/strata.yaml`, 21 cells → 63 strata at terciles). Throughput classes are quantile bands of the cell's throughput distribution by construction, so the tercile → quintile switch for V4 needs no refit. Weights are PLACEHOLDER until fitted from [ghgrp; state-production-data]; see DECISION_LOG 2026-09-30 "Default strata list".
 
+**Amendment (2026-10-03, DECISION_LOG "Well-pad facilities are real production sites"):** well-pad strata are built from the table of real production sites in [ogim] (`data/fitted/sites.npz`). Basin comes from the EIA outlines carried by OGIM, facility type from the site's gas energy share, and throughput class from the site's rank in produced energy within its basin × type cell. The cell list is now 25 cells (18 well-pad, 7 midstream) → 75 strata. For a stratum $h$ of real sites with $N_h$ sites, the sampled facilities are $n_h = \min(n, N_h)$ distinct sites drawn without replacement, each with the site's location and production. Weights: $W_h^{count} = W_c^{count} N_h / N_c$ and $W_h^{thr} = W_c^{thr} V_h / V_c$, with $N_c$, $V_c$ the cell's site count and gas volume; cell weights within the well-pad group are proportional to $N_c$ and $V_c$. Count aggregates scale by $W_h^{count}/n_h$ as before. Throughput aggregates give facility $i$ of stratum $h$ the weight $W_h^{thr} V_i / \sum_{j \in h} V_j$ (sum over the sampled facilities), since $V$ varies by orders of magnitude inside a class of real sites. The even split of a cell across classes above is superseded for well-pad cells and still applies to midstream cells. `population.throughput_class_rule` selects the class boundaries: `count` (equal numbers of sites, the rule above, default) or `throughput` (equal shares of the cell's produced energy); see the decision-log entry for the trade-off. Midstream facilities take locations from OGIM pools. `population.site_locations: box` restores uniform placement in the [basin-extents] boxes with lognormal throughput.
+
 **Stability test (V4):** results must change by less than the Monte Carlo standard error when throughput terciles are replaced by quintiles.
 
 ### 3.2 Source count
@@ -141,7 +143,7 @@ G_i = V_{\text{gas,mkt},i} \cdot \rho_{\text{CH}_4} \cdot X_{\text{CH}_4,i}, \qq
 \ln X_{\text{CH}_4,i} \sim \mathcal{N}(\ln 0.88, 0.05^2) \text{ (basin-adjusted)}
 $$
 
-$V_{\text{gas,mkt},i}$ is drawn from the stratum's throughput distribution. The true $G_i$ is known to the population generator; the estimator sees only a noisy version (§6.6).
+$V_{\text{gas,mkt},i}$ is drawn from the stratum's throughput distribution. **Amendment (2026-10-03):** for a well-pad facility, $V_{\text{gas,mkt},i}$ and the oil volume are the reported 2022 production of the real site it was sampled from [ogim] (produced gas used as marketed gas); the lognormal draw remains for midstream facilities. A site reporting no gas gets $V = 1$ m³/yr so that $\ln G$ is finite; $f_{gas} M / G$ does not depend on that floor. The true $G_i$ is known to the population generator; the estimator sees only a noisy version (§6.6).
 
 ### 3.6 Observing conditions per facility
 
@@ -496,6 +498,7 @@ Each limitation maps to a version-2 item in `DECISION_LOG.md`.
 | 2026-09-30 | §6.7, §7: interval is two-sided 90 % [p5, p95]; original percentiles marked superseded |
 | 2026-10-01 | §4 table (field of view and pointing), §5.1 satellites (field of regard, scene footprint, incidental capture): DECISION_LOG "Incidental capture" |
 | 2026-10-01 | §5.1 aircraft scheduling (regional campaigns), §8.1 Targeting wording corrected and Scheduling row: DECISION_LOG "Regional flight campaigns" |
+| 2026-10-03 | §3.1 (real production sites, 75 strata, site-based weights, class rule), §3.5 (real production as throughput): DECISION_LOG "Well-pad facilities are real production sites" |
 | 2026-10-01 | §6.7 (quantile grid, prior summary, evidence counts persisted), §7 (decision-only certifiable/fails/indeterminate shares; precise, prior-only, evidence-ratio rows), §8.3 note: DECISION_LOG "certification is the compliance decision at 95 %" |
 | 2026-09-30 | §6.7 estimand (realised-mass predictive), sampler, §6.3–6.5 v1 likelihood definitions, §10 measured timings, §11 limitation 10: Phase 4 |
 | 2026-09-30 | §4.1 wind floor, §5.2 gate conventions: Phase 3 implementation notes |

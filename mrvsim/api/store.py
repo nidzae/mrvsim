@@ -120,6 +120,8 @@ def facilities_geojson(run: LoadedRun, kpi: str = "intensity") -> dict[str, Any]
     ratio = run.prior_ratio(kpi); po = run.prior_only(kpi)
     ev = run.evidence
     basins = list(pop.strata.basins); ftypes = list(pop.strata.facility_types)
+    rep = pop.sites_represented            # real sites each dot stands for [ogim]; None for runs saved before 2026-10-03
+    boe_d = _boe_per_day(pop)
     feats = []
     fin = lambda x: None if not np.isfinite(x) else float(x)  # noqa: E731
     for i in range(pop.n_facilities):
@@ -133,11 +135,19 @@ def facilities_geojson(run: LoadedRun, kpi: str = "intensity") -> dict[str, Any]
                  "other_kpi": "mass" if kpi == "intensity" else "intensity",
                  "other_p05": float(other[0, i] * other_scale), "other_p50": float(other[2, i] * other_scale), "other_p95": float(other[4, i] * other_scale),
                  "n_obs": int(ev[0, i] + ev[1, i]) if ev is not None else None, "cms_h": int(ev[2, i]) if ev is not None else None}
+        if rep is not None and np.isfinite(rep[i]):
+            props["represents"] = float(rep[i]); props["boe_d"] = float(boe_d[i])
         if q is not None:
             props["q"] = [float(v) for v in q[::5, i]]   # 21-point quantile grid (0, 5, ..., 100 %) for P(K <= B) at any bar
         feats.append({"type": "Feature", "geometry": {"type": "Point", "coordinates": [float(pop.lon[i]), float(pop.lat[i])]}, "properties": props})
     return {"type": "FeatureCollection", "features": feats, "kpi": kpi, "units": "fraction" if kpi == "intensity" else "t/yr (values in kg/yr x scale)",
             "has_quantiles": q is not None, "has_evidence": run.prior_mass is not None}
+
+
+def _boe_per_day(pop: Population) -> np.ndarray:
+    """Barrels of oil equivalent per day (oil plus gas on an energy basis [eia-heat-content])."""
+    c = pop.constants
+    return (pop.throughput.oil_bbl_yr + pop.throughput.gas_mkt_m3_yr * c.gas_hhv_mj_per_m3 / c.oil_mj_per_bbl) / 365.0
 
 
 def slices(run: LoadedRun, kpi: str = "intensity") -> dict[str, list[dict[str, Any]]]:
@@ -209,6 +219,9 @@ def facility_detail(run: LoadedRun, fid: int, bar_mass_t: float | None, bar_inte
     n_fac = int(pop.n_facilities)
     throughput = {"gas_mkt_m3_yr": float(gas[fid]), "mmbtu_yr": float(pop.throughput.mmbtu_yr[fid]), "rank": rank, "n_facilities": n_fac,
                   "top_share": rank / n_fac, "throughput_class": int(pop.tclass_idx[fid]), "ghgrp_reporter": bool(pop.throughput.ghgrp_reporter[fid])}
+    if pop.sites_represented is not None and np.isfinite(pop.sites_represented[fid]):
+        throughput.update({"real_site": True, "sites_represented": float(pop.sites_represented[fid]), "boe_d": float(_boe_per_day(pop)[fid]),
+                           "oil_bbl_yr": float(pop.throughput.oil_bbl_yr[fid])})
     monitoring = []
     for key, spec in (run.config.policy.get("sensors") or {}).items():
         if not spec.get("enabled", True):

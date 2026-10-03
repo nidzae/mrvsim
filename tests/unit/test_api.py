@@ -74,7 +74,7 @@ def test_run_summary_facility_attribution(client: TestClient) -> None:
     assert any(t["sensor"] == "bridger_gml" for t in d["timeline"])
     a = client.get(f"/api/run/{run_id}/attribution").json()
     keys = {i["key"] for i in a["items"]}
-    assert {"ghgrp", "johnson2021", "cost-assumptions"} <= keys
+    assert {"ghgrp", "ogim", "johnson2021", "cost-assumptions"} <= keys
     assert a["priors_provenance"] == "FITTED" and all(i["resolved"] for i in a["items"])
     v = client.get("/api/validation").json()
     assert "targets" in v and v["priors_placeholder"] is False
@@ -94,6 +94,6 @@ def test_modes_and_estimate(client: TestClient) -> None:
     q = client.post("/api/estimate", json={"mode": "quick"}).json()
     f = client.post("/api/estimate", json={"mode": "full"}).json()
     c = client.post("/api/estimate", json={"mode": "custom", "replications": 1, "n_draws": 500, "facilities_per_stratum": 2, "n_per_stratum": 30}).json()
-    assert q["facilities_estimated"] == 630 and q["replications"] == 3 and q["n_draws"] == 2000
-    assert f["facilities_estimated"] == 6300 and f["n_draws"] == 10000 and f["estimated_seconds"] > q["estimated_seconds"] * 5
-    assert c["facilities_estimated"] == 126 and c["replications"] == 1
+    assert q["facilities_estimated"] == 750 and q["replications"] == 3 and q["n_draws"] == 2000
+    assert f["facilities_estimated"] == 7500 and f["n_draws"] == 10000 and f["estimated_seconds"] > q["estimated_seconds"] * 5
+    assert c["facilities_estimated"] == 150 and c["replications"] == 1

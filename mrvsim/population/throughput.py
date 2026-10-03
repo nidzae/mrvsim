@@ -17,6 +17,7 @@ import numpy as np
 import yaml
 from scipy.special import ndtri
 
+MIN_GAS_M3_YR = 1.0             # numerical floor for real sites that report no gas (see draw_throughput)
 DEFAULT_CONSTANTS_PATH = Path(__file__).resolve().parents[2] / "configs" / "constants.yaml"
 
 
@@ -80,10 +81,23 @@ def draw_throughput(
     class_index: np.ndarray, n_classes: np.ndarray,
     ghgrp_share: np.ndarray,
     constants: Constants,
+    gas_m3_yr: np.ndarray | None = None,
+    oil_bbl_yr: np.ndarray | None = None,
 ) -> Throughput:
-    """Draw V_gas (class-truncated), oil, X_CH4, and derived G_i, f_gas, MMBtu (TDD section 3.5)."""
+    """Draw V_gas (class-truncated), oil, X_CH4, and derived G_i, f_gas, MMBtu (TDD section 3.5).
+
+    ``gas_m3_yr`` / ``oil_bbl_yr`` give the real production of facilities that are real sites [ogim]
+    (NaN elsewhere); those facilities keep it instead of the lognormal draw (TDD section 3.5 as amended 2026-10-03).
+    """
     gas = draw_class_truncated_lognormal(rng, ln_gas_mu, ln_gas_sigma, class_index, n_classes)
     oil = np.exp(rng.normal(np.asarray(ln_oil_mu, dtype=float), np.asarray(ln_oil_sigma, dtype=float)))
+    if gas_m3_yr is not None and oil_bbl_yr is not None:
+        real = np.isfinite(gas_m3_yr)
+        # Deviation from TDD section 3.5 for numerical reasons: a site that reports no gas gets MIN_GAS_M3_YR so
+        # that ln G is finite. Intensity f_gas * M / G does not depend on the floor: as gas -> 0, f_gas / G tends
+        # to HHV_gas / (E_oil * rho * X), the energy-allocated limit of PRD section 5.1.
+        gas = np.where(real, np.maximum(gas_m3_yr, MIN_GAS_M3_YR), gas)
+        oil = np.where(real, oil_bbl_yr, oil)
     x = np.exp(rng.normal(np.log(constants.x_ch4_default), constants.x_ch4_log_sd, size=gas.shape))
     # Deviation from TDD section 3.5 for physical validity: mole fraction cannot exceed 1.
     x = np.minimum(x, 1.0)

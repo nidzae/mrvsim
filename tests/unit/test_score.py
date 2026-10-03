@@ -118,7 +118,7 @@ def test_cost_from_yaml_and_metrics() -> None:
     n_br = len(res.plan.deployments["bridger_gml"].facilities); n_cms = len(res.plan.deployments["cms_generic"].facilities)
     assert cost["cost_bridger_gml_usd"] == pytest.approx(n_br * 2 * LIB["bridger_gml"].cost.per_site_visit_usd)
     assert cost["cost_cms_generic_usd"] == pytest.approx(n_cms * LIB["cms_generic"].cost.per_site_year_usd)
-    gh_rows = (res.obs.log.sensor_idx == list(res.obs.log.sensor_keys).index("ghgsat_c")).sum()
+    gh_rows = ((res.obs.log.sensor_idx == list(res.obs.log.sensor_keys).index("ghgsat_c")) & ~res.obs.log.incidental).sum()   # incidental looks are free
     assert cost["cost_ghgsat_c_usd"] == pytest.approx(gh_rows * LIB["ghgsat_c"].cost.per_tasking_usd)
     assert cost["cost_total_usd"] == pytest.approx(cost["cost_bridger_gml_usd"] + cost["cost_cms_generic_usd"] + cost["cost_ghgsat_c_usd"])
     assert cost["cost_per_tonne_detected_usd"] > 0 and np.isfinite(cost["cost_per_tonne_detected_usd"])

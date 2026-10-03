@@ -6,6 +6,11 @@ Reads the three tables written by ``fetch_ghgrp_subpart_w.py`` and produces
 ``configs/strata.yaml``: a facility-count weight, a throughput weight, and the
 raw counts they came from.
 
+When ``data/fitted/sites_summary.json`` exists (``build_sites.py`` [ogim]), well-pad cells take their
+count and gas volume from the full OGIM site population instead of GHGRP reporters, and the three
+well-pad types form one group that shares their combined GHGRP CH4 share (2026-10-03). The GHGRP
+well-pad notes below then apply only to that group share.
+
 Mapping and caveats (all recorded in the output file):
 
 - GHGRP basins are AAPG codes; ``BASIN_MAP`` maps the codes that fall inside
@@ -74,6 +79,8 @@ def main() -> int:
     emis = pd.read_csv(RAW / f"ghgrp_ef_w_emissions_source_ghg_{YEAR}.csv", low_memory=False)
     over = pd.read_csv(RAW / f"ghgrp_ef_w_facility_overview_{YEAR}.csv", low_memory=False)
     strata = yaml.safe_load((REPO / "configs" / "strata.yaml").read_text())
+    sites_path = FITTED / "sites_summary.json"          # written by build_sites.py [ogim]
+    sites = json.loads(sites_path.read_text()) if sites_path.exists() else None
 
     # One row per facility x segment: CH4 summed over reporting categories; basin from the emissions
     # table where present (production), else from the facility overview (gathering, midstream).
@@ -116,7 +123,14 @@ def main() -> int:
         b, f = cell["basin"], cell["facility_type"]
         sel = fac[(fac.basin == b) & (fac.facility_type == f)]
         n = int(len(sel))
-        if f.startswith("wp_"):
+        if f.startswith("wp_") and sites is not None:
+            # Full site population [ogim]: GHGRP covers reporters above its threshold only, which leaves out
+            # most small operators (DECISION_LOG 2026-10-03).
+            cell_sites = sites["cells"][f"{b}/{f}"]
+            count, thr = float(cell_sites["n_sites"]), float(cell_sites["gas_mcf_yr"])
+            count_basis = f"production sites with reported production in {sites['source']['production_year']} [ogim]"
+            thr_basis = "gas produced at those sites (Mcf) [ogim]"
+        elif f.startswith("wp_"):
             count = float(sel.wells.fillna(0).sum())
             thr = float(sel.gas_mscf.fillna(0).sum())
             count_basis, thr_basis = "producing wells at end of year", "gas produced for sales (Mscf)"
@@ -131,31 +145,36 @@ def main() -> int:
             count_basis, thr_basis = "GHGRP facilities (physical sites)", "no volume field; equals count weight (flagged)"
         rows.append({"basin": b, "facility_type": f, "n_ghgrp_rows": n, "count_raw": count, "throughput_raw": thr,
                      "ch4_reported_t": float(sel.ch4_t.sum()),
-                     "count_basis": count_basis, "throughput_basis": thr_basis, "flag": None if n > 0 else "no GHGRP rows; floor weight"})
+                     "count_basis": count_basis, "throughput_basis": thr_basis, "flag": None if n > 0 or (f.startswith("wp_") and sites is not None) else "no GHGRP rows; floor weight"})
 
     df = pd.DataFrame(rows)
     # Normalise within facility-type group so that type shares come from GHGRP too (raw counts across types are
     # not comparable: wells vs sites). Type shares of national CH4 are used to weight groups, a documented proxy.
     type_ch4 = fac.groupby("facility_type").ch4_t.sum()
     type_ch4 = type_ch4 / type_ch4.sum()
+    # With the site table, site counts and volumes are comparable across the three well-pad types, so they
+    # form one group that shares the well-pad types' combined CH4 share.
+    group = df.facility_type.where(~df.facility_type.str.startswith("wp_"), "well_pad") if sites is not None else df.facility_type
+    group_ch4 = type_ch4.groupby(lambda f: "well_pad" if sites is not None and f.startswith("wp_") else f).sum()
     for col in ("count_raw", "throughput_raw"):
         wcol = "weight_count" if col == "count_raw" else "weight_throughput"
         df[wcol] = 0.0
-        for f, grp in df.groupby("facility_type"):
+        for g, grp in df.groupby(group):
             raw = grp[col].to_numpy(dtype=float)
             floor = 0.02 * raw[raw > 0].mean() if (raw > 0).any() else 1.0
             raw = np.where(raw > 0, raw, floor)
-            df.loc[grp.index, wcol] = raw / raw.sum() * float(type_ch4.get(f, 0.0))
+            df.loc[grp.index, wcol] = raw / raw.sum() * float(group_ch4.get(g, 0.0))
         df[wcol] = df[wcol] / df[wcol].sum()
 
     out = {
         "provenance": "FITTED",
-        "citation_keys": ["ghgrp", "eia-heat-content"],
+        "citation_keys": ["ghgrp", "eia-heat-content"] + (["ogim"] if sites is not None else []),
         "source_tables": [f"ghgrp_ef_w_emissions_source_ghg_{YEAR}.csv", f"ghgrp_ef_w_facility_overview_{YEAR}.csv"],
         "reporting_year": YEAR,
         "fitted_utc": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
         "method": __doc__.strip(),
         "type_group_shares_from_reported_ch4": {k: float(v) for k, v in type_ch4.items()},
+        "group_shares_used": {k: float(v) for k, v in group_ch4.items()},
         "basin_map": BASIN_MAP,
         "cells": df.to_dict(orient="records"),
     }
