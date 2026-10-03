@@ -6,9 +6,11 @@ import time
 from typing import Any
 
 import numpy as np
+import yaml
 
 from mrvsim.io.seeds import SeedTree
 from mrvsim.population import generate_population
+from mrvsim.population.equipment import default_tail_path
 from mrvsim.validate.common import basin_loss_rate, default_priors, finish, guard_placeholder, weighted_basin_total_t_h
 from mrvsim.validate.results import ValidationResult
 from mrvsim.validate.targets import load_targets, target_missing, worst_status
@@ -27,6 +29,11 @@ def run(targets: dict[str, Any] | None = None, n_per_stratum: int = 100, seed: i
     truth = pop.true_mass_kg_yr()
     compared: dict[str, Any] = {}; verdicts = []; statuses = []
     # basin loss rates: sample emissions over sample marketed methane (stratum-weighted), vs Sherwin 2024 Table S10
+    # production-site-only loss rates of the same campaigns (fit_aerial_tail.py [sherwin2024]); reported, not part of the pass rule
+    production_only: dict[str, Any] = {}
+    tail_path = default_tail_path()
+    if tail_path is not None:
+        production_only = (yaml.safe_load(tail_path.read_text(encoding="utf-8")) or {}).get("basins", {})
     for basin, blk in (tg.get("loss_rates_by_basin") or {}).items():
         statuses.append(blk)
         if basin not in pop.strata.basins:
@@ -34,7 +41,8 @@ def run(targets: dict[str, Any] | None = None, n_per_stratum: int = 100, seed: i
         # Corrected 2026-10-03: the previous ratio used throughput weights on both sums, which weights emissions by gas.
         lr, how = basin_loss_rate(pop, truth, basin)
         lo, hi = blk["ci_95"]; ok = bool(lo <= lr <= hi)
-        compared[f"loss_rate_{basin}"] = {"sim_true_loss_rate": lr, "published": blk["value"], "published_ci": blk["ci_95"], "campaign": blk.get("campaign"), "pass": ok,
+        prod_only = production_only.get(basin, {}).get("production_loss_rate")
+        compared[f"loss_rate_{basin}"] = {"published_production_only": prod_only, "sim_true_loss_rate": lr, "published": blk["value"], "published_ci": blk["ci_95"], "campaign": blk.get("campaign"), "pass": ok,
                                           "estimator": how, "note": "published value is production + midstream; the simulated value covers well pads only when the site table is used"}
         verdicts.append(ok)
     for basin, blk in tg["basin_totals_t_h"].items():

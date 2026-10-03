@@ -15,6 +15,7 @@ from typing import Mapping
 
 import numpy as np
 import yaml
+from scipy.special import log_ndtr, ndtr, ndtri
 
 _PRIORS_DIR = Path(__file__).resolve().parents[2] / "configs" / "priors"
 CLASSES = ("drygas", "gaswoil", "oilwgas", "oilonly")
@@ -24,7 +25,8 @@ M3_PER_MSCF = 28.316847
 MAX_EXPECTED_SOURCES = 4.0
 MAX_DUTY_CYCLE = 0.5            # pooled episodic emitters cannot be on more than this share of the time
 NO_PARETO_SPLICE_KG_H = 1.0e12  # q_tail for equipment-model sites: the lognormal is not spliced (see site_prior_params)
-OVERRIDE_KEYS = ("lambda_k", "p_intermittent", "mu_0", "sigma_0", "mu_1", "sigma_1", "q_tail", "nu_off")
+OVERRIDE_KEYS = ("lambda_k", "p_intermittent", "mu_0", "sigma_0", "mu_1", "sigma_1", "q_tail", "alpha", "nu_off")
+MAX_TAIL_SHARE = 0.3            # at most this share of an intermittent source's on-time is spent above the transition point
 _GH_X, _GH_W = np.polynomial.hermite_e.hermegauss(9)      # Gauss-Hermite nodes for N(0, 1) expectations
 _GH_W = _GH_W / _GH_W.sum()
 
@@ -87,6 +89,49 @@ def load_equipment_cells(path: str | Path | None = None) -> EquipmentCells | Non
     )
 
 
+@dataclass(frozen=True)
+class AerialTail:
+    """Per-basin super-emitter tail above the aerial transition point [sherwin2024] (fit_aerial_tail.py)."""
+
+    provenance: str
+    source_path: str
+    transition_kg_h: Mapping[str, float]
+    alpha: Mapping[str, float]
+    p_per_well: Mapping[str, float]
+    frequency_max: float
+    citation_keys: tuple[str, ...] = ("sherwin2024",)
+
+    def site_tail(self, basin: np.ndarray, ch4_kg_h: np.ndarray, n_wells: np.ndarray) -> dict[str, np.ndarray]:
+        """Transition point, Pareto index and snapshot frequency of an emission above the transition point, per site.
+
+        A site is eligible only if it produces at least the transition point in methane; the frequency is
+        n_wells x the basin's per-well chance (capped), zero otherwise.
+        """
+        T = np.array([self.transition_kg_h.get(b, np.inf) for b in basin])
+        a = np.array([self.alpha.get(b, np.nan) for b in basin])
+        p = np.array([self.p_per_well.get(b, 0.0) for b in basin])
+        eligible = np.asarray(ch4_kg_h, float) >= T
+        f = np.where(eligible & np.isfinite(p), np.minimum(np.asarray(n_wells, float) * p, self.frequency_max), 0.0)
+        return {"T": T, "alpha": a, "freq": f}
+
+
+def default_tail_path() -> Path | None:
+    files = sorted(_PRIORS_DIR.glob("aerial_tail_*.yaml"))
+    return files[-1] if files else None
+
+
+def load_aerial_tail(path: str | Path | None = None) -> AerialTail | None:
+    path = Path(path) if path is not None else default_tail_path()
+    if path is None or not path.exists():
+        return None
+    raw = yaml.safe_load(path.read_text(encoding="utf-8"))
+    b = raw["basins"]
+    return AerialTail(provenance=str(raw.get("provenance", "UNKNOWN")), source_path=str(path),
+                      transition_kg_h={k: float(v["transition_kg_h"]) for k, v in b.items()}, alpha={k: float(v["alpha"]) for k, v in b.items()},
+                      p_per_well={k: float(v["p_per_well"]) for k, v in b.items()}, frequency_max=float(raw.get("frequency_max", 0.5)),
+                      citation_keys=tuple(raw.get("citation_keys", ("sherwin2024",))))
+
+
 def expected_duty_cycle(nu_on: np.ndarray, tau_on: np.ndarray, nu_off: np.ndarray, tau_off: np.ndarray,
                         sigma_nu_on: np.ndarray, sigma_nu_off: np.ndarray) -> np.ndarray:
     """E[pi] over the between-source spread of the duration locations (pi as in TDD section 3.4)."""
@@ -97,8 +142,36 @@ def expected_duty_cycle(nu_on: np.ndarray, tau_on: np.ndarray, nu_off: np.ndarra
     return ((e_on / (e_on + e_off)) * (_GH_W[:, None] * _GH_W[None, :])).sum(axis=(-2, -1))
 
 
+def _nu_off_for_duty(base: Mapping[str, np.ndarray], pi_base: np.ndarray, pi_target: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Shift nu_off so the expected duty cycle moves from pi_base towards pi_target; returns (nu_off, achieved E[pi])."""
+    e_on = np.exp(base["nu_on"] + 0.5 * base["tau_on"] ** 2)
+    pi_central = e_on / (e_on + np.exp(base["nu_off"] + 0.5 * base["tau_off"] ** 2))
+    pi_new_central = np.clip(pi_central * pi_target / pi_base, 1e-6, 0.999)
+    nu_off = np.log(e_on * (1.0 - pi_new_central) / pi_new_central) - 0.5 * base["tau_off"] ** 2
+    for _ in range(3):      # the between-source spread makes E[pi] differ from the central value: correct towards the target
+        got = expected_duty_cycle(base["nu_on"], base["tau_on"], nu_off, base["tau_off"], base["sigma_nu_on"], base["sigma_nu_off"])
+        pi_new_central = np.clip(pi_new_central * pi_target / got, 1e-6, 0.999)
+        nu_off = np.log(e_on * (1.0 - pi_new_central) / pi_new_central) - 0.5 * base["tau_off"] ** 2
+    return nu_off, expected_duty_cycle(base["nu_on"], base["tau_on"], nu_off, base["tau_off"], base["sigma_nu_on"], base["sigma_nu_off"])
+
+
+def _sigma_for_mass_below(ln_T: np.ndarray, z_t: np.ndarray, ln_c: np.ndarray, fallback: np.ndarray) -> np.ndarray:
+    """sigma of a lognormal with P(q > T) fixed (mu = ln T - sigma z_t) whose mean mass below T, E[q; q < T], is c.
+
+    h(sigma) = ln T - sigma z_t + sigma^2 / 2 + ln Phi(z_t - sigma) - ln c is decreasing in sigma; bisection.
+    """
+    h = lambda sg: ln_T - sg * z_t + 0.5 * sg**2 + log_ndtr(z_t - sg) - ln_c  # noqa: E731
+    lo, hi = np.full(ln_T.shape, 0.02), np.full(ln_T.shape, 6.0)
+    solvable = (h(lo) > 0) & (h(hi) < 0)
+    for _ in range(60):
+        mid = 0.5 * (lo + hi)
+        up = h(mid) > 0
+        lo, hi = np.where(up, mid, lo), np.where(up, hi, mid)
+    return np.where(solvable, 0.5 * (lo + hi), fallback)
+
+
 def site_prior_params(cells: EquipmentCells, cls: np.ndarray, bin_: np.ndarray, n_wells: np.ndarray,
-                      base: Mapping[str, np.ndarray]) -> dict[str, np.ndarray]:
+                      base: Mapping[str, np.ndarray], tail: Mapping[str, np.ndarray] | None = None) -> dict[str, np.ndarray]:
     """Per-site overrides of the stratum priors (keys ``OVERRIDE_KEYS``).
 
     ``base`` holds the site's stratum duration parameters (``nu_on``, ``tau_on``, ``nu_off``, ``tau_off``,
@@ -114,8 +187,16 @@ def site_prior_params(cells: EquipmentCells, cls: np.ndarray, bin_: np.ndarray, 
       cycle is g times the stratum's (capped at MAX_DUTY_CYCLE), and the rate when on is lognormal with the
       episodic emitter's sigma and the mean that makes rate x E[duty cycle] equal the pooled annual average.
 
-    The Pareto splice of TDD section 3.3 is switched off for these sites (q_tail set very high): it would add
-    mass that the equipment data do not contain. The aerial-survey tail is a separate, still open, add-on.
+    ``tail`` (from :meth:`AerialTail.site_tail`) adds the aerial-survey super-emitter tail [sherwin2024] to sites
+    with a positive snapshot frequency f of an emission above the transition point T. It uses the Pareto splice
+    of TDD section 3.3 on the intermittent sources: q_tail = T with the basin's alpha, and the lognormal body is
+    re-solved so that (i) the chance that an intermittent source that is on emits above T reproduces f, and
+    (ii) the mass emitted below T equals the equipment model's episodic mass from emitters whose annual-average
+    rate is below T (nearly all of it). Following the survey's own construction, the bottom-up model is kept
+    below T and the aerial data above it.
+    The duty cycle is raised where needed so that at most MAX_TAIL_SHARE of on-time is above T. Expected site
+    mass is then the equipment model's steady mass + its episodic mass below T + f T alpha / (alpha - 1).
+    Sites without a tail keep an unspliced lognormal (q_tail set very high).
     """
     cls, bin_ = np.asarray(cls), np.asarray(bin_)
     n = np.maximum(np.asarray(n_wells, float), 1.0)
@@ -130,16 +211,34 @@ def site_prior_params(cells: EquipmentCells, cls: np.ndarray, bin_: np.ndarray, 
     mu_0 = np.log(g * m0) - 0.5 * sigma_0**2
 
     pi_base = expected_duty_cycle(base["nu_on"], base["tau_on"], base["nu_off"], base["tau_off"], base["sigma_nu_on"], base["sigma_nu_off"])
-    pi_target = np.minimum(g * pi_base, MAX_DUTY_CYCLE)
-    # Shift nu_off so the duty cycle at the stratum's central durations scales by pi_target / pi_base, then
-    # take the expectation again: the rate below uses the duty cycle the generator will actually produce.
-    e_on = np.exp(base["nu_on"] + 0.5 * base["tau_on"] ** 2)
-    pi_central = e_on / (e_on + np.exp(base["nu_off"] + 0.5 * base["tau_off"] ** 2))
-    pi_new_central = np.clip(pi_central * pi_target / pi_base, 1e-6, 0.999)
-    nu_off = np.log(e_on * (1.0 - pi_new_central) / pi_new_central) - 0.5 * base["tau_off"] ** 2
-    pi_exp = expected_duty_cycle(base["nu_on"], base["tau_on"], nu_off, base["tau_off"], base["sigma_nu_on"], base["sigma_nu_off"])
-    sigma_1 = cells.episodic_sigma[cls, bin_]
+    nu_off, pi_exp = _nu_off_for_duty(base, pi_base, np.minimum(g * pi_base, MAX_DUTY_CYCLE))
+    sigma_1 = cells.episodic_sigma[cls, bin_].copy()
     mu_1 = np.log(g * cells.episodic_mean_kg_h[cls, bin_] / pi_exp) - 0.5 * sigma_1**2
+    q_tail = np.full(n.shape, NO_PARETO_SPLICE_KG_H)
+    alpha = np.full(n.shape, 2.0)                       # unused where the splice is off
+
+    has_tail = np.zeros(n.shape, dtype=bool) if tail is None else (tail["freq"] > 0) & (n_e > 0)
+    if has_tail.any():
+        i = has_tail
+        T, f = tail["T"][i], tail["freq"][i]
+        b_i = {k: v[i] for k, v in base.items()}
+        k_int = (k_exp * n_e / (n_s + n_e))[i]                                  # expected intermittent sources on the site
+        a_epi = (n_e * cells.episodic_mean_kg_h[cls, bin_])[i]                  # episodic annual-average mass, kg/h
+        # Share of that mass kept below T. As in the survey's construction, the bottom-up model is taken as annual-average
+        # rates: the share is that of pooled emitters whose annual-average rate is below T (close to 1), not of
+        # rates-when-on, which depend on the duty cycle assumed for episodic sources.
+        mu_avg = np.log((g * cells.episodic_mean_kg_h[cls, bin_])[i]) - 0.5 * sigma_1[i] ** 2
+        below = ndtr((np.log(T) - mu_avg - sigma_1[i] ** 2) / sigma_1[i])
+        # expected on-fraction u = k_int E[pi]: enough for the tail frequency and for a mean rate below T under T / 2
+        u = np.maximum.reduce([k_int * pi_exp[i], f / MAX_TAIL_SHARE, 2.0 * a_epi * below / T + f])
+        nu_off_i, pi_i = _nu_off_for_duty(b_i, pi_base[i], np.minimum(u / k_int, MAX_DUTY_CYCLE))
+        u = k_int * pi_i
+        t = np.clip(f / u, 1e-9, 0.5)                                            # P(q > T | on)
+        c = np.minimum(a_epi * below / u, 0.9 * T * (1.0 - t))                   # E[q; q < T | on]
+        z_t = ndtri(1.0 - t)
+        sig = _sigma_for_mass_below(np.log(T), z_t, np.log(c), sigma_1[i])
+        nu_off[i], sigma_1[i], mu_1[i] = nu_off_i, sig, np.log(T) - sig * z_t
+        q_tail[i], alpha[i] = T, tail["alpha"][i]
 
     return {"lambda_k": k_exp - 1.0, "p_intermittent": n_e / (n_s + n_e), "mu_0": mu_0, "sigma_0": sigma_0, "mu_1": mu_1, "sigma_1": sigma_1,
-            "q_tail": np.full(n.shape, NO_PARETO_SPLICE_KG_H), "nu_off": nu_off}
+            "q_tail": q_tail, "alpha": alpha, "nu_off": nu_off}

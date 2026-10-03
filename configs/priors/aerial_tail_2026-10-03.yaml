@@ -1,0 +1,174 @@
+# Aerial-survey super-emitter tail per basin, per well of an eligible site (provenance FITTED).
+# Produced by data/scripts/fit_aerial_tail.py from the Sherwin et al. 2024 correction release [sherwin2024] and the
+# OGIM site table [ogim]. Method and caveats in the script docstring; DECISION_LOG 2026-10-03.
+provenance: FITTED
+version: '2026-10-03'
+citation_keys:
+- sherwin2024
+- ogim
+alpha_min: 1.2
+frequency_max: 0.5
+fitted_utc: '2026-10-03T21:12:55+00:00'
+basins:
+  anadarko:
+    campaign: pooled over permian, appalachian, dj, uinta
+    transition_kg_h: 127.39345047635068
+    alpha: 1.2809970417604406
+    tail_loss_rate: 0.003706276520063997
+    pooled: true
+    p_per_well: 0.0027430518242467974
+    eligible_sites: 5892
+    eligible_wells: 9558
+    basin_sites: 24850
+    eligible_share_of_basin_gas: 0.8454359716471425
+    target_tail_kg_h: 15226.304779765534
+    mean_tail_emission_kg_h: 580.7556982716775
+  appalachian:
+    campaign: Pennsylvania_2021
+    transition_kg_h: 120.2427939888
+    alpha_from_mean_excess: 1.0966624346024552
+    alpha: 1.2
+    tail_loss_rate: 0.0035822877277334355
+    production_loss_rate: 0.004732839401509359
+    survey:
+      well_sites: 12324.1
+      site_frequency_above_T: 0.0021827250093626066
+      mean_above_T_kg_h: 1364.1882261861592
+      max_kg_h: 4255.658839114129
+      covered_production_t_h: 10242.4800414006
+      n_batches: 10
+    p_per_well: 0.004572762041354662
+    eligible_sites: 4210
+    eligible_wells: 26389
+    basin_sites: 173689
+    eligible_share_of_basin_gas: 0.9800115235262578
+    target_tail_kg_h: 87058.63321003818
+    mean_tail_emission_kg_h: 721.4567639328002
+  bakken:
+    campaign: pooled over permian, appalachian, dj, uinta
+    transition_kg_h: 127.39345047635068
+    alpha: 1.2809970417604406
+    tail_loss_rate: 0.003706276520063997
+    pooled: true
+    p_per_well: 0.001322031922271936
+    eligible_sites: 2526
+    eligible_wells: 9815
+    basin_sites: 9810
+    eligible_share_of_basin_gas: 0.8943602768333807
+    target_tail_kg_h: 7535.736870715912
+    mean_tail_emission_kg_h: 580.7556982716775
+  dj:
+    campaign: Denver_fall2021
+    transition_kg_h: 116.3041602126
+    alpha_from_mean_excess: 1.4160761513130904
+    alpha: 1.4160761513130904
+    tail_loss_rate: 0.0008205645742045535
+    production_loss_rate: 0.007188339357337671
+    survey:
+      well_sites: 7265.0
+      site_frequency_above_T: 0.000564349621472815
+      mean_above_T_kg_h: 395.8302994675342
+      max_kg_h: 805.3577388020849
+      covered_production_t_h: 1972.72576203208
+      n_batches: 10
+    p_per_well: 0.00048672863187361253
+    eligible_sites: 1430
+    eligible_wells: 8762
+    basin_sites: 5596
+    eligible_share_of_basin_gas: 0.9753256477698733
+    target_tail_kg_h: 1688.1039192784765
+    mean_tail_emission_kg_h: 395.83029946753425
+  eagle_ford:
+    campaign: pooled over permian, appalachian, dj, uinta
+    transition_kg_h: 127.39345047635068
+    alpha: 1.2809970417604406
+    tail_loss_rate: 0.003706276520063997
+    pooled: true
+    p_per_well: 0.0021062176274938664
+    eligible_sites: 5734
+    eligible_wells: 13324
+    basin_sites: 19286
+    eligible_share_of_basin_gas: 0.8845295753667772
+    target_tail_kg_h: 16297.888672600524
+    mean_tail_emission_kg_h: 580.7556982716775
+  haynesville:
+    campaign: pooled over permian, appalachian, dj, uinta
+    transition_kg_h: 127.39345047635068
+    alpha: 1.2809970417604406
+    tail_loss_rate: 0.003706276520063997
+    pooled: true
+    p_per_well: 0.010035081934950119
+    eligible_sites: 3473
+    eligible_wells: 6799
+    basin_sites: 17474
+    eligible_share_of_basin_gas: 0.9629936165652578
+    target_tail_kg_h: 39624.10298013273
+    mean_tail_emission_kg_h: 580.7556982716775
+  other:
+    campaign: pooled over permian, appalachian, dj, uinta
+    transition_kg_h: 127.39345047635068
+    alpha: 1.2809970417604406
+    tail_loss_rate: 0.003706276520063997
+    pooled: true
+    p_per_well: 0.0028965180203780437
+    eligible_sites: 15902
+    eligible_wells: 39971
+    basin_sites: 219765
+    eligible_share_of_basin_gas: 0.8108187876678482
+    target_tail_kg_h: 67084.04587660405
+    mean_tail_emission_kg_h: 580.7556982716775
+  permian:
+    campaign: Permian_fall2021
+    transition_kg_h: 144.041
+    alpha_from_mean_excess: 1.3686713251829565
+    alpha: 1.3686713251829565
+    tail_loss_rate: 0.004232885672313729
+    production_loss_rate: 0.00974564168273876
+    survey:
+      well_sites: 10777.0
+      site_frequency_above_T: 0.004574556926788531
+      mean_above_T_kg_h: 534.7440196300684
+      max_kg_h: 2529.596652711085
+      covered_production_t_h: 6227.84081938927
+      n_batches: 10
+    p_per_well: 0.0023659614574831874
+    eligible_sites: 15734
+    eligible_wells: 48722
+    basin_sites: 73038
+    eligible_share_of_basin_gas: 0.9333007119742368
+    target_tail_kg_h: 61641.435240337836
+    mean_tail_emission_kg_h: 534.7440196300684
+  san_juan:
+    campaign: pooled over permian, appalachian, dj, uinta
+    transition_kg_h: 127.39345047635068
+    alpha: 1.2809970417604406
+    tail_loss_rate: 0.003706276520063997
+    pooled: true
+    p_per_well: 0.002253410411259916
+    eligible_sites: 2586
+    eligible_wells: 4020
+    basin_sites: 21009
+    eligible_share_of_basin_gas: 0.506211187888359
+    target_tail_kg_h: 5260.897366273361
+    mean_tail_emission_kg_h: 580.7556982716775
+  uinta:
+    campaign: Uinta_2020
+    transition_kg_h: 102.983
+    alpha_from_mean_excess: 1.3297941534187796
+    alpha: 1.3297941534187796
+    tail_loss_rate: 0.01420704844223584
+    production_loss_rate: 0.04496869244398984
+    survey:
+      well_sites: 5371.0
+      site_frequency_above_T: 0.0022342208154905977
+      mean_above_T_kg_h: 415.24748053258855
+      max_kg_h: 1274.6322658948502
+      covered_production_t_h: 350.739267670637
+      n_batches: 10
+    p_per_well: 0.0034211957407174892
+    eligible_sites: 2057
+    eligible_wells: 13946
+    basin_sites: 12490
+    eligible_share_of_basin_gas: 0.8295194283880744
+    target_tail_kg_h: 19812.286047150596
+    mean_tail_emission_kg_h: 415.24748053258855

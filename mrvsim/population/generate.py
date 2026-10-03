@@ -17,7 +17,7 @@ import numpy as np
 
 from mrvsim.io.seeds import SeedTree
 from mrvsim.population.conditions import Conditions, draw_conditions
-from mrvsim.population.equipment import OVERRIDE_KEYS, load_equipment_cells, site_prior_params
+from mrvsim.population.equipment import OVERRIDE_KEYS, load_aerial_tail, load_equipment_cells, site_prior_params
 from mrvsim.population.priors import DEFAULT_PRIORS_PATH, PriorSet, load_priors
 from mrvsim.population.sources import draw_rates_kg_h, draw_source_counts, draw_source_types, rate_params_for_type
 from mrvsim.population.sites import DEFAULT_SITES_PATH
@@ -136,6 +136,8 @@ class Population:
             keys.add("ogim")
         if self.prior_overrides is not None:
             keys.add("rutherford2021")
+            if np.nanmin(self.prior_overrides["q_tail"]) < 1.0e11:
+                keys.add("sherwin2024")
         return tuple(sorted(keys))
 
     # -- persistence --------------------------------------------------------
@@ -257,7 +259,8 @@ def generate_population(
         basin boxes with lognormal throughput), ``sites_path``, ``throughput_class_rule``
         (``count`` or ``throughput``; see :func:`mrvsim.population.strata.load_strata`), ``leak_model``
         (``equipment``: real sites take source hyperparameters from their well count, class and
-        productivity [rutherford2021], the default; ``stratum``: the basin x type stratum priors).
+        productivity [rutherford2021], the default; ``stratum``: the basin x type stratum priors),
+        ``aerial_tail`` (default true: add the per-basin, per-well super-emitter tail [sherwin2024]).
     seeds:
         Seed tree scoped to this population (e.g. ``run.seeds.child(rep=r)``).
         Streams used: ``population/source_count``, ``population/source_type``,
@@ -306,7 +309,7 @@ def generate_population(
     # Per-facility source hyperparameters: the stratum's, overridden for real sites by the equipment-based
     # model, which conditions on the site's well count, class and productivity (TDD sections 3.2-3.4 as
     # amended 2026-10-03) [rutherford2021]. The same overrides are the estimator's prior (prior_overrides).
-    FP = {k: P[k][stratum_idx].astype(float) for k in ("lambda_k", "p_intermittent", "mu_0", "sigma_0", "mu_1", "sigma_1", "q_tail", "nu_off")}
+    FP = {k: P[k][stratum_idx].astype(float) for k in ("lambda_k", "p_intermittent", "mu_0", "sigma_0", "mu_1", "sigma_1", "q_tail", "alpha", "nu_off")}
     prior_overrides: dict[str, np.ndarray] | None = None
     equipment = load_equipment_cells() if str(population_cfg.get("leak_model", "equipment")) == "equipment" else None
     real = site_row >= 0
@@ -315,7 +318,14 @@ def generate_population(
         rows = site_row[real]
         cls, bin_ = equipment.classify(sites.gas_m3_yr[rows], sites.oil_bbl_yr[rows], sites.n_wells[rows])
         base = {k: P[k][stratum_idx[real]] for k in ("nu_on", "tau_on", "nu_off", "tau_off", "sigma_nu_on", "sigma_nu_off")}
-        ov = site_prior_params(equipment, cls, bin_, sites.n_wells[rows], base)
+        # aerial-survey super-emitter tail [sherwin2024], per well of a site that produces at least the transition point
+        tail_model = load_aerial_tail() if bool(population_cfg.get("aerial_tail", True)) else None
+        tail = None
+        if tail_model is not None:
+            basin_keys = np.array(list(strata.basins))[basin_idx[real]]
+            ch4_kg_h = sites.gas_m3_yr[rows] * constants.rho_ch4_kg_per_m3 * constants.x_ch4_default / constants.hours_per_year
+            tail = tail_model.site_tail(basin_keys, ch4_kg_h, sites.n_wells[rows])
+        ov = site_prior_params(equipment, cls, bin_, sites.n_wells[rows], base, tail)
         prior_overrides = {k: np.full(n_fac, np.nan) for k in OVERRIDE_KEYS}
         for k in OVERRIDE_KEYS:
             FP[k][real] = ov[k]; prior_overrides[k][real] = ov[k]
@@ -327,7 +337,7 @@ def generate_population(
     src_stratum = stratum_idx[src_facility]
     z = draw_source_types(seeds.rng("population", "source_type"), FP["p_intermittent"][src_facility])
     mu, sigma = rate_params_for_type(z, FP["mu_0"][src_facility], FP["sigma_0"][src_facility], FP["mu_1"][src_facility], FP["sigma_1"][src_facility])
-    q = draw_rates_kg_h(seeds.rng("population", "rates"), mu, sigma, FP["q_tail"][src_facility], P["alpha"][src_stratum])
+    q = draw_rates_kg_h(seeds.rng("population", "rates"), mu, sigma, FP["q_tail"][src_facility], FP["alpha"][src_facility])
 
     # Per-source duration location parameters: stratum value plus between-source spread, so that duty
     # cycles vary across sources (DECISION_LOG 2026-09-30, Phase 4). tau (within-source spread) stays per stratum.

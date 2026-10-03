@@ -11,7 +11,7 @@ from mrvsim.estimate.fast import facility_priors
 from mrvsim.io.seeds import SeedTree
 from mrvsim.population import generate_population, load_population
 from mrvsim.population.equipment import (
-    MAX_EXPECTED_SOURCES, OVERRIDE_KEYS, expected_duty_cycle, load_equipment_cells, site_prior_params,
+    MAX_EXPECTED_SOURCES, NO_PARETO_SPLICE_KG_H, OVERRIDE_KEYS, expected_duty_cycle, load_aerial_tail, load_equipment_cells, site_prior_params,
 )
 
 BASE = {"nu_on": np.array([2.0]), "tau_on": np.array([1.0]), "nu_off": np.array([6.0]), "tau_off": np.array([1.2]),
@@ -61,7 +61,7 @@ def test_emissions_rise_with_wells_and_productivity(cells) -> None:
 
 
 def test_population_uses_site_priors_and_matches_cell_means(cells) -> None:
-    pop = generate_population({"n_per_stratum": 100}, SeedTree(5))
+    pop = generate_population({"n_per_stratum": 100, "aerial_tail": False}, SeedTree(5))
     real = pop.site_row >= 0
     assert pop.prior_overrides is not None and set(pop.prior_overrides) == set(OVERRIDE_KEYS)
     assert np.isfinite(pop.prior_overrides["lambda_k"][real]).all() and np.isnan(pop.prior_overrides["lambda_k"][~real]).all()
@@ -84,8 +84,42 @@ def test_estimator_prior_is_the_site_prior(tmp_path: Path) -> None:
     i = int(np.nonzero(pop.site_row >= 0)[0][0]); j = int(np.nonzero(pop.site_row < 0)[0][0])
     sp = facility_priors(i, inp, pbs)
     assert sp.lambda_k == pytest.approx(pop.prior_overrides["lambda_k"][i]) and sp.mu_0 == pytest.approx(pop.prior_overrides["mu_0"][i])
-    assert sp.alpha == pbs[int(pop.stratum_idx[i])].alpha                  # untouched fields come from the stratum
+    assert sp.tau_on == pbs[int(pop.stratum_idx[i])].tau_on                # untouched fields come from the stratum
     assert facility_priors(j, inp, pbs) is pbs[int(pop.stratum_idx[j])]     # midstream keeps the stratum prior
     pop.save(tmp_path / "population")
     back = load_population(tmp_path / "population")
     np.testing.assert_array_equal(back.prior_overrides["mu_1"], pop.prior_overrides["mu_1"])
+
+
+def test_aerial_tail_frequency_and_mass(cells) -> None:
+    """With a tail, a site's snapshot frequency above T and its tail mass match the request; steady mass is untouched."""
+    from scipy.special import ndtr
+    n = np.array([1, 4, 12]); cls = np.array([2, 2, 0]); b = np.array([6, 7, 8])
+    base = {k: np.repeat(v, 3) for k, v in BASE.items()}
+    tail = {"T": np.array([140.0, 140.0, 120.0]), "alpha": np.array([1.4, 1.4, 1.2]), "freq": np.array([0.003, 0.01, 0.0])}
+    p0 = site_prior_params(cells, cls, b, n, base)
+    p = site_prior_params(cells, cls, b, n, base, tail)
+    assert p["q_tail"][2] == NO_PARETO_SPLICE_KG_H and p["mu_1"][2] == p0["mu_1"][2]            # zero frequency: unchanged
+    np.testing.assert_allclose(p["mu_0"], p0["mu_0"]); np.testing.assert_allclose(p["lambda_k"], p0["lambda_k"])
+    i = slice(0, 2)
+    pi = expected_duty_cycle(base["nu_on"][i], base["tau_on"][i], p["nu_off"][i], base["tau_off"][i], base["sigma_nu_on"][i], base["sigma_nu_off"][i])
+    k_int = (p["lambda_k"][i] + 1.0) * p["p_intermittent"][i]
+    p_above = 1.0 - ndtr((np.log(tail["T"][i]) - p["mu_1"][i]) / p["sigma_1"][i])
+    np.testing.assert_allclose(k_int * pi * p_above, tail["freq"][i], rtol=1e-3)                  # snapshot frequency above T
+    np.testing.assert_array_equal(p["q_tail"][i], tail["T"][i]); np.testing.assert_array_equal(p["alpha"][i], tail["alpha"][i])
+    below = np.exp(p["mu_1"][i] + 0.5 * p["sigma_1"][i] ** 2) * ndtr((np.log(tail["T"][i]) - p["mu_1"][i] - p["sigma_1"][i] ** 2) / p["sigma_1"][i])
+    episodic = n[i] * cells.k_episodic[cls[i], b[i]] * cells.episodic_mean_kg_h[cls[i], b[i]]
+    assert np.all(k_int * pi * below <= episodic * 1.001) and np.all(k_int * pi * below >= 0.5 * episodic)   # bottom-up mass kept below T
+
+
+def test_aerial_tail_only_at_sites_that_can_sustain_it() -> None:
+    tl = load_aerial_tail()
+    assert tl is not None and tl.provenance == "FITTED"
+    T = tl.transition_kg_h["permian"]
+    out = tl.site_tail(np.array(["permian", "permian", "permian"]), np.array([0.5 * T, 2 * T, 2 * T]), np.array([3, 1, 4]))
+    assert out["freq"][0] == 0.0                                    # produces less methane than the transition point
+    assert out["freq"][2] == pytest.approx(4 * out["freq"][1])      # per well
+    pop = generate_population({"n_per_stratum": 60}, SeedTree(3))
+    has = pop.prior_overrides["q_tail"] < NO_PARETO_SPLICE_KG_H
+    ch4_kg_h = pop.throughput.g_ch4_kg_yr / 8760.0
+    assert has.any() and np.all(ch4_kg_h[has] > 50.0) and "sherwin2024" in pop.citation_keys()
