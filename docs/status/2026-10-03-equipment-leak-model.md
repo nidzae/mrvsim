@@ -48,3 +48,21 @@ Not modelled. The data on disk contain no age–leak relationship, and a web sea
 ## Docs changed
 
 DECISION_LOG 2026-10-03 "Equipment-based leak model…"; TDD §3.4a (new), §9, §13; PRD §11; REFERENCES ([omara2022], verify); QUICKSTART; `configs/default.yaml`.
+
+## Addendum 2026-10-05 — aerial super-emitter tail (DECISION_LOG "Aerial super-emitter tail")
+
+Built 2026-10-03 at Nidhi's choice ("per well by basin fitted to Sherwin"): `data/scripts/fit_aerial_tail.py` → `configs/priors/aerial_tail_2026-10-03.yaml`; TDD §3.4a. Per-well chance applies only to sites whose methane production is at least the survey's transition point; basin totals are anchored to the survey's above-transition loss rate. 155 unit tests passing. Default quick run `20261003T212043Z-d090a209`: calibration 0.908 (mass), 0.906 (intensity).
+
+Validation (quick mode, `runs/validation/20261005T164610Z.json`). Earlier attempts on 2026-10-03/04 were cut off because the laptop slept; no code fault was found.
+
+| Test | Result | Detail |
+|---|---|---|
+| V1 | fail | Quantile bands and survival curves fail in all four basins with targets; persistence fails (not fitted). |
+| V2 | fail | Well-pad loss rates from a 60-per-stratum sample: Permian 1.41 % (published production-only 0.97 %, production + midstream 1.89 %); Appalachian 0.41 % (0.47 %, 0.71 %); DJ 0.90 % (0.72 %, 1.10 %); Uinta 1.63 % (4.50 %, 5.55 %). The pass rule compares with the production + midstream interval. FEAST cross-check 0.999 (pass). Sampled values are noisy: the expectation over every site is 1.37 %, 0.73 %, 0.95 %, 3.16 %. |
+| V3 | fail | Haynesville, Appalachian and DJ pass; Permian (interval up to 1.17 % vs 1.89 %) and Uinta (up to 5.53 % vs 5.55 %, just short) fail. |
+| V4 | fail | One metric: completeness 0.997 vs 0.983 between terciles and quintiles (2·SE 0.012). All certification, width, bias and calibration metrics are stable. |
+| V5 | pass | κ 0.89–0.92 under every perturbation. |
+| V6 | fail | Unchanged: 2 of 60 events detected; placeholder target. |
+| V7 | pass | κ 0.893 (mass), 0.900 (intensity). |
+
+Open after this: V1 needs a look at why the simulated detected-rate distributions miss the published bands even with the tail (the sample holds few sites above the campaign floors, and the tail is matched on mass and frequency above the transition point, not on the shape between the detection floor and the transition point); persistence; midstream in V2; the Uinta shortfall in sampled runs.
