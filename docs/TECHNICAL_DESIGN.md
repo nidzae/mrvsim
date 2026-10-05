@@ -328,6 +328,8 @@ An opportunity is usable if all of the following hold, with draws from the facil
 | Wind | $u \le u_{\max,s}$ | $u \le u_{\max,s}$ | $u \le u_{\max,s}$ | Wind sector must intersect sensor placement |
 | Outage | — | — | — | $\text{Bernoulli}(1 - p_{\text{outage}})$ |
 
+**Amendment (2026-10-05, DECISION_LOG "Full-year coverage"):** a continuous monitor deployment may have $r$ independent networks at a facility (`redundancy`, default 1). Each network draws its own outage and wind-sector gates; the hour is usable if any network's is, so $P(\text{unusable}) = \big[(p_{\text{outage}} + (1 - p_{\text{outage}})(1 - c_{\text{sector}})\big]^r$ and the expected usable share is $1 - (1 - a)^r$ with $a$ the single-network availability (about 0.82 for `cms_generic`: 0.97, 0.99 for $r$ = 2, 3). Detection and the reported rate are drawn once per usable hour. Cost is $r$ site-years. `cms_high_availability` is a second monitor class with the same POD and quantification but $p_{\text{outage}}$ = 0.005 and $c_{\text{sector}}$ = 1.0 (assumptions, [cms-high-availability-assumption]); with $r$ = 2 most of its facilities are observed every hour of the year, which the observation-only verdict (§7a) requires.
+
 **Implementation note (Phase 3, DECISION_LOG 2026-09-30):** the aircraft cloud gate blocks with probability $p_{\text{cloud}} (1 - c_s)$ where $c_s$ is the sensor's cloud tolerance (`max_cloud_fraction` in its YAML); CMS outage and wind-sector gates are independent per hour; tasked satellites use one overpass per equal slice of the year up to the tasking frequency.
 
 ### 5.3 Detection and reporting
@@ -483,7 +485,7 @@ Intensity bounds are $f_{gas,i}\,L_i / \hat G_i$ and $f_{gas,i}\,U_i / \hat G_i$
 
 Choices and their direction: the quantification error is applied as one common factor to all detected hours (fully correlated, the conservative case; independent hourly errors would average out and give a tighter range); $q_{90}$ is the rate detected nine times in ten, so an hour without a detection can still hide a larger emission one time in ten; $\hat G$ is taken at face value; false detections are not removed from $m_i$. An optional `scoring.unobserved_cap: throughput` replaces the $\infty$ by $U_i^{obs} + (8760 - H_i)\,\hat G_i / 8760$ ("a facility cannot emit more gas than it handles"); it is not the default because reported gas is marketed gas, and with energy allocation (PRD §5.1) the cap would certify oil-dominant sites with no observation.
 
-Headline metrics (count weights of §3.1a over all facilities): share certified, share failing, the same for well pads and for midstream separately, the gas-weighted certified share, and the mean share of the year under continuous observation $\sum_i w^{cnt}_i H_i / 8760$. The estimate's certified and fails shares are also reported per segment so the two views can be read side by side.
+Headline metrics (count weights of §3.1a over all facilities): share certified, share failing, share observed every hour of the year, cost per facility certified from observation (programme cost over the facilities it certifies), the same for well pads and for midstream separately, the gas-weighted certified share, and the mean share of the year under continuous observation $\sum_i w^{cnt}_i H_i / 8760$. The estimate's certified and fails shares are also reported per segment so the two views can be read side by side.
 
 ---
 
@@ -497,6 +499,7 @@ Headline metrics (count weights of §3.1a over all facilities): share certified,
 | Coverage fraction | share of facilities, or of throughput, instrumented or surveyed | 0–1 |
 | Frequency | surveys per year (aircraft, drone, OGI); tasking priority (satellite) | 0–52 |
 | Targeting | random / throughput-weighted / prior-risk-weighted / widest-interval-first *(wording superseded 2026-10-01: `throughput` is a top-k cutoff by marketed gas, "top facilities by throughput")* | categorical |
+| Redundancy | continuous monitors only: independent networks per facility; usable hours are the union, cost multiplies (2026-10-05) | 1–4 |
 | Coverage weighting | `population` (default for runs since 2026-10-05): a coverage share refers to the real population through the count weights (targeted: cumulative $w^{cnt}$ in descending score order; random: equal chance per sampled facility); `sample` (older runs): share of the sampled facilities | categorical |
 | Scheduling (campaign/survey sensors) | independent dates / regional campaign with `campaign_days` per basin (added 2026-10-01) | categorical, 1–60 days |
 | Validation tier filter | minimum tier | A–D |
@@ -618,6 +621,7 @@ Each limitation maps to a version-2 item in `DECISION_LOG.md`.
 | 2026-10-05 | §3.1a added (sampling design, weights and estimators step by step; `throughput` class rule is the default); §7 (weighted shares, medians and cost; decided share of emitted mass replaces completeness on the headline row); §8.1 (coverage weighting): DECISION_LOG "Over-sample large sites and weight every population statistic" |
 | 2026-10-05 | §5.1 note on what is and is not physical in the satellite model; §11 items 11–13 (single-satellite constellations, pinned elements, no tasking capacity). Documentation only: DECISION_LOG "Satellite orbit realism reviewed" |
 | 2026-10-05 | §7a added: observation-only bounds and verdict; headline shares by segment: DECISION_LOG "Observation-only verdict" |
+| 2026-10-05 | §5.2 (monitor redundancy, high-availability monitor), §7a (coverage metrics), §8.1 (Redundancy row): DECISION_LOG "Full-year coverage" |
 | 2026-10-01 | §6.7 (quantile grid, prior summary, evidence counts persisted), §7 (decision-only certifiable/fails/indeterminate shares; precise, prior-only, evidence-ratio rows), §8.3 note: DECISION_LOG "certification is the compliance decision at 95 %" |
 | 2026-09-30 | §6.7 estimand (realised-mass predictive), sampler, §6.3–6.5 v1 likelihood definitions, §10 measured timings, §11 limitation 10: Phase 4 |
 | 2026-09-30 | §4.1 wind floor, §5.2 gate conventions: Phase 3 implementation notes |

@@ -37,9 +37,10 @@ export default function Dashboard({ runId, kpi, basis, runSettings, pareto, onRe
         <h2>Observations only: what the measurements alone establish</h2>
         <p className="muted">Nothing is assumed about time nobody observed. Aircraft and satellite looks are instants and cover no time, so a site is certified only if a continuous monitor measured it for the whole year and found it under the bar; it fails if the emissions actually measured exceed the bar.</p>
         <div className="tiles">
-          <Tile label="Year under continuous observation" value={fmtPct(k.observed_share_of_year.mean, 1)} sub="average real facility" />
+          <Tile label="Year under continuous observation" value={fmtPct(k.observed_share_of_year.mean, 1)} sub={`average real facility · ${fmtPct(k.observed_full_year_share_facilities?.mean, 1)} observed every hour`} />
           <Tile label="Certified from observation" value={fmtPct(k.observed_certified_share_facilities.mean, 1)} sub={`of real facilities · ${fmtPct(k.observed_certified_share_weighted_throughput.mean, 1)} of gas`} />
           <Tile label="Fails from observation" value={fmtPct(k.observed_fails_share_facilities.mean, 1)} sub="measured emissions alone exceed the bar" />
+          {Number.isFinite(k.cost_per_facility_certified_from_observation_usd?.mean) && <Tile label="Cost per facility certified from observation" value={fmtUsd(k.cost_per_facility_certified_from_observation_usd.mean)} sub="whole monitoring programme over the facilities it certifies" />}
           <Tile label="Well pads: certified / fails" value={`${fmtPct(k.observed_certified_share_well_pads.mean, 1)} / ${fmtPct(k.observed_fails_share_well_pads.mean, 1)}`} sub={`estimate says ${fmtPct(k.certified_share_well_pads.mean, 1)} / ${fmtPct(k.fails_share_well_pads.mean, 1)}`} />
           <Tile label="Midstream: certified / fails" value={`${fmtPct(k.observed_certified_share_midstream.mean, 1)} / ${fmtPct(k.observed_fails_share_midstream.mean, 1)}`} sub={`estimate says ${fmtPct(k.certified_share_midstream.mean, 1)} / ${fmtPct(k.fails_share_midstream.mean, 1)}`} />
         </div>

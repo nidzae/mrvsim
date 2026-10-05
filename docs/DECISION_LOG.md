@@ -310,3 +310,11 @@ Format:
 **Docs updated:** PRD §5.3a, §11; TDD §7a, §13; QUICKSTART; BACKLOG.
 **Status:** active
 
+## 2026-10-05 — Full-year coverage: monitor redundancy and a high-availability monitor
+**Decision:** (1) Continuous monitors take a `redundancy` setting: independent networks at the same facility, each with its own outage and wind-sector gates; an hour is observed if any network is up; cost multiplies (TDD §5.2, §8.1). (2) A second monitor class `cms_high_availability` with `cms_generic`'s detection and quantification but hourly outage 0.005, full wind-sector coverage and three times the cost, all analyst assumptions ([cms-high-availability-assumption]). (3) The observation view reports the share of facilities observed every hour and the programme cost per facility certified from observation. The strict rule of PRD §5.3a is unchanged: no gap tolerance.
+**Reason:** Nidhi, on seeing that the observation-only verdict certified nothing in any mix: "couldn't you launch every sensor at max capacity and get full coverage at least on a small number of sites?" It could not, only because the model had one monitor class with fixed 82 % availability and no way to stack monitors. Both redundancy and purpose-built high-availability networks exist in practice; expressing them lets the observation view show where assumption-free certification is reachable and what it costs, rather than only that ordinary monitoring falls short.
+**Alternatives rejected:** a tolerance for monitoring gaps (reintroduces an assumption; left to Nidhi, BACKLOG A9); counting snapshot looks as covering some minutes (an instant bounds the rate at that instant, not the hour); averaging detections across networks (would tighten the measured bound beyond what one instrument supports).
+**Limitations:** the two networks' gaps are treated as independent, which flatters redundancy when outages share a cause (grid power, weather); the high-availability figures are not from a product; with `redundancy` 1 every series is unchanged (tested byte for byte).
+**Docs updated:** TDD §5.2, §7a, §8.1, §13; PRD §11; QUICKSTART; REFERENCES; BACKLOG; status note.
+**Status:** active
+

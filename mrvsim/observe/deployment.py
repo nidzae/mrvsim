@@ -10,6 +10,7 @@ the ``policy`` config section so the observation simulator can be exercised:
         tropomi:     {coverage: 1.0}                                                # wall-to-wall: every overpass
         cms_generic: {coverage: 0.2, targeting: throughput}
 
+Continuous monitors take ``redundancy`` (independent networks per facility, default 1; cost multiplies).
 Targeting: ``random`` | ``throughput`` (top-k facilities by marketed gas; a
 cutoff, not weighted sampling) | ``prior_risk`` (top by expected prior mass;
 Phase 7) | ``widest_interval`` (adaptive; Phase 7). Coverage is the share of
@@ -44,6 +45,7 @@ class SensorDeployment:
     visit_hours: np.ndarray | None = None        # (n_visits,) simulation hours for campaign/survey sensors
     visit_facility: np.ndarray | None = None     # (n_visits,) facility index per visit
     taskings_per_year: int | None = None         # tasked satellites: number of overpasses to use per facility
+    redundancy: int = 1                          # continuous monitors: independent networks per facility (TDD section 5.2, 2026-10-05)
 
 
 @dataclass
@@ -161,7 +163,7 @@ def build_plan(policy_cfg: Mapping[str, Any], seeds: SeedTree, n_fac: int, lon_d
         facs = select_facilities(rng, n_fac, cov, targeting, score,
                                  weights=throughput_weights if weighted and throughput_weights is not None else throughput_score,
                                  coverage_basis=basis, count_weights=count_weights if weighted else None)
-        dep = SensorDeployment(sensor_key=key, facilities=facs)
+        dep = SensorDeployment(sensor_key=key, facilities=facs, redundancy=max(int(spec.get("redundancy", 1)), 1) if schedule == "hourly" else 1)
         if schedule in ("campaign", "survey"):
             freq = int(spec.get("frequency_per_year", 1))
             scheduling = str(spec.get("scheduling", "independent"))

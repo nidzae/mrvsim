@@ -1,0 +1,43 @@
+# High-availability continuous monitor (added 2026-10-05, DECISION_LOG "Full-year coverage"). Same detection and quantification
+# performance as cms_generic [bell2023; ilonze2024]; availability and cost are analyst assumptions [cms-high-availability-assumption]
+# describing a network built for gap-free coverage. Exists so the observation-only verdict (PRD section 5.3a) can be reached.
+key: cms_high_availability
+name: Continuous monitoring system, high-availability network (nodes in every wind sector, backup power)
+class: cms
+tier: A                          # Tier A for detection [metec-aded; bell2023; ilonze2024]; quantification Tier C (TDD section 4 table)
+enabled_for_certification: true
+observation_mode: continuous
+spatial_scope: source            # hourly per-source detection series (TDD section 5.3, 6.4)
+schedule: hourly
+pod:
+  pod50_kg_h: 1.5                # Bell 2023: six of eight evaluable solutions had 90 % detection limits of 2.7-5.9 kg/h; Ilonze 2024: best four
+  pod90_kg_h: 4.5                #   3.9 [3.0, 5.5] to 6.2 [3.7, 16.7] kg/h. POD90 = 4.5 kg/h is the centre of the better solutions [bell2023; ilonze2024]
+  gamma: 0.0                     # TDD section 4.1 default for continuous monitors
+  u_ref_m_s: 3.0
+  surface_adjustment: {enabled: false}
+  citations: [metec-aded, bell2023, ilonze2024]
+  provenance: {status: summary, basis: "DL90 of the better-performing solutions in two METEC single-blind rounds (Bell 2023: 2.7-5.9 kg/h; Ilonze 2024: 3.9-6.2 kg/h); POD50 assumed at one third of DL90"}
+quantification:
+  beta: 0.0
+  sigma: 0.9                     # TDD section 4.2 and 6.4: Tier C default for CMS quantification
+  tier: C
+  citations: [bell2023, ilonze2024]
+  provenance: {status: summary, basis: "TDD section 4.2 Tier C default; consistent with Bell 2023 (>1 kg/h mean relative errors -40 % to +93 %, single estimates -82 % to +448 %) and Ilonze 2024 (61-89 % of estimates within a factor of 3)"}
+false_positive:
+  rate_per_opportunity: 0.002    # per hour (assumption). Ilonze 2024 reports 6.9-13.2 % of detection reports as false positives for the best solutions [ilonze2024]
+  reported_rate_quantile_max: 0.25
+  citations: [ilonze2024]
+  provenance: {status: assumption, basis: "0.2 % of hours flagged spuriously assumed"}
+constraints:
+  max_wind_m_s: null
+  max_solar_zenith_deg: null
+  max_cloud_fraction: null
+  day_only: false
+  outage_probability: 0.005      # assumption: backup power and redundant telemetry; about 2 days a year lost [cms-high-availability-assumption]
+  wind_sector_coverage: 1.0      # assumption: nodes in every wind sector [cms-high-availability-assumption]
+cost:
+  per_site_visit_usd: null
+  per_tasking_usd: null
+  per_site_year_usd: 45000.0     # assumption: about three times the generic network for the extra nodes and power [cms-high-availability-assumption; cost-assumptions]
+  citations: [cost-assumptions]
+  provenance: {status: assumption, basis: "analyst placeholder: three times the generic network (more nodes, backup power, redundant telemetry)"}

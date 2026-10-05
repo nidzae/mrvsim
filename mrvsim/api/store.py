@@ -250,8 +250,9 @@ def facility_detail(run: LoadedRun, fid: int, bar_mass_t: float | None, bar_inte
         covered = bool(dep is not None and dep.facilities.size and dep.facilities[np.searchsorted(dep.facilities, fid) % dep.facilities.size] == fid)
         cov = float(spec.get("coverage", 1.0)); targeting = str(spec.get("targeting", "random")); freq = int(spec.get("frequency_per_year", 1))
         tasked = bool(sensor.orbit.tasked) if sensor.orbit else False
+        networks = int(getattr(dep, "redundancy", 1)) if dep is not None else 1
         if cov >= 1.0:
-            rule = "all facilities"
+            rule = "all facilities" + (f", {networks} independent networks per site" if networks > 1 else "")
         elif targeting == "random":
             rule = f"random {cov:.0%} of facilities"
         else:

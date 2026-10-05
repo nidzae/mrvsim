@@ -112,6 +112,7 @@ def run_replication(cfg: RunConfig, seeds: SeedTree, rep: int, library: SensorLi
         m["observed_fails_share_facilities"] = float(w_count[st_o == 1].sum())
         m["observed_certified_share_weighted_throughput"] = float(w_thr[st_o == 0].sum())
         m["observed_share_of_year"] = float((w_count * ob.observed_hours).sum() / 8760.0)
+        m["observed_full_year_share_facilities"] = float(w_count[ob.observed_hours >= 8760].sum())
         for name, seg in (("well_pads", well_pad), ("midstream", ~well_pad)):
             ws = w_count[seg].sum()
             m[f"observed_certified_share_{name}"] = float(w_count[seg & (st_o == 0)].sum() / ws) if ws > 0 else float("nan")
@@ -121,6 +122,9 @@ def run_replication(cfg: RunConfig, seeds: SeedTree, rep: int, library: SensorLi
             m[f"certified_share_{name}"] = float(sc_w[st_e == 0].sum() / tot) if tot > 0 else float("nan")
             m[f"fails_share_{name}"] = float(sc_w[st_e == 1].sum() / tot) if tot > 0 else float("nan")
     cm = cost_metrics(cost, dm, pre.kpi_metrics["intensity"]["certified_mmbtu"])
+    for kpi in ("mass", "intensity"):      # cost per facility certified from observation alone (same population basis as cost_total)
+        share = pre.kpi_metrics[kpi]["observed_certified_share_facilities"]
+        pre.kpi_metrics[kpi]["cost_per_facility_certified_from_observation_usd"] = float(cost.total_usd / (pop.n_facilities * share)) if share > 0 else float("inf")
     cm.update({f"cost_{k}_usd": v for k, v in cost.by_sensor_usd.items()})
     pre.cost = cm
     pre.extras = {"n_smc": post.meta.get("n_smc"), "n_low_ess": post.meta.get("n_low_ess"), "detected_mass_kg": dm,

@@ -399,3 +399,4 @@ DOIs marked `verify` in `REFERENCES.md` must be checked against the publisher be
 | 2026-10-05 | §5.5: completeness demoted from the headline row; §5.5a added (share of emitted mass with a decided outcome); §7.6: how the sample over-represents large sites and is weighted back (TDD §3.1a) | Nidhi / Claude |
 | 2026-10-05 | Satellite orbit model reviewed and its simplifications documented (TDD §5.1, §11); a default mirroring today's operating fleet deferred to the backlog (no requirement change) | Nidhi / Claude |
 | 2026-10-05 | §5.3a added: observation-only verdict (bounds from measurements alone; certification needs the whole year under continuous observation), shown next to the estimate | Nidhi / Claude |
+| 2026-10-05 | Continuous monitors gain a redundancy setting and a high-availability class (TDD §5.2, §8.1), so the observation-only verdict of §5.3a can be reached; no requirement change | Nidhi / Claude |

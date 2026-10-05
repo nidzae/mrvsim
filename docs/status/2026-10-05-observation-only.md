@@ -29,3 +29,15 @@ Whether to allow a stated tolerance for monitoring gaps (for example: certify if
 ## Docs changed
 
 PRD §5.3a, §11; TDD §7a, §13; DECISION_LOG "Observation-only verdict"; QUICKSTART "Two kinds of verdict"; BACKLOG A9.
+
+## Addendum: redundancy and the high-availability monitor (DECISION_LOG "Full-year coverage")
+
+Nidhi asked why the observation view could only fail sites when enough sensors should give full coverage somewhere. Added: `redundancy` (independent monitor networks per facility, usable hours are the union, cost multiplies) and `cms_high_availability` (outage 0.005, every wind sector, 3x cost; assumptions). 162 unit tests passing.
+
+| Sensor mix (quick, on top of the default aircraft + satellites) | Year observed (avg) | Observed every hour | Observation: certified / fails (intensity) | Observation: certified / fails (absolute) | Programme cost (sample basis) | Cost per facility certified from observation (intensity) |
+|---|---|---|---|---|---|---|
+| 2 generic monitors on top 20 % (`20261005T233527Z-36c3649e`) | 19 % | 0 % | 0 % / 1.8 % | 0 % / 7.3 % | $34 M | — |
+| 2 high-availability monitors on top 20 % (`20261005T233820Z-f23c1f11`) | 20 % | 16 % | 9.3 % (19 % of gas) / 2.0 % | 3.1 % / 7.4 % | $61 M | $295 k |
+| 2 high-availability monitors everywhere (`20261005T234113Z-7e0b001a`) | 100 % | 81 % | 12 % (29 % of gas) / 25 % | 45 % / 20 % | $221 M | $820 k |
+
+No observation-based verdict was wrong in any run (certified: 0 wrong of 237, 95, 431, 791; fails: 0 wrong of 35, 144, 37, 148, 411, 448). Even with two high-availability networks everywhere 19 % of facilities miss at least one hour, and on intensity most fully observed sites stay undecided because the monitor's 4.5 kg/h detection limit over a year exceeds a small site's 0.2 % allowance.

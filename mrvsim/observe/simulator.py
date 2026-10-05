@@ -368,8 +368,14 @@ def simulate_survey(sensor: Sensor, sensor_idx: int, pop: Population, fac: np.nd
 
 
 def simulate_cms(sensor: Sensor, pop: Population, fac: np.ndarray, seeds: SeedTree, chunk: int = 256,
-                 force_usable: bool = False, no_fp: bool = False) -> CMSLog:
-    """Hourly CMS series per instrumented facility (TDD section 5.2-5.3): per-source POD, OR-ed to a facility flag."""
+                 force_usable: bool = False, no_fp: bool = False, redundancy: int = 1) -> CMSLog:
+    """Hourly CMS series per instrumented facility (TDD section 5.2-5.3): per-source POD, OR-ed to a facility flag.
+
+    ``redundancy`` independent monitor networks at each facility (TDD section 5.2 as amended 2026-10-05): each
+    draws its own outage and wind-sector gates and an hour is usable if any network's is. Detection and the
+    reported rate are drawn once per hour (the first network that is up reports); with ``redundancy=1`` the
+    series are identical to the single-network case.
+    """
     n_f = fac.shape[0]
     T = pop.n_hours
     usable = np.ones((n_f, T), dtype=bool); detected = np.zeros((n_f, T), dtype=bool)
@@ -386,6 +392,8 @@ def simulate_cms(sensor: Sensor, pop: Population, fac: np.ndarray, seeds: SeedTr
     for lo in range(0, n_f, chunk):
         f = fac[lo:lo + chunk]; m = f.shape[0]
         usable[lo:lo + m] = (rng_g.random((m, T)) >= p_out) & (rng_g.random((m, T)) < p_sector)
+        for _ in range(max(int(redundancy), 1) - 1):      # further networks: an hour is usable if any of them is
+            usable[lo:lo + m] |= (rng_g.random((m, T)) >= p_out) & (rng_g.random((m, T)) < p_sector)
         # per-source states for this chunk
         src_lists = [np.arange(pop.source_offset[i], pop.source_offset[i] + pop.n_sources[i]) for i in f]
         src = np.concatenate(src_lists); owner = np.repeat(np.arange(m), [len(s) for s in src_lists])
@@ -460,7 +468,7 @@ def simulate_observations(pop: Population, library: SensorLibrary, plan: Deploym
             parts.append(simulate_survey(sensor, si, pop, dep.visit_facility, dep.visit_hours, seeds, year, force_usable, no_false_positives))
         elif sensor.schedule == "hourly":
             counts[key] = int(dep.facilities.shape[0]) * pop.n_hours
-            cms[key] = simulate_cms(sensor, pop, dep.facilities, seeds, force_usable=force_usable, no_fp=no_false_positives)
+            cms[key] = simulate_cms(sensor, pop, dep.facilities, seeds, force_usable=force_usable, no_fp=no_false_positives, redundancy=dep.redundancy)
         else:
             raise ValueError(f"unknown schedule {sensor.schedule!r} for {key}")
     log = ObservationLog.concat(parts, keys)

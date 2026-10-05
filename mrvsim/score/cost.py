@@ -53,9 +53,9 @@ def deployment_cost(plan: DeploymentPlan, obs: ObservationSet, library: SensorLi
                 if si >= 0:
                     rows = (obs.log.sensor_idx == si) & ~obs.log.incidental     # incidental scene members are not taskings
                     np.add.at(cost_fac, obs.log.facility_idx[rows], c.per_tasking_usd)
-        else:  # wall-to-wall satellites, CMS
+        else:  # wall-to-wall satellites, CMS (a redundant monitor costs one site-year per network)
             if c.per_site_year_usd is not None:
-                cost_fac[dep.facilities] += c.per_site_year_usd
+                cost_fac[dep.facilities] += c.per_site_year_usd * max(int(getattr(dep, "redundancy", 1)), 1)
         by_sensor[key] = float(cost_fac.sum()) if count_weights is None else float(n_fac * (count_weights * cost_fac).sum())
         per_fac += cost_fac
     total = float(per_fac.sum()) if count_weights is None else float(n_fac * (count_weights * per_fac).sum())
