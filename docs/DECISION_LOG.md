@@ -293,3 +293,9 @@ Format:
 **Docs updated:** TDD §3.1a (new), §7, §8.1, §13; PRD §5.5, §5.5a (new), §7.6, §11; QUICKSTART; `configs/default.yaml`.
 **Status:** active
 
+## 2026-10-05 — Satellite orbit realism reviewed; "current reality" default deferred
+**Decision:** No change to the simulator or to the default sensor mix. The way satellite orbits are modelled, and where it departs from reality, is written down (TDD §5.1 note, §11 items 11–13; QUICKSTART), and the work needed for a default that mirrors today's operating fleet is in `docs/BACKLOG.md` (A8, B16–B18, C12).
+**Reason:** Nidhi asked whether satellites follow orbital physics and whether the default on load could be as close as possible to the satellites currently in orbit, then chose to document and defer ("no need to make any changes"). The review found the orbit mechanics physical (real elements, SGP4, swath and field-of-regard tests, sun angle, scene footprint) and three simplifications that matter for a "current reality" claim: one spacecraft per instrument, one pinned element set propagated over a different year, and no tasking capacity. The library was also not audited against the fleet operating today, so no statement is made about which satellites are currently active.
+**Alternatives considered and left open:** satellites-only default; capacity-limited tasking; counting unvalidated satellites by default with a flag.
+**Docs updated:** TDD §5.1, §11, §13; QUICKSTART; BACKLOG; PRD §11.
+**Status:** active (documentation only)

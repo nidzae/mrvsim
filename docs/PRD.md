@@ -386,3 +386,4 @@ DOIs marked `verify` in `REFERENCES.md` must be checked against the publisher be
 | 2026-10-03 | §7.6: well-pad sample drawn from real production sites [ogim]; §10: Q2 resolved, Q5 resolved for well pads (no requirement change) | Nidhi / Claude |
 | 2026-10-03 | Leak sizes of real sites depend on wells, class and productivity (TDD §3.4a); no requirement change. F1 "represent the full emissions population" now rests on a bottom-up equipment model for well pads; the aerial super-emitter tail is an open item | Nidhi / Claude |
 | 2026-10-05 | §5.5: completeness demoted from the headline row; §5.5a added (share of emitted mass with a decided outcome); §7.6: how the sample over-represents large sites and is weighted back (TDD §3.1a) | Nidhi / Claude |
+| 2026-10-05 | Satellite orbit model reviewed and its simplifications documented (TDD §5.1, §11); a default mirroring today's operating fleet deferred to the backlog (no requirement change) | Nidhi / Claude |

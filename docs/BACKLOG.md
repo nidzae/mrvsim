@@ -15,6 +15,7 @@ State at this point: all eight build phases exist; 157 unit tests pass; validati
 | A5 | **LDAR-Sim reuse** (PRD Q6): the hot path is native; LDAR-Sim is vendored for cross-checks only. | Provisional since Phase 3. | Confirm. |
 | A6 | **Hosting online.** On hold at Nidhi's request (2026-10-03). | Sharing without a local install. | Google Cloud Run was the free-tier option discussed; needs a billing account and `gcloud` login by Nidhi. |
 | A7 | **Is the decided share of emitted mass the right headline metric?** It is 94–98 % in the default mix. | It may not separate sensor mixes any better than completeness did. | Test it across mixes; if flat, restrict it to sites near the bar. |
+| A8 | **"Current reality" default on load.** Raised 2026-10-05 and deferred. The default mix (aircraft twice a year on every site, one GHGSat monthly on the top 30 %, TROPOMI everywhere) is illustrative. Three choices are open: what the default contains besides satellites (satellites only, plus today's aircraft, or as now); how pointable satellites are tasked (capacity-limited, free mappers only, or per site as now); whether satellites without blind-test validation count by default. | The first screen suggests a monitoring system that does not exist. | Satellites only, capacity-limited tasking, all operating satellites shown with the unvalidated ones flagged. Depends on B16, B17 and C12. |
 
 ## B. Modelling work
 
@@ -35,6 +36,9 @@ State at this point: all eight build phases exist; 157 unit tests pass; validati
 | B13 | **Source-level sensors on multi-well sites.** | A site's emitters are pooled into at most about four sources, which changes what an OGI survey would see. |
 | B14 | **Midstream throughput and locations.** | Midstream throughput is a placeholder lognormal; processing, transmission and storage use one national cell. |
 | B15 | **Correlated weather and error within a campaign day or scene** (TDD §4.2 version-2 item). | Cloud is shared within a scene; wind and quantification error are independent per facility. |
+| B16 | **Full satellite constellations.** | Each instrument is one spacecraft (GHGSat-C2, Sentinel-2A, Landsat 9, Tanager-1). Model every operating satellite with its own element set; the overpass cache and the sensor YAML need a list of satellites per sensor. |
+| B17 | **Tasking capacity for pointable satellites.** | No limit on targets per satellite per day and no competing customers; `_select_taskings` treats each facility independently. Needs a capacity per satellite and an allocation rule. |
+| B18 | **Orbit epoch and simulated year.** | One element set (epoch 2026) is propagated over the simulated year 2024. Align the simulated year with the epoch, or refresh elements per run; pass dates are representative either way. |
 
 ## C. Data items flagged `verify`
 
@@ -51,6 +55,7 @@ State at this point: all eight build phases exist; 157 unit tests pass; validati
 | C9 | Sensor POD blocks are published summary thresholds, none fitted to per-release tables | sensor YAMLs |
 | C10 | Condition priors (cloud, wind, surface) are placeholders; MODIS and ERA5 fetches need credentials | `data/README.md` |
 | C11 | Remaining `verify` rows in `REFERENCES.md` (shown flagged in the Attribution panel) | REFERENCES |
+| C12 | Sensor library not audited against the satellites operating today (for example EMIT is absent); constellation sizes and tasking capacities need sources | `configs/sensors/`, TDD §5.1 |
 
 ## D. Product and engineering
 
