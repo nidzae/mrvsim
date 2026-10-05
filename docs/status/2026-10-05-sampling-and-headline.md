@@ -45,3 +45,10 @@ Five of seven pass (V4–V7 and, within V3, four of five basins). What remains i
 ## Docs changed
 
 DECISION_LOG 2026-10-05; TDD §3.1a (new), §7, §8.1, §13; PRD §5.5, §5.5a (new), §7.6, §11; QUICKSTART; `configs/default.yaml`.
+
+## Addendum (same day): what the certified share is made of, and an observation-only attempt
+
+- **The headline "certified share of real facilities" (20 % at the 0.2 % intensity bar) is almost entirely midstream.** Split by type in one replication of the default run: well pads 0.4 % certified, 28 % fail, 72 % indeterminate; midstream 46 % certified. Midstream holds 41 % of the facility weight by the GHGRP convention and has placeholder throughput (median about 20 MMcf/d), so a 0.2 % bar allows 50 kg/h or more. The headline should be split by segment (BACKLOG A9, A2).
+- **Reliance on the prior.** 35 % of certified facilities had a prior that already certified them with no data; the "prior-only" flag caught 1.5 %, because it measures narrowing, not whether the verdict depended on data.
+- **Observation-only attempt (branch `observation-only-wip`, not merged, not for use).** Replacing the population priors with one vague prior for every site, plus a rule that a verdict must be moved across the bar by the data. Result on one replication, default mix: with a prior centred on 1 kg/h per source, 1.4 % of well pads certified on the absolute KPI and 44 % "failed" on intensity with no observation behind it; with a prior centred on 0.14 kg/h, 97 % certified on the absolute KPI, calibration 0.80–0.82, and 48 of 504 certifications wrong. Adding continuous monitors on 20 % of facilities changed almost nothing. Conclusion: a vague prior is still a prior and its arbitrary centre decides the outcome; a flat prior on duty cycle is optimistic about rare events. The approach was abandoned; options are in BACKLOG A9.
+
