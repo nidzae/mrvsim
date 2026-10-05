@@ -6,6 +6,7 @@ You are building MRVSim, a methane MRV coverage simulator. Read these before doi
 2. `docs/TECHNICAL_DESIGN.md` — exactly how every quantity is computed. Section numbers are referenced below as "TDD §x".
 3. `docs/DECISION_LOG.md` — decisions already made. Do not relitigate them; if implementation forces a change, add a new entry.
 4. `docs/REFERENCES.md` — citation keys. Every parameter you write must reference one.
+5. `docs/BACKLOG.md` — leftover work and open decisions as of the last session. Start here when resuming; update it when an item is started or closed.
 
 ## Document maintenance rules (non-negotiable)
 

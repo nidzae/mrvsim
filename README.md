@@ -6,6 +6,7 @@ An Observing System Simulation Experiment for US onshore oil and gas: synthetic 
 - How every quantity is computed: `docs/TECHNICAL_DESIGN.md`
 - Decisions: `docs/DECISION_LOG.md` · Citations: `docs/REFERENCES.md` · User guide: `docs/QUICKSTART.md`
 - Build log: `docs/status/`
+- Leftover work and open decisions: `docs/BACKLOG.md`
 
 ## Run it in 5 minutes
 
