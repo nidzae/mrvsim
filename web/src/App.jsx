@@ -36,6 +36,8 @@ export default function App() {
   const [busy, setBusy] = useState(false); const [pareto, setPareto] = useState(null); const [health, setHealth] = useState(null);
   useEffect(() => { api.runs().then((r) => { setRuns(r.runs); const first = r.runs.find((x) => x.has_summary && !/\[|v4-|v7-|tornado|opt-/.test(x.name || "")); if (first) setRunId(first.run_id); else { const any = r.runs.find((x) => x.has_summary); if (any) setRunId(any.run_id); } }).catch(() => {}); api.health().then(setHealth).catch(() => {}); }, []);
   const scoring = { bar_intensity: bar, bar_mass_t_yr: barMass, w_max: wMax };
+  // which verdicts the map and dashboard show: the estimate (measurements plus population statistics) or what the measurements alone establish
+  const [basis, setBasis] = useState("observed");
   const applyYaml = (yaml) => { try { setPolicy({ incidental_capture: policy.incidental_capture !== false, ...parsePolicyYaml(yaml) }); setTab("Map"); } catch (e) { alert(`Could not parse the proposal: ${e}`); } };
   const applyPolicy = (p) => { setPolicy({ incidental_capture: p.incidental_capture !== false, sensors: Object.fromEntries(Object.entries(p.sensors).filter(([, s]) => s.enabled !== false).map(([k, s]) => [k, { coverage: s.coverage, frequency_per_year: s.frequency_per_year, targeting: s.targeting, ...(s.scheduling ? { scheduling: s.scheduling, campaign_days: s.campaign_days } : {}) }])) }); setTab("Map"); };
   const onRunDone = (id) => { setRunId(id); api.runs().then((r) => setRuns(r.runs)).catch(() => {}); };
@@ -49,6 +51,8 @@ export default function App() {
         <div className="tabs">{TABS.map((t) => <button key={t} className={`tab${tab === t ? " active" : ""}`} onClick={() => setTab(t)}>{t}</button>)}</div>
         <div className="spacer" />
         <div className="barctl">
+          <select value={basis} onChange={(e) => setBasis(e.target.value)} title="Observations only: a verdict needs measurements; nothing is assumed about time nobody observed, so a site is certified only if it was measured all year. Estimate: measurements combined with published statistics for sites like this one.">
+            <option value="observed">verdicts: observations only</option><option value="estimate">verdicts: estimate (with population statistics)</option></select>
           <select value={kpi} onChange={(e) => setKpi(e.target.value)}><option value="intensity">intensity</option><option value="mass">absolute (t/yr)</option></select>
           {kpi === "intensity" ? <>bar %<input type="number" step="0.05" min="0" value={+(bar * 100).toFixed(3)} onChange={(e) => setBar(+e.target.value / 100)} /></> : <>bar t/yr<input type="number" step="5" min="0" value={barMass} onChange={(e) => setBarMass(+e.target.value)} /></>}
           <span title="Precision grade only: a certified facility with w above this is drawn with a dark ring. It does not block certification.">precision w_max</span><input type="number" step="0.05" min="0.05" value={wMax} onChange={(e) => setWMax(+e.target.value)} />
@@ -60,8 +64,8 @@ export default function App() {
         {!wide && <div className="side"><Sensors policy={policy} setPolicy={setPolicy} runSettings={{ ...runSettings, scoring }} setRunSettings={setRunSettings} onRunDone={onRunDone} busy={busy} setBusy={setBusy} />
           {health && !health.anthropic_key_configured && <p className="muted" style={{ marginTop: 10 }}>Gap analysis: the API server has no Anthropic credentials (set ANTHROPIC_API_KEY or run `ant auth login` where the server runs).</p>}</div>}
         <div className="content">
-          {tab === "Map" && <MapView runId={runId} kpi={kpi} bar={kpi === "intensity" ? bar : barMass} barIntensity={bar} barMass={barMass} wMax={wMax} />}
-          {tab === "Dashboard" && <Dashboard runId={runId} kpi={kpi} runSettings={{ ...runSettings, mode: "quick", policy, scoring }} pareto={pareto} onRerunFull={rerunFull} />}
+          {tab === "Map" && <MapView runId={runId} kpi={kpi} bar={kpi === "intensity" ? bar : barMass} barIntensity={bar} barMass={barMass} wMax={wMax} basis={basis} />}
+          {tab === "Dashboard" && <Dashboard runId={runId} kpi={kpi} basis={basis} runSettings={{ ...runSettings, mode: "quick", policy, scoring }} pareto={pareto} onRerunFull={rerunFull} />}
           {tab === "Optimize" && <Optimize scoring={scoring} onPareto={setPareto} onApply={applyPolicy} />}
           {tab === "Gap analysis" && <GapAnalysis runId={runId} onApply={applyYaml} />}
           {tab === "Attribution" && <Attribution runId={runId} />}

@@ -50,6 +50,7 @@ class LoadedRun:
     prior_mass: np.ndarray | None = None     # (3, n) prior p05, p50, p95
     prior_int: np.ndarray | None = None
     evidence: np.ndarray | None = None       # (3, n) usable snapshots, survey visits, CMS usable hours
+    observed: np.ndarray | None = None       # (9, n) observation-only bounds, rows mrvsim.score.observed.ROWS (runs since 2026-10-05)
 
     def prior_ratio(self, kpi: str) -> np.ndarray:
         """Posterior ln(p95/p05) over prior ln(p95/p05); nan where unavailable (PRD section 5.4a)."""
@@ -107,7 +108,8 @@ def load_run(run_id: str, root: str = str(RUNS_DIR)) -> LoadedRun:
     return LoadedRun(run_id, d, cfg, manifest, summary, pop, np.load(d / "posterior_mass_pcts.npy"), np.load(d / "posterior_intensity_pcts.npy"),
                      np.load(d / "true_mass_kg_yr.npy"), np.load(d / "true_intensity.npy"), np.load(d / "state_mass.npy"), np.load(d / "state_intensity.npy"), obs, plan, lib,
                      post_mass_q=opt("posterior_mass_quantiles"), post_int_q=opt("posterior_intensity_quantiles"),
-                     prior_mass=opt("prior_mass_pcts"), prior_int=opt("prior_intensity_pcts"), evidence=opt("evidence_counts"))
+                     prior_mass=opt("prior_mass_pcts"), prior_int=opt("prior_intensity_pcts"), evidence=opt("evidence_counts"),
+                     observed=opt("observed_bounds"))
 
 
 def facilities_geojson(run: LoadedRun, kpi: str = "intensity") -> dict[str, Any]:
@@ -122,6 +124,7 @@ def facilities_geojson(run: LoadedRun, kpi: str = "intensity") -> dict[str, Any]
     ratio = run.prior_ratio(kpi); po = run.prior_only(kpi)
     ev = run.evidence
     basins = list(pop.strata.basins); ftypes = list(pop.strata.facility_types)
+    ob = run.observed
     rep = pop.sites_represented            # real sites each dot stands for [ogim]; None for runs saved before 2026-10-03
     boe_d = _boe_per_day(pop)
     feats = []
@@ -137,13 +140,16 @@ def facilities_geojson(run: LoadedRun, kpi: str = "intensity") -> dict[str, Any]
                  "other_kpi": "mass" if kpi == "intensity" else "intensity",
                  "other_p05": float(other[0, i] * other_scale), "other_p50": float(other[2, i] * other_scale), "other_p95": float(other[4, i] * other_scale),
                  "n_obs": int(ev[0, i] + ev[1, i]) if ev is not None else None, "cms_h": int(ev[2, i]) if ev is not None else None}
+        if ob is not None:      # observation-only bounds in the units of p05/p95; a null upper bound means unbounded
+            lo_o, hi_o = (ob[3, i], ob[4, i]) if kpi == "intensity" else (ob[1, i], ob[2, i])
+            props["obs_lo"] = fin(lo_o); props["obs_hi"] = fin(hi_o); props["obs_hours"] = float(ob[0, i])
         if rep is not None and np.isfinite(rep[i]):
             props["represents"] = float(rep[i]); props["boe_d"] = float(boe_d[i])
         if q is not None:
             props["q"] = [float(v) for v in q[::5, i]]   # 21-point quantile grid (0, 5, ..., 100 %) for P(K <= B) at any bar
         feats.append({"type": "Feature", "geometry": {"type": "Point", "coordinates": [float(pop.lon[i]), float(pop.lat[i])]}, "properties": props})
     return {"type": "FeatureCollection", "features": feats, "kpi": kpi, "units": "fraction" if kpi == "intensity" else "t/yr (values in kg/yr x scale)",
-            "has_quantiles": q is not None, "has_evidence": run.prior_mass is not None}
+            "has_quantiles": q is not None, "has_evidence": run.prior_mass is not None, "has_observed": run.observed is not None}
 
 
 def _boe_per_day(pop: Population) -> np.ndarray:
@@ -279,11 +285,20 @@ def facility_detail(run: LoadedRun, fid: int, bar_mass_t: float | None, bar_inte
                 "prior_ratio_mass": None if not np.isfinite(run.prior_ratio("mass")[fid]) else float(run.prior_ratio("mass")[fid]),
                 "prior_ratio_intensity": None if not np.isfinite(run.prior_ratio("intensity")[fid]) else float(run.prior_ratio("intensity")[fid]),
                 "prior_only_ratio": float(run.config.scoring.get("prior_only_ratio", 0.9))} if ev is not None else None
+    observed = None
+    if run.observed is not None:
+        o = run.observed[:, fid]; nn = lambda x: None if not np.isfinite(x) else float(x)   # noqa: E731
+        f_gas = float(pop.throughput.f_gas[fid])
+        observed = {"hours": float(o[0]), "share_of_year": float(o[0] / 8760.0),
+                    "mass_t_yr": {"lo": float(o[1] * 1e-3), "hi": nn(o[2] * 1e-3), "hi_observed": float(o[5] * 1e-3)},
+                    "intensity": {"lo": nn(o[3]), "hi": nn(o[4]), "hi_observed": nn(o[6])},
+                    "f_gas": f_gas, "snapshot_detections": int(o[7]), "snapshot_max_kg_h": nn(o[8]),
+                    "monitors": [k for k, c in run.obs.cms.items() if fid in set(c.facilities.tolist())]}
     return {"id": fid, "lat": float(pop.lat[fid]), "lon": float(pop.lon[fid]), "basin": list(pop.strata.basins)[int(pop.basin_idx[fid])],
             "facility_type": list(pop.strata.facility_types)[int(pop.ftype_idx[fid])], "n_sources": int(pop.n_sources[fid]),
             "mass_t_yr": kpi_block(run.post_mass, run.post_mass_q, run.prior_mass, run.true_mass, 1e-3, bar_mass_t),
             "intensity": kpi_block(run.post_int, run.post_int_q, run.prior_int, run.true_int, 1.0, bar_intensity),
-            "evidence": evidence, "w_max": float(run.config.scoring.get("w_max", 0.30)), "throughput": throughput, "monitoring": monitoring,
+            "evidence": evidence, "observed": observed, "w_max": float(run.config.scoring.get("w_max", 0.30)), "throughput": throughput, "monitoring": monitoring,
             "timeline": timeline, "cms": cms, "oracle_truth_sources": truth_sources, "method": run.summary.get("meta", {}).get("sampler", "fast")}
 
 

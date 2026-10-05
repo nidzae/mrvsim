@@ -15,6 +15,15 @@ For each facility:
 
 Each comes with a **90% interval**: a low and a high value. The tool is saying "the true number is between these, 9 times out of 10." A narrow interval means the sensors measured well. A wide one means they did not.
 
+## Two kinds of verdict
+
+The selector at the top right, **verdicts: observations only / estimate**, changes what the colours and the dashboard mean. It needs no rerun.
+
+- **Observations only** (the default). Only measurements count, and nothing is assumed about time nobody observed. A site is **certified** only if a continuous monitor measured it for the whole year and found it under the bar. It **fails** if the emissions actually measured already exceed the bar. Everything else is **undecided**. Aircraft and satellite looks are instants: they can flag a site but cannot certify it. Expect almost every dot to be grey unless you deploy continuous monitors, and even then real monitors have outages, so few sites reach a full year.
+- **Estimate.** Measurements are combined with published leak statistics for sites like this one, which fill in the unobserved time. This gives many more verdicts, but some rest on those statistics more than on measurements.
+
+The difference between the two views is how much of a verdict rests on assumption. The facility panel shows both.
+
 ## The three colors on the map
 
 You set a **bar** (for example, 0.2% intensity). Each facility is then decided at 95 % confidence:

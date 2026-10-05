@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, ScatterChart, Scatter, ZAxis, CartesianGrid } from "recharts";
-import { api, waitForJob, classify, halfWidth, precision, probBelow, fmtProb, fmtNum, fmtPct } from "../api.js";
+import { api, waitForJob, classify, classifyObserved, halfWidth, precision, probBelow, fmtProb, fmtNum, fmtPct } from "../api.js";
 
 const SENSOR_COLORS = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#4a3aa7", "#e34948"];
 
@@ -23,6 +23,30 @@ function IntervalBar({ k, unit }) {
       {Number.isFinite(k.truth) && <polygon points={`${x(k.truth) - 5},52 ${x(k.truth) + 5},52 ${x(k.truth)},43`} fill="#52514e" />}
       <text x={x(k.bar)} y={56} fontSize={10} textAnchor="middle" fill="#52514e">bar</text>
     </svg>
+  );
+}
+
+// What the measurements alone establish (PRD 5.3a): bounds with nothing assumed about unobserved time.
+function ObservedBlock({ o, kpi, bar, primary }) {
+  const isInt = kpi === "intensity"; const b = isInt ? o.intensity : o.mass_t_yr;
+  const fmtK = (v) => (v === null || v === undefined ? "no upper limit" : isInt ? fmtPct(v) : `${fmtNum(v, 1)} t/yr`);
+  const state = classifyObserved(b.lo, b.hi, bar);
+  const obsOk = Number.isFinite(b.hi_observed) && b.hi_observed <= bar;
+  const why = state === "certified" ? `measured for the whole year, and the most it could have emitted, ${fmtK(b.hi)}, is under the bar`
+    : state === "fails" ? `the emissions actually measured, at least ${fmtK(b.lo)}, are already above the bar`
+    : o.hours === 0 ? "no continuous monitor: nothing was measured over time, so nothing can be concluded either way"
+    : o.share_of_year < 1 ? `measured for ${fmtPct(o.share_of_year, 1)} of the year; nothing is known about the other ${fmtPct(1 - o.share_of_year, 1)}${obsOk ? ", although what was measured is under the bar" : ""}`
+    : "measured all year, but the monitor's detection limit and error leave room on both sides of the bar";
+  return (
+    <div className="panel" style={{ marginTop: 8, borderLeft: primary ? "3px solid var(--text-2)" : undefined }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <b>Observations only</b><span className={`badge ${state}`}>{state === "indeterminate" ? "undecided" : state}</span>
+      </div>
+      <div className="muted">Between {fmtK(b.lo)} and {fmtK(b.hi)}: {why}.</div>
+      <div className="muted">Continuous monitoring: {o.hours.toLocaleString()} usable hours ({fmtPct(o.share_of_year, 1)} of the year){o.monitors?.length ? ` by ${o.monitors.join(", ")}` : ""}.
+        {" "}Snapshot looks (aircraft, satellite) cover no time: {o.snapshot_detections} detection{o.snapshot_detections === 1 ? "" : "s"}{o.snapshot_detections > 0 && Number.isFinite(o.snapshot_max_kg_h) ? `, largest ${fmtNum(o.snapshot_max_kg_h, 1)} kg/h` : ""}; they flag a site but do not bound its year.
+        {state !== "certified" && o.share_of_year < 1 && <> To certify, the site would have to be measured for the whole year.</>}</div>
+    </div>
   );
 }
 
@@ -54,7 +78,7 @@ function KpiBlock({ name, raw, bar, wMax, isInt, primary }) {
   );
 }
 
-export default function Drilldown({ runId, fid, kpi, bar, barIntensity, barMass, wMax, onClose }) {
+export default function Drilldown({ runId, fid, kpi, bar, barIntensity, barMass, wMax, onClose, basis }) {
   const [d, setD] = useState(null); const [budget, setBudget] = useState(null); const [busy, setBusy] = useState(false); const [err, setErr] = useState(null);
   useEffect(() => { setD(null); setBudget(null); api.facility(runId, fid).then(setD).catch((e) => setErr(String(e))); }, [runId, fid]);
   const runBudget = async () => {
@@ -103,7 +127,7 @@ export default function Drilldown({ runId, fid, kpi, bar, barIntensity, barMass,
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: -12, background: "var(--surface)", padding: "4px 0", zIndex: 1 }}>
         <b>Facility #{d.id}</b>
         <span style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-          <span className={`badge ${k.state}`}>{k.state}</span>
+          <span className={`badge ${k.state}`} title="verdict of the estimate (measurements plus population statistics)">{basis === "observed" ? `estimate: ${k.state}` : k.state}</span>
           <span className={`badge ${k.precision}`} title={`relative half-width w = ${fmtNum(w, 2)} vs w_max ${fmtNum(wMax, 2)}`}>{k.precision === "precise" ? "precise" : "wide"} · w {fmtNum(w, 2)}</span>
           {k.priorOnly && <span className="badge prior-only" title="the observations barely narrowed the prior; this certification rests on the population prior">prior-only</span>}
         </span>
@@ -114,6 +138,7 @@ export default function Drilldown({ runId, fid, kpi, bar, barIntensity, barMass,
         {thr?.real_site && <div className="muted">Real production site (location and 2022 production from OGIM): {fmtNum(thr.boe_d, thr.boe_d < 10 ? 1 : 0)} boe/d, {fmtNum(thr.oil_bbl_yr, 0)} bbl oil/yr.
           Stands for {fmtNum(thr.sites_represented, 0)} sites of its basin, type and size class. Emissions are simulated, not measured at this site.
           {thr.n_wells ? <> Leak model inputs: {thr.n_wells} well{thr.n_wells === 1 ? "" : "s"}, class {({ drygas: "dry gas", gaswoil: "gas with oil", oilwgas: "oil with gas", oilonly: "oil only" })[thr.well_class]}, productivity bin {thr.productivity_bin + 1}.</> : null}</div>}</div>
+      {d.observed && <ObservedBlock o={d.observed} kpi={kpi} bar={bar} primary={basis === "observed"} />}
       {legacy && <div className="muted" style={{ marginTop: 4 }}>This run was scored before the probability grid and evidence measures existed; probabilities outside p5–p95 are bounds. Re-run it to get exact values.</div>}
       <KpiBlock name={kpi === "intensity" ? "Methane intensity" : "Absolute emissions (t/yr)"} raw={raw} bar={bar} wMax={wMax} isInt={kpi === "intensity"} primary />
       {ev && <div className="muted" style={{ marginTop: 4 }}>

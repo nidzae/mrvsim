@@ -463,6 +463,30 @@ Monte Carlo standard errors are reported for every metric.
 
 ---
 
+### 7a Observation-only bounds (added 2026-10-05)
+
+PRD §5.3a; `mrvsim/score/observed.py`. Computed for every facility of every replication from the observation logs alone; the estimator is not involved. For facility $i$ with continuous-monitor hourly series (usable flag $u_{it}$, detection flag $d_{it}$, reported rate $r_{it}$), monitor quantification log-sd $\sigma_s$ and 90 % detection limit $q_{90,s}$ (§4.1), and $z = 1.645$:
+
+$$
+H_i = \sum_t u_{it}, \qquad m_i = \sum_t u_{it}\,d_{it}\,r_{it}
+$$
+
+$$
+L_i = m_i\,e^{-z\sigma_s}, \qquad U_i^{obs} = m_i\,e^{+z\sigma_s} + q_{90,s} \sum_t u_{it}\,(1 - d_{it})
+$$
+
+$$
+U_i = \begin{cases} U_i^{obs} & H_i = 8760 \\ \infty & \text{otherwise} \end{cases}
+$$
+
+Intensity bounds are $f_{gas,i}\,L_i / \hat G_i$ and $f_{gas,i}\,U_i / \hat G_i$ with the reported methane throughput $\hat G_i$. Verdict at bar $B$: certified iff $U_i \le B$, fails iff $L_i > B$, else undecided. Snapshot and survey detections are counted per facility as flags only.
+
+Choices and their direction: the quantification error is applied as one common factor to all detected hours (fully correlated, the conservative case; independent hourly errors would average out and give a tighter range); $q_{90}$ is the rate detected nine times in ten, so an hour without a detection can still hide a larger emission one time in ten; $\hat G$ is taken at face value; false detections are not removed from $m_i$. An optional `scoring.unobserved_cap: throughput` replaces the $\infty$ by $U_i^{obs} + (8760 - H_i)\,\hat G_i / 8760$ ("a facility cannot emit more gas than it handles"); it is not the default because reported gas is marketed gas, and with energy allocation (PRD §5.1) the cap would certify oil-dominant sites with no observation.
+
+Headline metrics (count weights of §3.1a over all facilities): share certified, share failing, the same for well pads and for midstream separately, the gas-weighted certified share, and the mean share of the year under continuous observation $\sum_i w^{cnt}_i H_i / 8760$. The estimate's certified and fails shares are also reported per segment so the two views can be read side by side.
+
+---
+
 ## 8. Policy engine and optimizer
 
 ### 8.1 Policy parameters
@@ -593,6 +617,7 @@ Each limitation maps to a version-2 item in `DECISION_LOG.md`.
 | 2026-10-03 | §3.4a: aerial-survey super-emitter tail per basin, per well of eligible sites: DECISION_LOG "Aerial super-emitter tail" |
 | 2026-10-05 | §3.1a added (sampling design, weights and estimators step by step; `throughput` class rule is the default); §7 (weighted shares, medians and cost; decided share of emitted mass replaces completeness on the headline row); §8.1 (coverage weighting): DECISION_LOG "Over-sample large sites and weight every population statistic" |
 | 2026-10-05 | §5.1 note on what is and is not physical in the satellite model; §11 items 11–13 (single-satellite constellations, pinned elements, no tasking capacity). Documentation only: DECISION_LOG "Satellite orbit realism reviewed" |
+| 2026-10-05 | §7a added: observation-only bounds and verdict; headline shares by segment: DECISION_LOG "Observation-only verdict" |
 | 2026-10-01 | §6.7 (quantile grid, prior summary, evidence counts persisted), §7 (decision-only certifiable/fails/indeterminate shares; precise, prior-only, evidence-ratio rows), §8.3 note: DECISION_LOG "certification is the compliance decision at 95 %" |
 | 2026-09-30 | §6.7 estimand (realised-mass predictive), sampler, §6.3–6.5 v1 likelihood definitions, §10 measured timings, §11 limitation 10: Phase 4 |
 | 2026-09-30 | §4.1 wind floor, §5.2 gate conventions: Phase 3 implementation notes |

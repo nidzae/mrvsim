@@ -18,7 +18,7 @@ function SliceTable({ title, rows }) {
 }
 
 // Headline metrics, tornado, Pareto frontier, slices (PRD F10).
-export default function Dashboard({ runId, kpi, runSettings, pareto, onRerunFull }) {
+export default function Dashboard({ runId, kpi, basis, runSettings, pareto, onRerunFull }) {
   const [s, setS] = useState(null); const [err, setErr] = useState(null); const [busy, setBusy] = useState(false); const [prog, setProg] = useState(null);
   useEffect(() => { if (!runId) return; setS(null); api.summary(runId, kpi).then(setS).catch((e) => setErr(String(e))); }, [runId, kpi]);
   const runTornado = async () => {
@@ -33,6 +33,18 @@ export default function Dashboard({ runId, kpi, runSettings, pareto, onRerunFull
   const allPts = pareto?.all_trials?.filter((t) => Number.isFinite(t.cost_usd)).map((t) => ({ cost: t.cost_usd, width: t.width, name: `trial ${t.number}`, feasible: t.feasible })) || [];
   return (
     <div>
+      {k.observed_certified_share_facilities && <div className="panel" style={{ marginBottom: 12, borderLeft: basis === "observed" ? "3px solid var(--text-2)" : undefined }}>
+        <h2>Observations only: what the measurements alone establish</h2>
+        <p className="muted">Nothing is assumed about time nobody observed. Aircraft and satellite looks are instants and cover no time, so a site is certified only if a continuous monitor measured it for the whole year and found it under the bar; it fails if the emissions actually measured exceed the bar.</p>
+        <div className="tiles">
+          <Tile label="Year under continuous observation" value={fmtPct(k.observed_share_of_year.mean, 1)} sub="average real facility" />
+          <Tile label="Certified from observation" value={fmtPct(k.observed_certified_share_facilities.mean, 1)} sub={`of real facilities · ${fmtPct(k.observed_certified_share_weighted_throughput.mean, 1)} of gas`} />
+          <Tile label="Fails from observation" value={fmtPct(k.observed_fails_share_facilities.mean, 1)} sub="measured emissions alone exceed the bar" />
+          <Tile label="Well pads: certified / fails" value={`${fmtPct(k.observed_certified_share_well_pads.mean, 1)} / ${fmtPct(k.observed_fails_share_well_pads.mean, 1)}`} sub={`estimate says ${fmtPct(k.certified_share_well_pads.mean, 1)} / ${fmtPct(k.fails_share_well_pads.mean, 1)}`} />
+          <Tile label="Midstream: certified / fails" value={`${fmtPct(k.observed_certified_share_midstream.mean, 1)} / ${fmtPct(k.observed_fails_share_midstream.mean, 1)}`} sub={`estimate says ${fmtPct(k.certified_share_midstream.mean, 1)} / ${fmtPct(k.fails_share_midstream.mean, 1)}`} />
+        </div>
+      </div>}
+      <h2 style={{ margin: "4px 0" }}>Estimate: measurements combined with population statistics</h2>
       <div className="tiles">
         <Tile label="Certified share (real facilities)" value={fmtPct(k.certified_share_facilities.mean, 1)} sub={`± ${fmtPct(k.certified_share_facilities.se, 1)} MC SE · precise ${fmtPct(k.certified_precise_share_facilities?.mean, 0)} · prior-only ${fmtPct(k.certified_prior_only_share_facilities?.mean, 0)}`} />
         <Tile label="Certified share (throughput)" value={fmtPct(k.certified_share_weighted_throughput.mean, 1)} sub={`weighted to real gas volumes · precise ${fmtPct(k.certified_precise_share_weighted_throughput?.mean, 0)} · prior-only ${fmtPct(k.certified_prior_only_share_weighted_throughput?.mean, 0)}`} />

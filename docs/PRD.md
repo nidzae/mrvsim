@@ -156,6 +156,17 @@ $$
 
 Equivalently, with $p = P(K \le B \mid \text{observations})$: certified iff $p \ge 0.95$, fails iff $p \le 0.05$. The tool reports $p$ itself for every facility. The 90% bound $\hat{K}_{U,90}$ above is superseded.
 
+### 5.3a Observation-only verdict (added 2026-10-05)
+
+A second verdict, shown next to the one of §5.3, answers a narrower question: **what do the measurements alone establish?** Nothing about the facility's population is assumed: not how many sources it has, how large they are, or how often they are on. Time that nobody observed is simply unknown.
+
+- **Observed time** is the hours a continuous monitor was working at the facility. An aircraft or satellite look is an instant; it covers no time. Its detections are reported as flags and do not enter the bounds.
+- **Lower bound** $L$: the emissions actually measured during monitored hours with a detection, at the low end of the monitor's measurement error.
+- **Upper bound** $U$: the same at the high end of the measurement error, plus the monitor's detection limit for every monitored hour without a detection. If any hour of the year was not observed, $U$ is unbounded.
+- **Verdict:** certified iff $U \le B$; fails iff $L > B$; otherwise undecided.
+
+So a facility can be certified from observation only if a continuous monitor measured it for the whole year, and it fails only when what was measured already exceeds the bar. Snapshot sensors cannot certify; they can only flag. This is deliberately strict. It is the floor: what can be claimed with no assumption about unobserved time. The estimate of §5.3 is the other end: what can be claimed if published statistics for similar facilities are trusted to fill that time. The gap between the two is the part of a verdict that rests on assumption (DECISION_LOG 2026-10-05 "Observation-only verdict").
+
 ### 5.4 The precision requirement
 
 A bar is a pair $(B, w)$, where $w$ is the maximum permitted relative half-width of the 90% credible interval:
@@ -387,3 +398,4 @@ DOIs marked `verify` in `REFERENCES.md` must be checked against the publisher be
 | 2026-10-03 | Leak sizes of real sites depend on wells, class and productivity (TDD §3.4a); no requirement change. F1 "represent the full emissions population" now rests on a bottom-up equipment model for well pads; the aerial super-emitter tail is an open item | Nidhi / Claude |
 | 2026-10-05 | §5.5: completeness demoted from the headline row; §5.5a added (share of emitted mass with a decided outcome); §7.6: how the sample over-represents large sites and is weighted back (TDD §3.1a) | Nidhi / Claude |
 | 2026-10-05 | Satellite orbit model reviewed and its simplifications documented (TDD §5.1, §11); a default mirroring today's operating fleet deferred to the backlog (no requirement change) | Nidhi / Claude |
+| 2026-10-05 | §5.3a added: observation-only verdict (bounds from measurements alone; certification needs the whole year under continuous observation), shown next to the estimate | Nidhi / Claude |

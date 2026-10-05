@@ -45,6 +45,15 @@ export function classify(p, B) {
   return "indeterminate";
 }
 
+// Observation-only verdict (PRD 5.3a), mirroring mrvsim.score.observed.ObservedBounds.states: bounds from measurements
+// alone. lo/hi are in the units of B; a missing upper bound means unbounded.
+export function classifyObserved(lo, hi, B) {
+  const L = Number.isFinite(lo) ? lo : 0, U = Number.isFinite(hi) ? hi : Infinity;
+  if (L > B) return "fails";
+  if (U <= B) return "certified";
+  return "indeterminate";
+}
+
 // Relative half-width w = (p95 - p5) / (2 median) (PRD 5.4) and the precision grade at w_max.
 export const halfWidth = (p) => (p.p50 > 0 ? (p.p95 - p.p05) / (2 * p.p50) : Infinity);
 export const precision = (p, wMax) => (halfWidth(p) <= wMax ? "precise" : "wide");

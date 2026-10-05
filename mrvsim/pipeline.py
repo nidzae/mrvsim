@@ -25,6 +25,7 @@ from mrvsim.io.run import RunContext
 from mrvsim.io.seeds import SeedTree
 from mrvsim.observe import DeploymentPlan, ObservationSet, build_plan, simulate_observations
 from mrvsim.population import Population, generate_population
+from mrvsim.score.observed import ObservedBounds, observed_bounds
 from mrvsim.score import (
     Bar, ReplicationScores, ScoreReport, aggregate, completeness_from_detection_probability, cost_metrics, deployment_cost,
     detected_mass_kg, detection_probability_once, score_replication,
@@ -42,6 +43,7 @@ class ReplicationResult:
     scores: ReplicationScores
     scored_facilities: np.ndarray
     extras: dict[str, Any] = field(default_factory=dict)
+    observed: ObservedBounds | None = None      # observation-only bounds (PRD section 5.3a)
 
 
 def sensor_modes(library: SensorLibrary) -> dict[str, tuple[str, str, bool]]:
@@ -99,12 +101,31 @@ def run_replication(cfg: RunConfig, seeds: SeedTree, rep: int, library: SensorLi
                           source_weights=(pop.n_facilities * w_count)[pop.src_facility] if weighted else None)
     pre = score_replication(post, truth_m, truth_i, pop.stratum_idx, w_count, w_thr,
                             pop.throughput.mmbtu_yr, bars, comp, comp_b, {}, len(pop.strata), scored)
+    # Observation-only view (PRD section 5.3a): bounds from measurements alone, for every facility (no estimator needed).
+    ob = observed_bounds(obs, library, pop.n_facilities, inputs.g_hat_kg_yr, pop.throughput.f_gas, pop.throughput.gas_mkt_m3_yr,
+                         cap=str(cfg.scoring.get("unobserved_cap", "none")))
+    well_pad = pop.site_row >= 0 if pop.site_row is not None else np.zeros(pop.n_facilities, dtype=bool)
+    for kpi in ("mass", "intensity"):
+        st_o = ob.states(kpi, bars[kpi].B)
+        m = pre.kpi_metrics[kpi]
+        m["observed_certified_share_facilities"] = float(w_count[st_o == 0].sum())
+        m["observed_fails_share_facilities"] = float(w_count[st_o == 1].sum())
+        m["observed_certified_share_weighted_throughput"] = float(w_thr[st_o == 0].sum())
+        m["observed_share_of_year"] = float((w_count * ob.observed_hours).sum() / 8760.0)
+        for name, seg in (("well_pads", well_pad), ("midstream", ~well_pad)):
+            ws = w_count[seg].sum()
+            m[f"observed_certified_share_{name}"] = float(w_count[seg & (st_o == 0)].sum() / ws) if ws > 0 else float("nan")
+            m[f"observed_fails_share_{name}"] = float(w_count[seg & (st_o == 1)].sum() / ws) if ws > 0 else float("nan")
+            # the estimate's verdicts for the same segment, so the two views can be read side by side
+            sc_w = np.where(scored & seg, w_count, 0.0); tot = sc_w.sum(); st_e = pre.states[kpi]
+            m[f"certified_share_{name}"] = float(sc_w[st_e == 0].sum() / tot) if tot > 0 else float("nan")
+            m[f"fails_share_{name}"] = float(sc_w[st_e == 1].sum() / tot) if tot > 0 else float("nan")
     cm = cost_metrics(cost, dm, pre.kpi_metrics["intensity"]["certified_mmbtu"])
     cm.update({f"cost_{k}_usd": v for k, v in cost.by_sensor_usd.items()})
     pre.cost = cm
     pre.extras = {"n_smc": post.meta.get("n_smc"), "n_low_ess": post.meta.get("n_low_ess"), "detected_mass_kg": dm,
                   "n_snapshot_rows": len(obs.log), "overpass_counts": obs.overpass_counts}
-    return ReplicationResult(rep, pop, plan, obs, post, pre, sub)
+    return ReplicationResult(rep, pop, plan, obs, post, pre, sub, observed=ob)
 
 
 def run_scored(cfg: RunConfig, root: str | Path = "runs", run_id: str | None = None, library: SensorLibrary | None = None,
@@ -149,6 +170,8 @@ def run_scored(cfg: RunConfig, root: str | Path = "runs", run_id: str | None = N
                 run.save_array("prior_intensity_pcts", last.post.prior_intensity_pcts)
             if last.post.evidence is not None:
                 run.save_array("evidence_counts", last.post.evidence)
+            if last.observed is not None:
+                run.save_array("observed_bounds", last.observed.table())      # rows: mrvsim.score.observed.ROWS
             last.pop.save(run.dir / "population")
             last.obs.save(run.dir / "observations")
     return report, run, last

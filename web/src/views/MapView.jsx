@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
-import { api, classify, precision, halfWidth, fmtNum, fmtPct } from "../api.js";
+import { api, classify, classifyObserved, precision, halfWidth, fmtNum, fmtPct } from "../api.js";
 import Drilldown from "./Drilldown.jsx";
 
 const COLORS = { certified: "#0ca30c", fails: "#d03b3b", indeterminate: "#8d8b84", unscored: "#555" };
@@ -12,7 +12,7 @@ const STYLE = {
 
 // Facility map with three-state colouring at the user's (B, w_max) (PRD F9). Well-pad dots sit on real production sites
 // [ogim] with synthetic emissions; the grey background layer is the density of all real sites the sample stands for.
-export default function MapView({ runId, kpi, bar, barIntensity, barMass, wMax }) {
+export default function MapView({ runId, kpi, bar, barIntensity, barMass, wMax, basis }) {
   const ref = useRef(null); const mapRef = useRef(null);
   const [geo, setGeo] = useState(null); const [sel, setSel] = useState(null); const [err, setErr] = useState(null);
   const [density, setDensity] = useState(null); const [showDensity, setShowDensity] = useState(true); const [ready, setReady] = useState(false);
@@ -25,8 +25,11 @@ export default function MapView({ runId, kpi, bar, barIntensity, barMass, wMax }
   const colored = useMemo(() => {
     if (!geo) return null;
     const B = kpi === "intensity" ? bar : bar * 1000; // mass bar in t/yr -> kg/yr
-    return { ...geo, features: geo.features.map((f) => ({ ...f, properties: { ...f.properties, state: classify(f.properties, B), precision: precision(f.properties, wMax), prior_only: f.properties.prior_only === true } })) };
-  }, [geo, bar, wMax, kpi]);
+    const obs = basis === "observed" && geo.has_observed;
+    return { ...geo, obs, features: geo.features.map((f) => ({ ...f, properties: { ...f.properties,
+      state: obs ? classifyObserved(f.properties.obs_lo, f.properties.obs_hi, B) : classify(f.properties, B),
+      precision: obs ? "precise" : precision(f.properties, wMax), prior_only: !obs && f.properties.prior_only === true } })) };
+  }, [geo, bar, wMax, kpi, basis]);
 
   const counts = useMemo(() => {
     const c = { certified: 0, fails: 0, indeterminate: 0, wide: 0, prior_only: 0 };
@@ -68,6 +71,7 @@ export default function MapView({ runId, kpi, bar, barIntensity, barMass, wMax }
           `intensity <b>${fmtPct(ip[1])}</b> <span style="color:#666">[${fmtPct(ip[0])} – ${fmtPct(ip[2])}]</span><br/>` +
           `absolute <b>${fmtNum(mp[1], 1)} t/yr</b> <span style="color:#666">[${fmtNum(mp[0], 1)} – ${fmtNum(mp[2], 1)} t/yr]</span><br/>` +
           (q.represents ? `<span style="color:#666">real site · ${fmtNum(q.boe_d, q.boe_d < 10 ? 1 : 0)} boe/d · stands for ${fmtNum(q.represents, 0)} sites like it</span><br/>` : "") +
+          (q.obs_hours !== undefined ? `<span style="color:#666">observed continuously ${fmtPct(q.obs_hours / 8760, 1)} of the year</span><br/>` : "") +
           `<span style="color:#666">median and 90 % interval · click for the full panel</span></div>`).addTo(map);
       });
       map.on("mouseleave", "fac", () => { map.getCanvas().style.cursor = ""; popup.remove(); });
@@ -92,11 +96,12 @@ export default function MapView({ runId, kpi, bar, barIntensity, barMass, wMax }
         <span title="certified, but the observations barely narrowed the prior"><span className="dot faded" style={{ background: COLORS.certified }} />prior-only ({counts.prior_only})</span>
         {density?.n > 0 && <label title="Every US production site with reported production (OGIM v3.0), counted per 0.1° cell. The dots are a sample of these sites; hover a dot to see how many it stands for.">
           <input type="checkbox" checked={showDensity} onChange={(e) => setShowDensity(e.target.checked)} /> all {fmtNum(density.n, 0)} real sites</label>}
-        <span className="muted">{kpi === "intensity" ? `bar ${fmtPct(bar)}` : `bar ${fmtNum(bar)} t/yr`} at 95 %; w_max {fmtNum(wMax, 2)} · hover a dot for both KPIs</span>
+        <span className="muted">{kpi === "intensity" ? `bar ${fmtPct(bar)}` : `bar ${fmtNum(bar)} t/yr`}{colored?.obs ? " · verdicts from observations only: a site is certified only if it was measured for the whole year" : ` at 95 %; w_max ${fmtNum(wMax, 2)}`} · hover a dot for both KPIs</span>
+        {basis === "observed" && geo && !geo.has_observed && <span className="flagged">This run was made before the observations-only view existed; showing the estimate. Re-run it.</span>}
       </div>
       {err && <div className="drill"><b>Could not load facilities.</b><div className="muted">{err}</div></div>}
       {!geo && !err && runId && <div className="drill muted">Loading facilities…</div>}
-      {sel !== null && <Drilldown runId={runId} fid={sel} kpi={kpi} bar={bar} barIntensity={barIntensity} barMass={barMass} wMax={wMax} onClose={() => setSel(null)} />}
+      {sel !== null && <Drilldown runId={runId} fid={sel} kpi={kpi} bar={bar} barIntensity={barIntensity} barMass={barMass} wMax={wMax} basis={basis} onClose={() => setSel(null)} />}
     </div>
   );
 }
