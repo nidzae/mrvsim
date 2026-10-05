@@ -63,7 +63,10 @@ def run_replication(cfg: RunConfig, seeds: SeedTree, rep: int, library: SensorLi
     library = library or load_library()
     rs = seeds.child(rep=rep)
     pop = generate_population(cfg.population, rs, coordinate_seeds=seeds)   # locations fixed across replications
-    plan = build_plan(cfg.policy, rs, pop.n_facilities, pop.lon, pop.throughput.gas_mkt_m3_yr, sensor_modes(library), cfg.year, basin_idx=pop.basin_idx)
+    w_count, w_thr = pop.stratum_weights("count"), pop.stratum_weights("throughput")
+    policy = {**cfg.policy}; policy.setdefault("coverage_weighting", "population")     # TDD section 8.1 as amended 2026-10-05
+    plan = build_plan(policy, rs, pop.n_facilities, pop.lon, pop.throughput.gas_mkt_m3_yr, sensor_modes(library), cfg.year, basin_idx=pop.basin_idx,
+                      count_weights=w_count, throughput_weights=w_thr)
     obs = simulate_observations(pop, library, plan, rs, cfg.year, cache_dir=cache_dir, incidental_capture=bool(cfg.policy.get("incidental_capture", True)))
     inputs = build_inputs(pop, obs, library, rs)
     est = cfg.estimator
@@ -77,7 +80,8 @@ def run_replication(cfg: RunConfig, seeds: SeedTree, rep: int, library: SensorLi
     p_once = detection_probability_once(pop, obs, library)
     comp, comp_b = completeness_from_detection_probability(
         pop.q_kg_h, pop.states.on_hours(), p_once, pop.src_facility, pop.basin_idx, list(pop.strata.basins), pop.constants.completeness_threshold_kg_h)
-    cost = deployment_cost(plan, obs, library, pop.n_facilities)
+    weighted = policy["coverage_weighting"] == "population"
+    cost = deployment_cost(plan, obs, library, pop.n_facilities, count_weights=w_count if weighted else None)
     scored = np.zeros(pop.n_facilities, dtype=bool); scored[sub] = True
     # detected mass: sources whose facility had at least one true detection by any sensor (snapshot) or per-source detection
     det_src = np.zeros(pop.n_total_sources, dtype=bool)
@@ -91,8 +95,9 @@ def run_replication(cfg: RunConfig, seeds: SeedTree, rep: int, library: SensorLi
         for fi, f in enumerate(c.facilities):
             if c.detected[fi].any():
                 det_src[pop.source_offset[f]:pop.source_offset[f + 1]] = True
-    dm = detected_mass_kg(pop.q_kg_h, pop.states.on_hours(), p_once, det_src)
-    pre = score_replication(post, truth_m, truth_i, pop.stratum_idx, pop.stratum_weights("count"), pop.stratum_weights("throughput"),
+    dm = detected_mass_kg(pop.q_kg_h, pop.states.on_hours(), p_once, det_src,
+                          source_weights=(pop.n_facilities * w_count)[pop.src_facility] if weighted else None)
+    pre = score_replication(post, truth_m, truth_i, pop.stratum_idx, w_count, w_thr,
                             pop.throughput.mmbtu_yr, bars, comp, comp_b, {}, len(pop.strata), scored)
     cm = cost_metrics(cost, dm, pre.kpi_metrics["intensity"]["certified_mmbtu"])
     cm.update({f"cost_{k}_usd": v for k, v in cost.by_sensor_usd.items()})
@@ -107,6 +112,8 @@ def run_scored(cfg: RunConfig, root: str | Path = "runs", run_id: str | None = N
                keep_last: bool = True, cache_dir: Path | None = None) -> tuple[ScoreReport, RunContext, ReplicationResult | None]:
     """Run R replications, aggregate, persist. Returns (report, run context, last replication for drill-down)."""
     library = library or load_library()
+    if "coverage_weighting" not in cfg.policy:      # recorded in the run's config so a reloaded run rebuilds the same plan
+        cfg = cfg.with_overrides(policy={**cfg.policy, "coverage_weighting": "population"})
     R = int(replications or cfg.replications)
     reps: list[ReplicationScores] = []
     last: ReplicationResult | None = None

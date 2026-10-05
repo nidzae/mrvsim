@@ -34,12 +34,14 @@ export default function Dashboard({ runId, kpi, runSettings, pareto, onRerunFull
   return (
     <div>
       <div className="tiles">
-        <Tile label="Certified share (facilities)" value={fmtPct(k.certified_share_facilities.mean, 1)} sub={`± ${fmtPct(k.certified_share_facilities.se, 1)} MC SE · precise ${fmtPct(k.certified_precise_share_facilities?.mean, 0)} · prior-only ${fmtPct(k.certified_prior_only_share_facilities?.mean, 0)}`} />
-        <Tile label="Certified share (throughput)" value={fmtPct(k.certified_share_weighted_throughput.mean, 1)} sub={`stratum-weighted · precise ${fmtPct(k.certified_precise_share_weighted_throughput?.mean, 0)} · prior-only ${fmtPct(k.certified_prior_only_share_weighted_throughput?.mean, 0)}`} />
+        <Tile label="Certified share (real facilities)" value={fmtPct(k.certified_share_facilities.mean, 1)} sub={`± ${fmtPct(k.certified_share_facilities.se, 1)} MC SE · precise ${fmtPct(k.certified_precise_share_facilities?.mean, 0)} · prior-only ${fmtPct(k.certified_prior_only_share_facilities?.mean, 0)}`} />
+        <Tile label="Certified share (throughput)" value={fmtPct(k.certified_share_weighted_throughput.mean, 1)} sub={`weighted to real gas volumes · precise ${fmtPct(k.certified_precise_share_weighted_throughput?.mean, 0)} · prior-only ${fmtPct(k.certified_prior_only_share_weighted_throughput?.mean, 0)}`} />
         <Tile label="Calibration κ" value={fmtNum(cal.mean, 3)} sub={calOk ? "within 0.85–0.95" : "OUTSIDE 0.85–0.95: intervals not trustworthy"} flag={!calOk} />
-        <Tile label="Median interval half-width w" value={fmtNum(k.width_median.mean, 2)} sub={`bias ${fmtPct(k.bias_median.mean, 1)}`} />
-        <Tile label="Completeness C" value={fmtPct(s.summary.completeness.mean, 1)} sub="sources > 10 kg/h, Jacob 2022" />
-        <Tile label="Cost / tonne detected" value={fmtUsd(s.summary.cost.cost_per_tonne_detected_usd.mean)} sub={`total ${fmtUsd(s.summary.cost.cost_total_usd.mean)} (sample)`} />
+        <Tile label="Median interval half-width w" value={fmtNum(k.width_median.mean, 2)} sub={`typical real site${k.width_median_weighted_throughput ? ` · typical unit of gas ${fmtNum(k.width_median_weighted_throughput.mean, 2)}` : ""} · bias ${fmtPct(k.bias_median.mean, 1)}`} />
+        {k.decided_share_emitted_mass
+          ? <Tile label="Emissions with a decided outcome" value={fmtPct(k.decided_share_emitted_mass.mean, 1)} sub="share of emitted methane at sites that are certified or fail (not indeterminate)" />
+          : <Tile label="Completeness C" value={fmtPct(s.summary.completeness.mean, 1)} sub="sources > 10 kg/h (run scored before 2026-10-05)" />}
+        <Tile label="Cost / tonne detected" value={fmtUsd(s.summary.cost.cost_per_tonne_detected_usd.mean)} sub={`total ${fmtUsd(s.summary.cost.cost_total_usd.mean)} per ${s.summary.n_facilities ? fmtNum(s.summary.n_facilities, 0) : "sample-sized set of"} facilities in real proportions`} />
         <Tile label="Cost / certified MMBtu" value={fmtUsd(s.summary.cost.cost_per_certified_mmbtu_usd?.mean)} sub={`${s.summary.n_replications} replications`} />
       </div>
       <div className="row" style={{ marginTop: 12 }}>

@@ -63,7 +63,7 @@ class StrataTable:
     # ``site_rows[h]`` are the rows of ``sites`` that make up stratum h (None for a stratum without site data).
     sites: SiteTable | None = None
     site_rows: tuple[np.ndarray | None, ...] = ()
-    class_rule: str = "count"
+    class_rule: str = "throughput"
 
     def rows_of(self, h: int) -> np.ndarray | None:
         return self.site_rows[h] if self.site_rows else None
@@ -107,7 +107,7 @@ def load_strata(
     n_classes: int | None = None,
     weights_path: str | Path | None = DEFAULT_WEIGHTS_PATH,
     sites: SiteTable | str | Path | None = DEFAULT_SITES_PATH,
-    class_rule: str = "count",
+    class_rule: str = "throughput",
 ) -> StrataTable:
     """Load the strata table.
 
@@ -128,12 +128,10 @@ def load_strata(
         real share of the cell's site count and gas volume. ``None`` (or a missing file) keeps the even
         split across classes.
     class_rule:
-        ``count`` (default): classes hold equal numbers of sites (the quantile classes of TDD section 3.1),
-        so the sample mirrors the site population: mostly small sites. Throughput-weighted aggregates then
-        rest on the few sampled large sites.
-        ``throughput``: classes hold equal shares of the cell's produced energy, so large sites are sampled
-        as heavily as small ones; unweighted sample statistics then over-represent large sites.
-        See DECISION_LOG 2026-10-03.
+        ``throughput`` (default since 2026-10-05): classes hold equal shares of the cell's produced energy, so the
+        few large sites that carry most of the gas are sampled as heavily as the many small ones; every
+        population statistic is then weighted (TDD section 3.1).
+        ``count``: classes hold equal numbers of sites (the quantile classes of TDD section 3.1 as first written).
     """
     raw = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
     basins = {

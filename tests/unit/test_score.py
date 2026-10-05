@@ -115,16 +115,22 @@ def test_cost_from_yaml_and_metrics() -> None:
     res = run_replication(cfg, SeedTree(cfg.seed), 0, LIB, n_draws=500, facilities_per_stratum=2)
     cost = res.scores.cost
     n_fac = res.pop.n_facilities
-    n_br = len(res.plan.deployments["bridger_gml"].facilities); n_cms = len(res.plan.deployments["cms_generic"].facilities)
-    assert cost["cost_bridger_gml_usd"] == pytest.approx(n_br * 2 * LIB["bridger_gml"].cost.per_site_visit_usd)
-    assert cost["cost_cms_generic_usd"] == pytest.approx(n_cms * LIB["cms_generic"].cost.per_site_year_usd)
-    gh_rows = ((res.obs.log.sensor_idx == list(res.obs.log.sensor_keys).index("ghgsat_c")) & ~res.obs.log.incidental).sum()   # incidental looks are free
-    assert cost["cost_ghgsat_c_usd"] == pytest.approx(gh_rows * LIB["ghgsat_c"].cost.per_tasking_usd)
+    # costs are on the basis of n_fac facilities in population proportions: n_fac x sum_i w_i cost_i (TDD section 3.1a)
+    w = res.pop.stratum_weights("count")
+    expand = lambda facilities: n_fac * w[facilities].sum()  # noqa: E731
+    br, cms = res.plan.deployments["bridger_gml"].facilities, res.plan.deployments["cms_generic"].facilities
+    assert cost["cost_bridger_gml_usd"] == pytest.approx(expand(br) * 2 * LIB["bridger_gml"].cost.per_site_visit_usd)
+    assert cost["cost_cms_generic_usd"] == pytest.approx(expand(cms) * LIB["cms_generic"].cost.per_site_year_usd)
+    log = res.obs.log
+    gh = (log.sensor_idx == list(log.sensor_keys).index("ghgsat_c")) & ~log.incidental     # incidental looks are free
+    assert cost["cost_ghgsat_c_usd"] == pytest.approx(expand(log.facility_idx[gh]) * LIB["ghgsat_c"].cost.per_tasking_usd)
+    # targeted coverage refers to the population: the CMS facilities stand for at least 10 % of real facilities
+    assert 0.10 <= w[cms].sum() < 0.10 + w[cms].max() + 1e-12
     assert cost["cost_total_usd"] == pytest.approx(cost["cost_bridger_gml_usd"] + cost["cost_cms_generic_usd"] + cost["cost_ghgsat_c_usd"])
     assert cost["cost_per_tonne_detected_usd"] > 0 and np.isfinite(cost["cost_per_tonne_detected_usd"])
     assert 0 <= res.scores.completeness <= 1
     assert res.scores.n_scored == 2 * len(res.pop.strata)
-    assert n_fac == 30 * len(res.pop.strata)
+    assert n_fac == res.pop.strata.sizes(30).sum()
 
 
 @pytest.mark.slow
@@ -147,3 +153,24 @@ def test_run_scored_persists_and_aggregates(tmp_path) -> None:
     report2, run2, _ = run_scored(cfg, root=tmp_path, replications=2, n_draws=400, facilities_per_stratum=1)
     assert report2.kpi["mass"]["calibration"].mean == report.kpi["mass"]["calibration"].mean
     assert report2.cost["cost_total_usd"].mean == report.cost["cost_total_usd"].mean
+
+
+def test_population_weighted_shares_and_decided_emissions() -> None:
+    """Shares and medians use the count weights; decided share is the weighted true mass at decided facilities (PRD 5.5a)."""
+    from mrvsim.score.metrics import weighted_median
+    med = np.array([10e3, 200e3, 55e3, 20e3])                    # certified, fails, indeterminate, certified at a 50 t bar
+    post = _post(4, med, rel_w=0.2)
+    post.mass_kg_yr_p05[3], post.mass_kg_yr_p95[3] = 20e3 * 0.5, 20e3 * 1.5        # a wider interval, still certified
+    truth = np.array([9e3, 180e3, 50e3, 21e3])
+    wc = np.array([0.6, 0.05, 0.05, 0.3]); wt = np.array([0.1, 0.5, 0.3, 0.1])
+    bars = {"mass": Bar("mass", 50e3, 0.30), "intensity": Bar("intensity", 0.002, 0.30)}
+    sc = score_replication(post, truth, truth / 1e6, np.zeros(4, int), wc, wt, np.ones(4), bars, 1.0, {}, {}, 1)
+    m = sc.kpi_metrics["mass"]
+    assert m["certified_share_facilities"] == pytest.approx(0.9) and m["certified_share_sample"] == pytest.approx(0.5)
+    assert m["fails_share_facilities"] == pytest.approx(0.05) and m["indeterminate_share_facilities"] == pytest.approx(0.05)
+    assert m["certified_share_weighted_throughput"] == pytest.approx(0.2)
+    decided = (0.6 * 9e3 + 0.05 * 180e3 + 0.3 * 21e3) / (0.6 * 9e3 + 0.05 * 180e3 + 0.05 * 50e3 + 0.3 * 21e3)
+    assert m["decided_share_emitted_mass"] == pytest.approx(decided)
+    assert m["width_median"] == pytest.approx(0.2) and m["width_median_weighted_throughput"] == pytest.approx(0.2)   # w = 0.2 holds 70 % of count weight
+    assert weighted_median(np.array([1.0, 2.0, 3.0]), np.array([0.1, 0.1, 0.8])) == 3.0
+    assert weighted_median(np.array([1.0, np.nan, 3.0]), np.array([0.6, 0.3, 0.1])) == 1.0

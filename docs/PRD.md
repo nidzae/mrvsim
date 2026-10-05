@@ -196,6 +196,16 @@ $$
 
 where $\bar{P}_j$ is the probability that source $j$ is detected at least once during the year by the deployed system.
 
+**Status (2026-10-05):** completeness is kept as a diagnostic but is no longer a headline metric (DECISION_LOG 2026-10-05). It measures whether large sources are *detected at least once*, not whether a site's emissions are *known well enough to decide*; it ignores sources under 10 kg/h, which decide most certifications; and with aircraft on every site it sat between 0.994 and 0.997 in every run, so it did not distinguish sensor mixes. It remains useful for satellite-only mixes and for comparison with published constellation studies.
+
+### 5.5a Headline metric: share of emitted mass with a decided outcome (added 2026-10-05)
+
+$$
+D = \frac{\sum_i w_i \, M_i \cdot \mathbb{1}[\text{facility } i \text{ is certified or fails}]}{\sum_i w_i \, M_i}
+$$
+
+where $M_i$ is the facility's true annual emitted mass and $w_i$ the share of real facilities it stands for (TDD §3.1a). $D$ answers: of all the methane actually emitted, how much comes from facilities where the monitoring was good enough to reach a verdict at the bar, either way? The remainder sits at indeterminate facilities, where the 90 % interval straddles the bar. A system can certify many small clean sites and still leave most of the emissions undecided; $D$ shows that. It is reported for each KPI's own verdicts and needs the true mass, so it exists only in simulation.
+
 ### 5.6 Cost metrics
 
 $$
@@ -275,6 +285,8 @@ LDAR-Sim is open source (MIT), maintained, already models a virtual field with s
 ### 7.6 Why a stratified sample rather than every US facility
 
 The US has on the order of a million active wells. Simulating each one at hourly resolution across hundreds of Monte Carlo replications is unnecessary: facilities within a stratum (basin × facility type × throughput class) share emission statistics. The tool simulates a representative sample per stratum and scales by stratum weight. Since 2026-10-03 the well-pad sample is drawn from the real site population (577,007 producing sites with their 2022 production, [ogim]), so each simulated well pad is a real site with real production and simulated emissions, and the stratum weights are real site counts and gas volumes (DECISION_LOG 2026-10-03). The design doc specifies the strata and a stability test (results must not change materially when strata are refined).
+
+**How the sample is drawn and scaled back (2026-10-05).** In plain terms the tool runs a poll of sites. Real production is very lopsided: about three quarters of sites are tiny and together hold 4 % of the gas, while a few thousand large pads hold most of it. A poll drawn in proportion to site numbers would contain so few large pads that any statement about *gas* (for example "what share of gas can be certified") would rest on about twenty of them. So the poll deliberately includes far more large sites than their numbers warrant, and then counts each polled site according to how many real sites, or how much real gas, it stands for. A small site in the poll may stand for several thousand real ones; a very large one for one or two. Every headline number is computed with these weights, sensor coverage shares refer to real sites rather than polled ones, and costs are stated for a set of sites in real proportions. The equations and the measured gain (about eight times more effective sample for gas questions, for about a third of the precision on site-count questions) are in TDD §3.1a.
 
 ### 7.7 Why calibration is the primary success metric
 
@@ -373,3 +385,4 @@ DOIs marked `verify` in `REFERENCES.md` must be checked against the publisher be
 | 2026-10-01 | §5.3: certification bound is the 95 % upper bound, fails at the 5 % lower bound, $P(K \le B)$ reported; §5.4: width is a precision attribute, no longer a certification condition; §5.4a added (evidence ratio, prior-only flag) | Nidhi / Claude |
 | 2026-10-03 | §7.6: well-pad sample drawn from real production sites [ogim]; §10: Q2 resolved, Q5 resolved for well pads (no requirement change) | Nidhi / Claude |
 | 2026-10-03 | Leak sizes of real sites depend on wells, class and productivity (TDD §3.4a); no requirement change. F1 "represent the full emissions population" now rests on a bottom-up equipment model for well pads; the aerial super-emitter tail is an open item | Nidhi / Claude |
+| 2026-10-05 | §5.5: completeness demoted from the headline row; §5.5a added (share of emitted mass with a decided outcome); §7.6: how the sample over-represents large sites and is weighted back (TDD §3.1a) | Nidhi / Claude |

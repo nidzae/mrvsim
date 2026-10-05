@@ -38,7 +38,7 @@ class SiteTable:
     def energy_mj_yr(self, gas_hhv_mj_per_m3: float, oil_mj_per_bbl: float) -> np.ndarray:
         return self.gas_m3_yr * gas_hhv_mj_per_m3 + self.oil_bbl_yr * oil_mj_per_bbl
 
-    def class_rows(self, cell_key: str, n_classes: int, energy_mj_yr: np.ndarray, rule: str = "count") -> list[np.ndarray]:
+    def class_rows(self, cell_key: str, n_classes: int, energy_mj_yr: np.ndarray, rule: str = "throughput") -> list[np.ndarray]:
         """Site rows of ``cell_key`` split into ``n_classes`` throughput classes, smallest first.
 
         Sites are ranked by produced energy (gas plus oil). ``count`` gives classes with equal numbers

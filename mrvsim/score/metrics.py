@@ -102,15 +102,34 @@ class ReplicationScores:
     prior_only: dict[str, np.ndarray] = field(default_factory=dict)   # kpi -> per-facility bool (PRD section 5.4a)
 
 
+def weighted_median(x: np.ndarray, w: np.ndarray) -> float:
+    """Median of ``x`` under weights ``w`` (non-finite x ignored); inf if nothing is finite."""
+    ok = np.isfinite(x) & (w > 0)
+    if not ok.any():
+        return float("inf")
+    o = np.argsort(x[ok]); xs, ws = x[ok][o], w[ok][o]
+    return float(xs[np.searchsorted(np.cumsum(ws) / ws.sum(), 0.5, side="left").clip(0, xs.size - 1)])
+
+
 def score_replication(post: PosteriorSummary, truth_mass_kg_yr: np.ndarray, truth_intensity: np.ndarray,
                       stratum_idx: np.ndarray, weights_count: np.ndarray, weights_thr: np.ndarray, mmbtu_yr: np.ndarray,
                       bars: dict[str, Bar], completeness: float, completeness_by_basin: dict[str, float], cost: dict[str, float],
                       n_strata: int, scored: np.ndarray | None = None) -> ReplicationScores:
     """TDD section 7 metrics for one replication.
 
-    ``weights_count`` / ``weights_thr`` are per-facility weights W_h / n_h (sum to 1 over the sample);
+    ``weights_count`` / ``weights_thr`` are per-facility weights (sum to 1 over the sample): the share of the real
+    facility population, and of real throughput, that each sampled facility stands for (TDD section 3.1).
     ``scored`` selects the facilities that were estimated (default: those with a finite posterior).
+
+    Since 2026-10-05 (TDD section 7) every share, median and total that describes the *population* is weighted,
+    because the sample deliberately over-represents large sites: ``*_share_facilities``, ``width_median`` and
+    ``bias_median`` use the count weights; ``*_weighted_throughput`` the throughput weights. ``*_sample`` keeps the
+    unweighted sample share. Calibration stays unweighted: it is a property of the estimator on whatever facilities
+    it was run on, and the unweighted mean uses every estimated facility equally.
+    ``decided_share_emitted_mass`` is the share of true emitted mass at facilities whose state is certified or
+    fails (PRD section 5.5a).
     """
+    n_fac = int(weights_count.shape[0])
     scored = np.isfinite(post.mass_kg_yr_p50) if scored is None else scored
     kpi_metrics: dict[str, dict[str, float]] = {}
     per_stratum: dict[str, np.ndarray] = {}
@@ -119,6 +138,7 @@ def score_replication(post: PosteriorSummary, truth_mass_kg_yr: np.ndarray, trut
     prior_only_d: dict[str, np.ndarray] = {}
     wc = weights_count[scored] / weights_count[scored].sum()
     wt = weights_thr[scored] / weights_thr[scored].sum()
+    mass_true = truth_mass_kg_yr[scored]; mass_w = float((wc * mass_true).sum())
     for kpi, truth in (("mass", truth_mass_kg_yr), ("intensity", truth_intensity)):
         covered = post.covers(truth, kpi)[scored]
         w = post.relative_half_width(kpi)[scored]
@@ -133,21 +153,26 @@ def score_replication(post: PosteriorSummary, truth_mass_kg_yr: np.ndarray, trut
         m = {
             "calibration": float(covered.mean()),
             "calibration_se": float(np.sqrt(covered.mean() * (1 - covered.mean()) / max(covered.size, 1))),
-            "width_median": float(np.median(w[np.isfinite(w)])) if np.isfinite(w).any() else float("inf"),
-            "bias_median": float(np.nanmedian(rel_err)),
-            "certified_share_facilities": float((s == 0).mean()),
-            "fails_share_facilities": float((s == 1).mean()),
-            "indeterminate_share_facilities": float((s == 2).mean()),
+            "width_median": weighted_median(w, wc),
+            "width_median_weighted_throughput": weighted_median(w, wt),
+            "width_median_sample": float(np.median(w[np.isfinite(w)])) if np.isfinite(w).any() else float("inf"),
+            "bias_median": weighted_median(rel_err, wc),
+            "certified_share_facilities": float(wc[s == 0].sum()),
+            "fails_share_facilities": float(wc[s == 1].sum()),
+            "indeterminate_share_facilities": float(wc[s == 2].sum()),
+            "certified_share_sample": float((s == 0).mean()),
             "certified_share_weighted_count": float(wc[s == 0].sum()),
+            "decided_share_emitted_mass": float((wc * mass_true)[s != 2].sum() / mass_w) if mass_w > 0 else float("nan"),
             "certified_share_weighted_throughput": float(wt[s == 0].sum()),
             "indeterminate_share_weighted_throughput": float(wt[s == 2].sum()),
             "fails_share_weighted_throughput": float(wt[s == 1].sum()),
-            "certified_mmbtu": float(mmbtu_yr[scored][s == 0].sum()),
+            # marketed gas energy at certified facilities, on the basis of n_fac facilities in population proportions
+            "certified_mmbtu": float(n_fac * (wc * mmbtu_yr[scored])[s == 0].sum()),
             # precision and evidence attributes (PRD sections 5.4, 5.4a as amended 2026-10-01)
-            "precise_share_facilities": float(pr.mean()),
-            "certified_precise_share_facilities": float(((s == 0) & pr).mean()),
+            "precise_share_facilities": float(wc[pr].sum()),
+            "certified_precise_share_facilities": float(wc[(s == 0) & pr].sum()),
             "certified_precise_share_weighted_throughput": float(wt[(s == 0) & pr].sum()),
-            "certified_prior_only_share_facilities": float(((s == 0) & po).mean()),
+            "certified_prior_only_share_facilities": float(wc[(s == 0) & po].sum()),
             "certified_prior_only_share_weighted_throughput": float(wt[(s == 0) & po].sum()),
         }
         kpi_metrics[kpi] = m

@@ -47,7 +47,7 @@ Grey is the most common result with sparse monitoring. Turning grey into green o
    - **Certified share** — percent of facilities, and of gas throughput, that are green; the sub-line says how many of those are also precise and how many are prior-only.
    - **Calibration κ** — should sit between 0.85 and 0.95. If it is outside that band the tile turns red: the intervals are not trustworthy.
    - **Median interval width** — smaller is better.
-   - **Completeness** — share of large emissions the sensors could see at all.
+   - **Emissions with a decided outcome** — of all the methane actually emitted, the share that comes from sites where the monitoring reached a verdict (certified or fails). The rest sits at indeterminate sites.
    - **Cost per tonne detected** and **cost per certified MMBtu**.
 7. **Use the tornado chart.** On **Dashboard**, press **Compute tornado**. Each bar reruns the pipeline with one sensor change (a sensor off, doubled frequency, full coverage, or a missing sensor added at 20 %) and shows the change in median interval width. Negative bars narrow intervals; start with the most negative one.
 
@@ -74,7 +74,7 @@ Claude will explain and can propose a sensor configuration as a small YAML block
 - **Attribution tab.** Lists every study, dataset, and method behind the current run, the provenance of the priors and stratum weights, and which sensor parameter blocks are not yet fitted to blind-test data. Entries marked "verify" have not yet been checked against the original publication.
 - **Real sites, simulated emissions.** Each well-pad dot sits on a real production site and carries that site's 2022 oil and gas production (OGIM v3.0). Its leaks are simulated from basin statistics, not measured there. Do not use a dot's colour to make a claim about a specific real operator. Compressor stations, processing plants and storage sites use real locations with simulated throughput.
 - **Leaks depend on what is on the site.** A site's simulated leaks follow from its number of wells, whether it is an oil or gas site, and how much each well produces, using published equipment-level leak measurements. More wells and more productive wells mean more and larger leaks; small sites leak less in total but far more per unit of gas. The facility panel lists these inputs. Rare very large leaks seen by aircraft surveys are added on top for sites that produce enough gas to sustain one, with a per-well chance fitted per basin to published survey data.
-- **The dots are a sample.** The US has about 577,000 producing sites in the data; the map shows about 2,250 (quick) or 7,500 (full) of them. The brown shading behind the dots is the density of all real sites (untick **all … real sites** in the legend to hide it). Hover a dot to see its production and how many real sites it stands for. About three in four real sites produce under 15 barrels of oil equivalent a day, so most dots are small sites; headline shares "by throughput" weight each dot by its gas volume instead.
+- **The dots are a poll, and large sites are deliberately over-represented.** The US has about 577,000 producing sites in the data; the map shows about 2,200 (quick) or 7,200 (full). Because a few large sites hold most of the gas, the poll includes far more of them than their numbers warrant, then counts each dot by how many real sites, or how much real gas, it stands for. So the map shows more big sites than reality (about a quarter of well-pad dots are small sites, against three quarters in reality), but every headline number is corrected for this. Hover a dot to see its production and how many real sites it stands for. The brown shading behind the dots is the density of all real sites (untick **all … real sites** in the legend to hide it). A sensor's **coverage** is a share of real facilities: "top 30 % by throughput" means the largest sites that together make up 30 % of real sites.
 
 ## Glossary (short)
 
@@ -84,7 +84,7 @@ Claude will explain and can propose a sensor configuration as a small YAML block
 | Calibration | Whether the intervals keep their 90% promise, checked on synthetic truth |
 | Duty cycle | Fraction of the year a source is emitting |
 | POD | Probability a sensor detects a source of a given size |
-| Completeness | Share of large emissions the sensor system could detect at all |
+| Emissions with a decided outcome | Share of all emitted methane that comes from sites with a verdict (certified or fails) rather than indeterminate |
 | Tip-and-cue | A cheap sensor's detection triggers an expensive sensor's visit |
 | Pareto frontier | The set of best trade-offs between cost and precision |
 

@@ -14,7 +14,7 @@ population:
   n_per_stratum: 100       # TDD section 3.1 (default 100, minimum 30)
   min_per_stratum: 30
   site_locations: ogim     # ogim = well-pad facilities are real production sites with their real production, midstream on real locations [ogim] (data/fitted/sites.npz); box = uniform in the basin boxes with lognormal throughput [basin-extents]
-  throughput_class_rule: count   # count = classes with equal numbers of sites (TDD section 3.1); throughput = classes with equal shares of produced energy (DECISION_LOG 2026-10-03)
+  throughput_class_rule: throughput   # throughput = classes with equal shares of produced energy, large sites over-sampled and weighted back (TDD section 3.1, DECISION_LOG 2026-10-05); count = equal numbers of sites
   leak_model: equipment    # equipment = real sites take source hyperparameters from wells, class and productivity [rutherford2021] (TDD section 3.4a); stratum = basin x type priors
   aerial_tail: true        # add the per-basin, per-well super-emitter tail above the aerial transition point [sherwin2024] (TDD section 3.4a)
   priors_dir: configs/priors

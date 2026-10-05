@@ -14,7 +14,9 @@ from mrvsim.validate.results import ValidationResult
 from mrvsim.validate.targets import load_targets
 
 VID, NAME = "V4", "Stratum stability (terciles vs quintiles)"
-HEADLINE = ("calibration", "width_median", "bias_median", "certified_share_weighted_throughput")
+# Headline metrics of the dashboard. Completeness left the headline row on 2026-10-05 (PRD section 5.5) and is no
+# longer part of this check; the decided share of emitted mass (PRD section 5.5a) replaced it.
+HEADLINE = ("calibration", "width_median", "bias_median", "certified_share_weighted_throughput", "decided_share_emitted_mass")
 
 
 def run(targets: dict[str, Any] | None = None, replications: int = 3, n_per_stratum: int = 30, n_draws: int = 2000,
@@ -43,7 +45,4 @@ def run(targets: dict[str, Any] | None = None, replications: int = 3, n_per_stra
             diff = abs(a.mean - b.mean); ok = bool(diff <= k * se) if se > 0 else bool(diff == 0)
             compared[f"{kpi}.{m}"] = {"terciles": a.mean, "quintiles": b.mean, "diff": diff, "k_se": k * se, "pass": ok}
             verdicts.append(ok)
-    a, b = reports["terciles"].completeness, reports["quintiles"].completeness
-    se = float(np.sqrt(np.nan_to_num(a.se) ** 2 + np.nan_to_num(b.se) ** 2)); ok = abs(a.mean - b.mean) <= k * se if se > 0 else a.mean == b.mean
-    compared["completeness"] = {"terciles": a.mean, "quintiles": b.mean, "k_se": k * se, "pass": bool(ok)}; verdicts.append(bool(ok))
     return finish(ValidationResult(VID, NAME, "pass" if all(verdicts) else "fail", tg["pass_rule"], compared, "", tg["citations"], "ok"), t0, priors)

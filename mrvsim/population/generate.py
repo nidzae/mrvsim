@@ -257,7 +257,7 @@ def generate_population(
         (``ogim``: well-pad facilities are real production sites with their real production, and
         midstream facilities sit on real locations [ogim], the default; ``box``: uniform in the
         basin boxes with lognormal throughput), ``sites_path``, ``throughput_class_rule``
-        (``count`` or ``throughput``; see :func:`mrvsim.population.strata.load_strata`), ``leak_model``
+        (``throughput`` or ``count``; see :func:`mrvsim.population.strata.load_strata`), ``leak_model``
         (``equipment``: real sites take source hyperparameters from their well count, class and
         productivity [rutherford2021], the default; ``stratum``: the basin x type stratum priors),
         ``aerial_tail`` (default true: add the per-basin, per-well super-emitter tail [sherwin2024]).
@@ -274,7 +274,7 @@ def generate_population(
     strata = strata or load_strata(
         _resolve(population_cfg.get("strata_path"), DEFAULT_STRATA_PATH), n_classes=n_classes,
         sites=_resolve(population_cfg.get("sites_path"), DEFAULT_SITES_PATH) if use_sites else None,
-        class_rule=str(population_cfg.get("throughput_class_rule", "count")),
+        class_rule=str(population_cfg.get("throughput_class_rule", "throughput")),
     )
     priors = priors or load_priors(
         _resolve(population_cfg.get("priors_path"), DEFAULT_PRIORS_PATH), list(strata.basins), list(strata.facility_types)

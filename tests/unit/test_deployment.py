@@ -87,3 +87,22 @@ def test_policy_round_trips_scheduling_fields() -> None:
         raise AssertionError("expected ValueError")
     except ValueError as e:
         assert "scheduling" in str(e)
+
+
+def test_targeted_coverage_refers_to_the_population() -> None:
+    """With count weights, `coverage` of a targeted sensor is a share of the real population, not of the sample."""
+    from mrvsim.observe.deployment import select_facilities
+    rng = np.random.default_rng(0)
+    score = np.array([100.0, 90.0, 80.0, 5.0, 4.0, 3.0, 2.0, 1.0])
+    w = np.array([0.01, 0.01, 0.01, 0.2, 0.2, 0.2, 0.2, 0.17])           # three over-sampled large sites stand for 3 % of facilities
+    by_sample = select_facilities(rng, 8, 0.25, "throughput", score)
+    by_population = select_facilities(rng, 8, 0.25, "throughput", score, count_weights=w)
+    assert by_sample.tolist() == [0, 1]                                    # 25 % of 8 sampled facilities
+    assert by_population.tolist() == [0, 1, 2, 3, 4]                       # the largest sites standing for 25 % of real facilities
+    assert w[by_population].sum() >= 0.25 > w[by_population[:-1]].sum()
+    pol = {"sensors": {"cms_generic": {"coverage": 0.25, "targeting": "throughput"}}, "coverage_weighting": "population"}
+    modes = {**MODES, "cms_generic": ("hourly", "continuous", False)}
+    plan = build_plan(pol, SeedTree(1), 8, np.zeros(8), score, modes, 2024, count_weights=w, throughput_weights=w)
+    assert plan.deployments["cms_generic"].facilities.tolist() == [0, 1, 2, 3, 4]
+    legacy = build_plan({"sensors": pol["sensors"]}, SeedTree(1), 8, np.zeros(8), score, modes, 2024, count_weights=w, throughput_weights=w)
+    assert legacy.deployments["cms_generic"].facilities.tolist() == [0, 1]   # runs without the key keep the sample meaning

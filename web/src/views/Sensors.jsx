@@ -35,7 +35,7 @@ export default function Sensors({ policy, setPolicy, runSettings, setRunSettings
           <div className="name"><label><input type="checkbox" checked={on} onChange={() => toggle(s.key)} /> {s.key}</label><span className={`tier ${s.tier}`} title={s.enabled_for_certification ? "counts toward certification" : "excluded from certification (PRD N2)"}>Tier {s.tier}</span></div>
           <div className="muted">{s.name} · POD50 {s.pod50_kg_h >= 100 ? `${(s.pod50_kg_h / 1000).toFixed(1)} t/h` : `${s.pod50_kg_h.toFixed(2)} kg/h`}{s.unverified_blocks.length ? " · parameters unverified" : ""}</div>
           {on && <>
-            <div className="field">coverage (share of facilities)<input type="number" min="0" max="1" step="0.05" value={get(s.key).coverage} onChange={(e) => upd(s.key, { coverage: +e.target.value })} /></div>
+            <div className="field">coverage (share of real facilities)<input type="number" min="0" max="1" step="0.05" value={get(s.key).coverage} onChange={(e) => upd(s.key, { coverage: +e.target.value })} /></div>
             {(s.schedule === "campaign" || s.schedule === "survey" || s.key === "ghgsat_c" || s.key === "prisma" || s.key === "enmap" || s.key === "tanager1") && (
               <div className="field">{s.schedule === "orbit" ? "taskings / year" : "surveys / year"}<input type="number" min="0" max="52" step="1" value={get(s.key).frequency_per_year} onChange={(e) => upd(s.key, { frequency_per_year: +e.target.value })} /></div>)}
             <div className="field">targeting<select value={get(s.key).targeting} onChange={(e) => upd(s.key, { targeting: e.target.value })}><option value="random">random</option><option value="throughput">top facilities by throughput</option></select></div>

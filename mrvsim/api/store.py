@@ -18,6 +18,7 @@ from mrvsim.observe.simulator import CMSLog, ObservationLog, ObservationSet
 from mrvsim.pipeline import sensor_modes
 from mrvsim.population import Population, load_population
 from mrvsim.estimate.fast import log_width_ratio
+from mrvsim.score.metrics import weighted_median
 from mrvsim.sensors import SensorLibrary, load_library
 from mrvsim.sensors.library import REFERENCES_PATH, reference_keys
 
@@ -100,7 +101,8 @@ def load_run(run_id: str, root: str = str(RUNS_DIR)) -> LoadedRun:
     # the last replication's plan is deterministic from config + seeds (rep = R - 1)
     R = int(summary.get("meta", {}).get("replications") or cfg.replications)
     rs = SeedTree(cfg.seed).child(rep=R - 1)
-    plan = build_plan(cfg.policy, rs, pop.n_facilities, pop.lon, pop.throughput.gas_mkt_m3_yr, sensor_modes(lib), cfg.year, basin_idx=pop.basin_idx)
+    plan = build_plan(cfg.policy, rs, pop.n_facilities, pop.lon, pop.throughput.gas_mkt_m3_yr, sensor_modes(lib), cfg.year, basin_idx=pop.basin_idx,
+                      count_weights=pop.stratum_weights("count"), throughput_weights=pop.stratum_weights("throughput"))
     opt = lambda name: np.load(d / f"{name}.npy") if (d / f"{name}.npy").exists() else None  # noqa: E731
     return LoadedRun(run_id, d, cfg, manifest, summary, pop, np.load(d / "posterior_mass_pcts.npy"), np.load(d / "posterior_intensity_pcts.npy"),
                      np.load(d / "true_mass_kg_yr.npy"), np.load(d / "true_intensity.npy"), np.load(d / "state_mass.npy"), np.load(d / "state_intensity.npy"), obs, plan, lib,
@@ -162,7 +164,8 @@ def slices(run: LoadedRun, kpi: str = "intensity") -> dict[str, list[dict[str, A
     covered = (post[0] <= truth) & (truth <= post[4])
     w_max = float(run.config.scoring.get("w_max", 0.30))
     precise = width <= w_max; po = run.prior_only(kpi)
-    w_thr = pop.stratum_weights("throughput")
+    w_thr = pop.stratum_weights("throughput"); w_cnt = pop.stratum_weights("count")
+    share = lambda m, sel: float(w_cnt[m][sel].sum() / max(w_cnt[m].sum(), 1e-300))  # noqa: E731  population share within the group
     rate_bins = [0, 1, 10, 100, 1e9]; rate = run.true_mass / 8760.0
     labels = ["<1 kg/h", "1-10 kg/h", "10-100 kg/h", ">100 kg/h"]
     groups = {"basin": (list(pop.strata.basins), pop.basin_idx), "facility_type": (list(pop.strata.facility_types), pop.ftype_idx),
@@ -174,10 +177,10 @@ def slices(run: LoadedRun, kpi: str = "intensity") -> dict[str, list[dict[str, A
             m = scored & (idx == k)
             if not m.any():
                 continue
-            rows.append({"group": key, "n": int(m.sum()), "certified_share": float((states[m] == 0).mean()), "fails_share": float((states[m] == 1).mean()),
-                         "indeterminate_share": float((states[m] == 2).mean()), "certified_share_throughput": float(w_thr[m][states[m] == 0].sum() / max(w_thr[m].sum(), 1e-12)),
-                         "width_median": float(np.nanmedian(width[m])), "coverage": float(covered[m].mean()),
-                         "precise_share": float(precise[m].mean()), "certified_prior_only_share": float(((states[m] == 0) & po[m]).mean())})
+            rows.append({"group": key, "n": int(m.sum()), "certified_share": share(m, states[m] == 0), "fails_share": share(m, states[m] == 1),
+                         "indeterminate_share": share(m, states[m] == 2), "certified_share_throughput": float(w_thr[m][states[m] == 0].sum() / max(w_thr[m].sum(), 1e-12)),
+                         "width_median": weighted_median(width[m], w_cnt[m]), "coverage": float(covered[m].mean()),
+                         "precise_share": share(m, precise[m]), "certified_prior_only_share": share(m, (states[m] == 0) & po[m])})
         out[name] = rows
     return out
 
@@ -246,8 +249,11 @@ def facility_detail(run: LoadedRun, fid: int, bar_mass_t: float | None, bar_inte
         elif targeting == "random":
             rule = f"random {cov:.0%} of facilities"
         else:
-            n_sel = int(round(cov * n_fac))
-            rule = f"top {cov:.0%} by gas throughput (ranks 1–{n_sel} of {n_fac})"
+            n_sel = int(dep.facilities.size) if dep is not None else int(round(cov * n_fac))
+            if str(run.config.policy.get("coverage_weighting", "sample")) == "population":
+                rule = f"top {cov:.0%} of real facilities by gas throughput (the {n_sel} largest of {n_fac} sampled stand for them)"
+            else:
+                rule = f"top {cov:.0%} by gas throughput (ranks 1–{n_sel} of {n_fac})"
         if sensor.schedule in ("campaign", "survey"):
             sched = str(spec.get("scheduling", "independent"))
             how = (f"{freq} visit{'s' if freq != 1 else ''}/yr, regional campaign of {int(spec.get('campaign_days', 5))} days per basin" if sched == "campaign"

@@ -56,8 +56,14 @@ class DeploymentPlan:
 
 
 def select_facilities(rng: np.random.Generator, n_fac: int, coverage: float, targeting: str, score: np.ndarray | None,
-                      weights: np.ndarray | None = None, coverage_basis: str = "facilities") -> np.ndarray:
-    """Choose covered facilities. ``score`` ranks facilities for non-random targeting."""
+                      weights: np.ndarray | None = None, coverage_basis: str = "facilities",
+                      count_weights: np.ndarray | None = None) -> np.ndarray:
+    """Choose covered facilities. ``score`` ranks facilities for non-random targeting.
+
+    ``count_weights`` (per-facility share of the real population, W_h / n_h) makes a targeted coverage share refer
+    to the population. Random targeting needs no weights: each facility is covered with the same probability, so
+    the covered share of the population equals ``coverage`` in expectation.
+    """
     coverage = float(np.clip(coverage, 0.0, 1.0))
     if coverage == 0.0:
         return np.array([], dtype=np.int64)
@@ -68,9 +74,14 @@ def select_facilities(rng: np.random.Generator, n_fac: int, coverage: float, tar
     if coverage_basis == "throughput" and weights is not None:
         cum = np.cumsum(weights[order]) / weights.sum()
         n = int(np.searchsorted(cum, coverage, side="left") + 1)
+    elif count_weights is not None:
+        # population-weighted coverage (TDD section 8.1 as amended 2026-10-05): the top facilities by score that
+        # together stand for `coverage` of the real facility population, not `coverage` of the sample
+        cum = np.cumsum(count_weights[order]) / count_weights.sum()
+        n = int(np.searchsorted(cum, coverage, side="left") + 1)
     else:
         n = int(round(coverage * n_fac))
-    return np.sort(order[:n])
+    return np.sort(order[:min(n, n_fac)])
 
 
 def campaign_hours(rng: np.random.Generator, facilities: np.ndarray, lon_deg: np.ndarray, frequency_per_year: int,
@@ -125,7 +136,8 @@ def campaign_hours_regional(rng: np.random.Generator, facilities: np.ndarray, lo
 
 def build_plan(policy_cfg: Mapping[str, Any], seeds: SeedTree, n_fac: int, lon_deg: np.ndarray,
                throughput_score: np.ndarray, sensor_modes: Mapping[str, tuple[str, str, bool]], year: int,
-               basin_idx: np.ndarray | None = None) -> DeploymentPlan:
+               basin_idx: np.ndarray | None = None, count_weights: np.ndarray | None = None,
+               throughput_weights: np.ndarray | None = None) -> DeploymentPlan:
     """Build a plan from the ``policy`` config section.
 
     ``sensor_modes`` maps sensor key -> (schedule, observation_mode, tasked) from the sensor library.
@@ -143,7 +155,12 @@ def build_plan(policy_cfg: Mapping[str, Any], seeds: SeedTree, n_fac: int, lon_d
         basis = str(spec.get("coverage_basis", "facilities"))
         rng = seeds.rng("policy", "select", sensor=key)
         score = throughput_score if targeting in ("throughput", "prior_risk", "widest_interval") else None
-        facs = select_facilities(rng, n_fac, cov, targeting, score, weights=throughput_score, coverage_basis=basis)
+        # `coverage_weighting: population` (set by the pipeline for runs since 2026-10-05): coverage shares refer to the
+        # real population through the stratum weights; absent (older runs) they refer to the sample.
+        weighted = str(policy_cfg.get("coverage_weighting", "sample")) == "population" and count_weights is not None
+        facs = select_facilities(rng, n_fac, cov, targeting, score,
+                                 weights=throughput_weights if weighted and throughput_weights is not None else throughput_score,
+                                 coverage_basis=basis, count_weights=count_weights if weighted else None)
         dep = SensorDeployment(sensor_key=key, facilities=facs)
         if schedule in ("campaign", "survey"):
             freq = int(spec.get("frequency_per_year", 1))

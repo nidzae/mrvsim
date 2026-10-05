@@ -79,6 +79,69 @@ Each stratum $h$ has a weight $W_h$ equal to its share of national facility coun
 
 **Stability test (V4):** results must change by less than the Monte Carlo standard error when throughput terciles are replaced by quintiles.
 
+### 3.1a Sampling design and weights, step by step (added 2026-10-05)
+
+DECISION_LOG 2026-10-05 "Over-sample large sites and weight every population statistic". This section explains the whole chain from the real population to a headline number. Where it differs from §3.1 it supersedes it for well-pad cells; §3.1 remains the definition for midstream cells and for `throughput_class_rule: count`.
+
+**1. The population and why it is sampled.** The site table [ogim] holds $N = 577{,}007$ producing sites. Estimating one site takes about 15 ms at quick settings and several replications are needed, so a census would take hours per run; the tool is built around runs of a few minutes (PRD §7.6). A sample of a few thousand sites is used, and each sampled site stands for many real ones.
+
+**2. Why a simple random sample is not enough.** Production is extremely skewed: 77 % of sites produce under 15 boe/d and together hold 4 % of the gas. Two kinds of question are asked of the sample:
+
+- *count questions*, about sites: "what share of real sites can be certified?";
+- *throughput questions*, about gas: "what share of real gas comes from certified sites?".
+
+A sample drawn in proportion to site counts answers the first well and the second badly, because nearly all the gas sits in the handful of large sites it happens to contain.
+
+**3. Cells and classes.** Sites are grouped into basin × type cells $c$ (§3.1). Inside each cell they are ranked by produced energy $E_i$ (gas plus oil, [eia-heat-content]) and cut into $n_{cls} = 3$ classes; cell × class is a stratum $h$. Two cutting rules exist:
+
+- `count` (the original §3.1 rule): each class holds the same *number* of sites;
+- `throughput` (default since 2026-10-05): each class holds the same *share of the cell's energy*. With the cumulative energy of the sites ranked before site $i$ written $S_i = \sum_{j \prec i} E_j$, site $i$ is in class $k = \min\!\big(\lfloor n_{cls}\, S_i / \sum_{j \in c} E_j \rfloor,\ n_{cls} - 1\big)$.
+
+In Appalachian gas-dominant well pads the `throughput` rule gives classes of 132,709, 523 and 189 sites, each holding a third of the cell's energy.
+
+**4. Sampling.** From stratum $h$ with $N_h$ sites, $n_h = \min(n, N_h)$ distinct sites are drawn at random without replacement ($n = 30$ quick, 100 full). Large sites are therefore *over-sampled*: 189 sites supply as many sampled facilities as 132,709.
+
+**5. Weights undo the over-sampling.** A sampled site of stratum $h$ stands for $N_h / n_h$ real sites. Every statistic about the population multiplies each sampled site by a weight that sums to one over the sample:
+
+$$
+w^{cnt}_i = \frac{W^{cnt}_h}{n_h}, \qquad W^{cnt}_h = W^{cnt}_c\,\frac{N_h}{N_c}
+$$
+
+$$
+w^{thr}_i = W^{thr}_h\,\frac{V_i}{\sum_{j \in s_h} V_j}, \qquad W^{thr}_h = W^{thr}_c\,\frac{V_h}{V_c}
+$$
+
+where $V$ is gas volume, $s_h$ the sampled sites of the stratum, and $W_c$ the cell's share of the well-pad group (site counts and gas volumes from the full table). $w^{cnt}_i$ is the share of real *facilities* the sampled site represents; $w^{thr}_i$ the share of real *gas*. Inside a stratum the throughput weight is split in proportion to each site's own gas because $V$ still varies widely within a class. (The share of weight between well pads and each midstream type is still the GHGRP-based convention of DECISION_LOG 2026-09-30.)
+
+**6. Estimators.** For a per-site quantity $y_i$ (an indicator such as "certified", a width, a cost, an emission):
+
+| Question | Estimator |
+|---|---|
+| share of real facilities with property $A$ | $\sum_i w^{cnt}_i\,\mathbb{1}[A_i]$ |
+| share of real gas at facilities with property $A$ | $\sum_i w^{thr}_i\,\mathbb{1}[A_i]$ |
+| median of $y$ over real facilities (interval width, bias) | weighted median: the $y$ at which the cumulative $w^{cnt}$, in order of $y$, reaches one half |
+| population mean of $y$ per facility (cost) | $\sum_i w^{cnt}_i\,y_i$ |
+| basin loss rate | $\big(\sum_i w^{cnt}_i M_i / \sum_i w^{cnt}_i\big) N_b \,/\, G_b$ with $N_b$, $G_b$ the basin's site count and methane production from the full table |
+
+When only a subsample of each stratum is estimated (quick mode), the weights of the estimated facilities are renormalised to sum to one. These are standard stratified (Horvitz–Thompson type) estimators: unbiased for totals and shares when sites are drawn at random inside each stratum, which they are. A unit test checks that the weighted share of sites under 15 boe/d and the weighted share of gas they hold reproduce the full-table values.
+
+**7. What the design buys, and what it costs.** The precision of a weighted estimate is summarised by the effective sample size $n_{eff} = (\sum_i w_i)^2 / \sum_i w_i^2$: the size of an equal-weight sample with the same variance. Averages over five seeds, well pads only:
+
+| Rule | Sampled well pads | $n_{eff}$ for count questions | $n_{eff}$ for throughput questions | Largest single throughput weight | Sampled sites under 15 boe/d (real share 77 %) |
+|---|---|---|---|---|---|
+| `count`, quick | 1,620 | 681 | 19 | 21 % | 66 % |
+| `throughput`, quick | 1,596 | 240 | 160 | 6 % | 27 % |
+| `count`, full | 5,400 | 2,269 | 37 | 14 % | 66 % |
+| `throughput`, full | 5,125 | 801 | 185 | 6 % | 28 % |
+
+Under `count`, a throughput headline rests on about 20 to 40 effective facilities and one sampled site can carry a fifth of it; under `throughput` it rests on 160 to 185, at the price of roughly a third of the count precision. Since the product is about certifying gas, that trade was taken. Three consequences follow and are handled as described:
+
+- **The map and any unweighted count mislead.** 27 % of sampled well pads are small against 77 % in reality. Every headline share, median and cost is therefore weighted (§7); the map tooltip states how many real sites a dot stands for.
+- **Policy coverage must refer to the population.** "GHGSat on the top 30 % of facilities by throughput" means the largest sites that together stand for 30 % of real facilities (cumulative $w^{cnt}$ in descending throughput order reaches 0.3), not 30 % of the dots (§8.1).
+- **Cost must refer to the population.** Reported cost is $n_{fac} \sum_i w^{cnt}_i\,\text{cost}_i$: what the policy costs on $n_{fac}$ facilities drawn in real proportions, so that cost per certified MMBtu and cost per tonne are population ratios.
+
+**8. What is not weighted.** Calibration $\kappa$ is the unweighted share of estimated facilities whose interval contains the truth. It is a property of the estimator, and weighting it would let a few small-site strata dominate it. The throughput weight inside the largest-count class is still uneven ($n_{eff}$ of 160 to 185 is not large): more classes (`n_throughput_classes`) or a larger $n$ raise it.
+
 ### 3.2 Source count
 
 $$
@@ -387,10 +450,13 @@ For a configuration, across all simulated facilities and $R$ Monte Carlo replica
 | **Precise share** | Fraction with $w \le w_{\max}$; also reported as the certified-and-precise share (facilities and throughput) (added 2026-10-01) |
 | **Prior-only share** | Fraction of certified facilities (and of certified throughput) whose evidence ratio $e > $ `prior_only_ratio` or with no usable observation (PRD §5.4a; added 2026-10-01) |
 | **Evidence ratio** $e$ | Per facility, $\ln(\hat{K}_{95}/\hat{K}_{5})$ of the posterior over the same for the prior on common random numbers (added 2026-10-01) |
+| **Decided share of emitted mass** | $\sum_i w^{cnt}_i M_i\,\mathbb{1}[\text{certified or fails}] / \sum_i w^{cnt}_i M_i$ with $M_i$ the true annual mass: the share of real emissions at facilities whose state is not indeterminate (PRD §5.5a; added 2026-10-05, replaces completeness on the headline row) |
 | **Completeness** $C$ | PRD §5.5, with $\bar{P}_j = 1 - \prod_k (1 - P_s(q_j, c_k))$ over the year's usable opportunities |
 | **Cost** | Sum of sensor costs for the deployment; cost per tonne detected; cost per certified MMBtu |
 
 Monte Carlo standard errors are reported for every metric.
+
+**Amendment (2026-10-05, §3.1a):** "fraction of facilities" and "median over facilities" in the table mean the real facility population: shares use the count weights $w^{cnt}$, medians are weighted medians, throughput shares use $w^{thr}$, and cost is on the basis of $n_{fac}$ facilities in population proportions. The unweighted sample share is kept as `certified_share_sample`; calibration is unweighted. Completeness is still computed and stored but is no longer a headline metric or part of V4.
 
 **Implementation note (Phase 5, DECISION_LOG 2026-09-30 "Scoring conventions"):** fails ⇔ p10 > B *(superseded 2026-10-01: fails ⇔ p5 > B, certified ⇔ p95 ≤ B)*; completeness uses the realised usable opportunities with per-opportunity wind/surface factors and ignores the source state; costs are per visit scheduled / per tasking / per site-year as in each sensor YAML; with R = 1 the calibration SE is binomial over facilities. `mrvsim.pipeline.run_scored` runs the R replications and writes `runs/<id>/summary.json`.
 
@@ -406,6 +472,7 @@ Monte Carlo standard errors are reported for every metric.
 | Coverage fraction | share of facilities, or of throughput, instrumented or surveyed | 0–1 |
 | Frequency | surveys per year (aircraft, drone, OGI); tasking priority (satellite) | 0–52 |
 | Targeting | random / throughput-weighted / prior-risk-weighted / widest-interval-first *(wording superseded 2026-10-01: `throughput` is a top-k cutoff by marketed gas, "top facilities by throughput")* | categorical |
+| Coverage weighting | `population` (default for runs since 2026-10-05): a coverage share refers to the real population through the count weights (targeted: cumulative $w^{cnt}$ in descending score order; random: equal chance per sampled facility); `sample` (older runs): share of the sampled facilities | categorical |
 | Scheduling (campaign/survey sensors) | independent dates / regional campaign with `campaign_days` per basin (added 2026-10-01) | categorical, 1–60 days |
 | Validation tier filter | minimum tier | A–D |
 
@@ -519,6 +586,7 @@ Each limitation maps to a version-2 item in `DECISION_LOG.md`.
 | 2026-10-03 | §3.1 (real production sites, 75 strata, site-based weights, class rule), §3.5 (real production as throughput): DECISION_LOG "Well-pad facilities are real production sites" |
 | 2026-10-03 | §3.4a added (equipment-based hyperparameters for real sites; Pareto splice off for them); §9 note (V2, V3 weighting corrected): DECISION_LOG "Equipment-based leak model" |
 | 2026-10-03 | §3.4a: aerial-survey super-emitter tail per basin, per well of eligible sites: DECISION_LOG "Aerial super-emitter tail" |
+| 2026-10-05 | §3.1a added (sampling design, weights and estimators step by step; `throughput` class rule is the default); §7 (weighted shares, medians and cost; decided share of emitted mass replaces completeness on the headline row); §8.1 (coverage weighting): DECISION_LOG "Over-sample large sites and weight every population statistic" |
 | 2026-10-01 | §6.7 (quantile grid, prior summary, evidence counts persisted), §7 (decision-only certifiable/fails/indeterminate shares; precise, prior-only, evidence-ratio rows), §8.3 note: DECISION_LOG "certification is the compliance decision at 95 %" |
 | 2026-09-30 | §6.7 estimand (realised-mass predictive), sampler, §6.3–6.5 v1 likelihood definitions, §10 measured timings, §11 limitation 10: Phase 4 |
 | 2026-09-30 | §4.1 wind floor, §5.2 gate conventions: Phase 3 implementation notes |

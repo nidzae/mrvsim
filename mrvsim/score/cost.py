@@ -24,13 +24,21 @@ from mrvsim.sensors.library import SensorLibrary
 class CostBreakdown:
     by_sensor_usd: dict[str, float]
     total_usd: float
-    per_facility_usd: np.ndarray        # (n_fac,) cost attributed to each facility (sample, unweighted)
+    per_facility_usd: np.ndarray        # (n_fac,) cost attributed to each sampled facility (unweighted)
 
     def as_dict(self) -> dict[str, float]:
         return {**{f"cost_{k}_usd": v for k, v in self.by_sensor_usd.items()}, "cost_total_usd": self.total_usd}
 
 
-def deployment_cost(plan: DeploymentPlan, obs: ObservationSet, library: SensorLibrary, n_fac: int) -> CostBreakdown:
+def deployment_cost(plan: DeploymentPlan, obs: ObservationSet, library: SensorLibrary, n_fac: int,
+                    count_weights: np.ndarray | None = None) -> CostBreakdown:
+    """Monitoring cost by sensor and in total.
+
+    Without ``count_weights``: the plain sum over the sampled facilities. With them (per-facility share of the real
+    population, summing to 1): n_fac x the population-mean cost per facility, i.e. what the policy would cost on
+    n_fac facilities drawn in the population's true proportions (TDD section 7 as amended 2026-10-05). The two agree
+    when the sample is self-weighting.
+    """
     per_fac = np.zeros(n_fac)
     by_sensor: dict[str, float] = {}
     for key, dep in plan.deployments.items():
@@ -48,9 +56,10 @@ def deployment_cost(plan: DeploymentPlan, obs: ObservationSet, library: SensorLi
         else:  # wall-to-wall satellites, CMS
             if c.per_site_year_usd is not None:
                 cost_fac[dep.facilities] += c.per_site_year_usd
-        by_sensor[key] = float(cost_fac.sum())
+        by_sensor[key] = float(cost_fac.sum()) if count_weights is None else float(n_fac * (count_weights * cost_fac).sum())
         per_fac += cost_fac
-    return CostBreakdown(by_sensor, float(per_fac.sum()), per_fac)
+    total = float(per_fac.sum()) if count_weights is None else float(n_fac * (count_weights * per_fac).sum())
+    return CostBreakdown(by_sensor, total, per_fac)
 
 
 def cost_metrics(cost: CostBreakdown, detected_mass_kg: float, certified_mmbtu: float) -> dict[str, float]:
@@ -62,9 +71,16 @@ def cost_metrics(cost: CostBreakdown, detected_mass_kg: float, certified_mmbtu: 
     }
 
 
-def detected_mass_kg(pop_q_kg_h: np.ndarray, on_hours: np.ndarray, p_detect_once: np.ndarray, detected_sources: np.ndarray | None = None) -> float:
-    """sum_j detected mass_j: mass of sources detected at least once this year (realised); falls back to expected if no flags."""
+def detected_mass_kg(pop_q_kg_h: np.ndarray, on_hours: np.ndarray, p_detect_once: np.ndarray, detected_sources: np.ndarray | None = None,
+                     source_weights: np.ndarray | None = None) -> float:
+    """sum_j detected mass_j: mass of sources detected at least once this year (realised); falls back to expected if no flags.
+
+    ``source_weights`` (n_fac x the count weight of each source's facility) puts the sum on the same
+    population-proportional basis as :func:`deployment_cost`.
+    """
     mass = pop_q_kg_h * on_hours
+    if source_weights is not None:
+        mass = mass * source_weights
     if detected_sources is not None:
         return float(mass[detected_sources].sum())
     return float((mass * p_detect_once).sum())
