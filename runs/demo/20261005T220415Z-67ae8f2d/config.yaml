@@ -1,0 +1,32 @@
+estimator:
+  facilities_per_stratum: 10
+  mode: quick
+  n_draws: 2000
+name: default mix [quick]
+notes: ''
+policy:
+  coverage_weighting: population
+  incidental_capture: true
+  sensors:
+    bridger_gml:
+      campaign_days: 5
+      coverage: 1.0
+      frequency_per_year: 2
+      scheduling: campaign
+      targeting: random
+    ghgsat_c:
+      coverage: 0.3
+      frequency_per_year: 12
+      targeting: throughput
+    tropomi:
+      coverage: 1.0
+population:
+  n_per_stratum: 30
+replications: 3
+scoring:
+  bar_intensity: 0.002
+  bar_mass_t_yr: 50.0
+  w_max: 0.3
+seed: 20260930
+sensors: {}
+year: 2024

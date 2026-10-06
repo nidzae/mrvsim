@@ -19,6 +19,7 @@ DECISION_LOG (2026-09-30, Phase 3).
 from __future__ import annotations
 
 import hashlib
+import os
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -29,7 +30,7 @@ from mrvsim.observe.solar import solar_zenith_deg, year_start_unix
 
 _REPO = Path(__file__).resolve().parents[2]
 TLE_DIR = _REPO / "data" / "fitted" / "tle"
-CACHE_DIR = _REPO / "data" / "cache" / "overpasses"
+CACHE_DIR = Path(os.environ.get("MRVSIM_CACHE_DIR", _REPO / "data" / "cache" / "overpasses"))   # a mounted volume when hosted
 EARTH_RADIUS_KM = 6371.0088
 
 

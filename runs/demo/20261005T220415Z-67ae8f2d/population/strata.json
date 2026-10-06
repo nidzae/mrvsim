@@ -1,0 +1,686 @@
+{
+ "provenance": "FITTED (strata_weights.json, GHGRP RY2023)",
+ "throughput_classes": [
+  "t1",
+  "t2",
+  "t3"
+ ],
+ "class_rule": "throughput",
+ "strata": [
+  {
+   "basin": "permian",
+   "facility_type": "wp_oil",
+   "throughput_class": "t1",
+   "throughput_class_index": 0,
+   "n_classes": 3,
+   "weight_count": 0.019474439435760316,
+   "weight_throughput": 0.001451037693101134
+  },
+  {
+   "basin": "permian",
+   "facility_type": "wp_oil",
+   "throughput_class": "t2",
+   "throughput_class_index": 1,
+   "n_classes": 3,
+   "weight_count": 0.0007724039269879619,
+   "weight_throughput": 0.001872974530044564
+  },
+  {
+   "basin": "permian",
+   "facility_type": "wp_oil",
+   "throughput_class": "t3",
+   "throughput_class_index": 2,
+   "n_classes": 3,
+   "weight_count": 0.00021672503802454783,
+   "weight_throughput": 0.0018877780342278555
+  },
+  {
+   "basin": "permian",
+   "facility_type": "wp_mixed",
+   "throughput_class": "t1",
+   "throughput_class_index": 0,
+   "n_classes": 3,
+   "weight_count": 0.027088575487305217,
+   "weight_throughput": 0.030828630033576065
+  },
+  {
+   "basin": "permian",
+   "facility_type": "wp_mixed",
+   "throughput_class": "t2",
+   "throughput_class_index": 1,
+   "n_classes": 3,
+   "weight_count": 0.003038259063870202,
+   "weight_throughput": 0.029177546145880084
+  },
+  {
+   "basin": "permian",
+   "facility_type": "wp_mixed",
+   "throughput_class": "t3",
+   "throughput_class_index": 2,
+   "n_classes": 3,
+   "weight_count": 0.0008473846273471657,
+   "weight_throughput": 0.025978872105736205
+  },
+  {
+   "basin": "permian",
+   "facility_type": "wp_gas",
+   "throughput_class": "t1",
+   "throughput_class_index": 0,
+   "n_classes": 3,
+   "weight_count": 0.022823919762765297,
+   "weight_throughput": 0.004374108735004645
+  },
+  {
+   "basin": "permian",
+   "facility_type": "wp_gas",
+   "throughput_class": "t2",
+   "throughput_class_index": 1,
+   "n_classes": 3,
+   "weight_count": 0.0005977913371103642,
+   "weight_throughput": 0.004213481096678976
+  },
+  {
+   "basin": "permian",
+   "facility_type": "wp_gas",
+   "throughput_class": "t3",
+   "throughput_class_index": 2,
+   "n_classes": 3,
+   "weight_count": 0.0001602327295347368,
+   "weight_throughput": 0.004116365555595126
+  },
+  {
+   "basin": "appalachian",
+   "facility_type": "wp_oil",
+   "throughput_class": "t1",
+   "throughput_class_index": 0,
+   "n_classes": 3,
+   "weight_count": 0.015143020073914258,
+   "weight_throughput": 1.8359738263269424e-06
+  },
+  {
+   "basin": "appalachian",
+   "facility_type": "wp_oil",
+   "throughput_class": "t2",
+   "throughput_class_index": 1,
+   "n_classes": 3,
+   "weight_count": 0.0019638780696821585,
+   "weight_throughput": 3.849993079970425e-06
+  },
+  {
+   "basin": "appalachian",
+   "facility_type": "wp_oil",
+   "throughput_class": "t3",
+   "throughput_class_index": 2,
+   "n_classes": 3,
+   "weight_count": 0.00029581426991028334,
+   "weight_throughput": 5.682116703901863e-06
+  },
+  {
+   "basin": "appalachian",
+   "facility_type": "wp_mixed",
+   "throughput_class": "t1",
+   "throughput_class_index": 0,
+   "n_classes": 3,
+   "weight_count": 0.023920897680349267,
+   "weight_throughput": 0.0010900988816498274
+  },
+  {
+   "basin": "appalachian",
+   "facility_type": "wp_mixed",
+   "throughput_class": "t2",
+   "throughput_class_index": 1,
+   "n_classes": 3,
+   "weight_count": 2.6705454922456133e-05,
+   "weight_throughput": 0.0011702943998422438
+  },
+  {
+   "basin": "appalachian",
+   "facility_type": "wp_mixed",
+   "throughput_class": "t3",
+   "throughput_class_index": 2,
+   "n_classes": 3,
+   "weight_count": 1.0271328816329281e-05,
+   "weight_throughput": 0.001134645229961007
+  },
+  {
+   "basin": "appalachian",
+   "facility_type": "wp_gas",
+   "throughput_class": "t1",
+   "throughput_class_index": 0,
+   "n_classes": 3,
+   "weight_count": 0.13630977758862425,
+   "weight_throughput": 0.05663791207437726
+  },
+  {
+   "basin": "appalachian",
+   "facility_type": "wp_gas",
+   "throughput_class": "t2",
+   "throughput_class_index": 1,
+   "n_classes": 3,
+   "weight_count": 0.0005371904970940213,
+   "weight_throughput": 0.056796989643773485
+  },
+  {
+   "basin": "appalachian",
+   "facility_type": "wp_gas",
+   "throughput_class": "t3",
+   "throughput_class_index": 2,
+   "n_classes": 3,
+   "weight_count": 0.00019412811462862342,
+   "weight_throughput": 0.05655268232116325
+  },
+  {
+   "basin": "haynesville",
+   "facility_type": "wp_gas",
+   "throughput_class": "t1",
+   "throughput_class_index": 0,
+   "n_classes": 3,
+   "weight_count": 0.01725377814566993,
+   "weight_throughput": 0.025109167690146064
+  },
+  {
+   "basin": "haynesville",
+   "facility_type": "wp_gas",
+   "throughput_class": "t2",
+   "throughput_class_index": 1,
+   "n_classes": 3,
+   "weight_count": 0.0005012408462368689,
+   "weight_throughput": 0.025681040671573147
+  },
+  {
+   "basin": "haynesville",
+   "facility_type": "wp_gas",
+   "throughput_class": "t3",
+   "throughput_class_index": 2,
+   "n_classes": 3,
+   "weight_count": 0.0001931009817469905,
+   "weight_throughput": 0.025488668171954332
+  },
+  {
+   "basin": "eagle_ford",
+   "facility_type": "wp_mixed",
+   "throughput_class": "t1",
+   "throughput_class_index": 0,
+   "n_classes": 3,
+   "weight_count": 0.011673365199758229,
+   "weight_throughput": 0.005844608773156987
+  },
+  {
+   "basin": "eagle_ford",
+   "facility_type": "wp_mixed",
+   "throughput_class": "t2",
+   "throughput_class_index": 1,
+   "n_classes": 3,
+   "weight_count": 0.0014533930275105933,
+   "weight_throughput": 0.005157662209003879
+  },
+  {
+   "basin": "eagle_ford",
+   "facility_type": "wp_mixed",
+   "throughput_class": "t3",
+   "throughput_class_index": 2,
+   "n_classes": 3,
+   "weight_count": 0.0004293415445225639,
+   "weight_throughput": 0.005148000926315583
+  },
+  {
+   "basin": "eagle_ford",
+   "facility_type": "wp_gas",
+   "throughput_class": "t1",
+   "throughput_class_index": 0,
+   "n_classes": 3,
+   "weight_count": 0.005743727074091334,
+   "weight_throughput": 0.004969586785373512
+  },
+  {
+   "basin": "eagle_ford",
+   "facility_type": "wp_gas",
+   "throughput_class": "t2",
+   "throughput_class_index": 1,
+   "n_classes": 3,
+   "weight_count": 0.00036976783738785417,
+   "weight_throughput": 0.005124663032227349
+  },
+  {
+   "basin": "eagle_ford",
+   "facility_type": "wp_gas",
+   "throughput_class": "t3",
+   "throughput_class_index": 2,
+   "n_classes": 3,
+   "weight_count": 0.00013969007190207822,
+   "weight_throughput": 0.005129933323168265
+  },
+  {
+   "basin": "bakken",
+   "facility_type": "wp_mixed",
+   "throughput_class": "t1",
+   "throughput_class_index": 0,
+   "n_classes": 3,
+   "weight_count": 0.009001792574630983,
+   "weight_throughput": 0.004516359020185399
+  },
+  {
+   "basin": "bakken",
+   "facility_type": "wp_mixed",
+   "throughput_class": "t2",
+   "throughput_class_index": 1,
+   "n_classes": 3,
+   "weight_count": 0.0008391675642941024,
+   "weight_throughput": 0.005588827683159171
+  },
+  {
+   "basin": "bakken",
+   "facility_type": "wp_mixed",
+   "throughput_class": "t3",
+   "throughput_class_index": 2,
+   "n_classes": 3,
+   "weight_count": 0.00023521342989394055,
+   "weight_throughput": 0.004401578096852931
+  },
+  {
+   "basin": "dj",
+   "facility_type": "wp_mixed",
+   "throughput_class": "t1",
+   "throughput_class_index": 0,
+   "n_classes": 3,
+   "weight_count": 0.005465374063168811,
+   "weight_throughput": 0.005354247115942309
+  },
+  {
+   "basin": "dj",
+   "facility_type": "wp_mixed",
+   "throughput_class": "t2",
+   "throughput_class_index": 1,
+   "n_classes": 3,
+   "weight_count": 0.00020645370920821852,
+   "weight_throughput": 0.004941760750049537
+  },
+  {
+   "basin": "dj",
+   "facility_type": "wp_mixed",
+   "throughput_class": "t3",
+   "throughput_class_index": 2,
+   "n_classes": 3,
+   "weight_count": 7.600783324083669e-05,
+   "weight_throughput": 0.004382066282621745
+  },
+  {
+   "basin": "anadarko",
+   "facility_type": "wp_mixed",
+   "throughput_class": "t1",
+   "throughput_class_index": 0,
+   "n_classes": 3,
+   "weight_count": 0.005334928187201429,
+   "weight_throughput": 0.0028690065535177944
+  },
+  {
+   "basin": "anadarko",
+   "facility_type": "wp_mixed",
+   "throughput_class": "t2",
+   "throughput_class_index": 1,
+   "n_classes": 3,
+   "weight_count": 0.0007734310598695948,
+   "weight_throughput": 0.0027903259534837878
+  },
+  {
+   "basin": "anadarko",
+   "facility_type": "wp_mixed",
+   "throughput_class": "t3",
+   "throughput_class_index": 2,
+   "n_classes": 3,
+   "weight_count": 0.000299922801436815,
+   "weight_throughput": 0.002728304399100247
+  },
+  {
+   "basin": "anadarko",
+   "facility_type": "wp_gas",
+   "throughput_class": "t1",
+   "throughput_class_index": 0,
+   "n_classes": 3,
+   "weight_count": 0.017494127239972034,
+   "weight_throughput": 0.006947842959026341
+  },
+  {
+   "basin": "anadarko",
+   "facility_type": "wp_gas",
+   "throughput_class": "t2",
+   "throughput_class_index": 1,
+   "n_classes": 3,
+   "weight_count": 0.001334245613241174,
+   "weight_throughput": 0.006803146873553581
+  },
+  {
+   "basin": "anadarko",
+   "facility_type": "wp_gas",
+   "throughput_class": "t3",
+   "throughput_class_index": 2,
+   "n_classes": 3,
+   "weight_count": 0.00028759720685721994,
+   "weight_throughput": 0.00717296229444185
+  },
+  {
+   "basin": "san_juan",
+   "facility_type": "wp_gas",
+   "throughput_class": "t1",
+   "throughput_class_index": 0,
+   "n_classes": 3,
+   "weight_count": 0.016832653664200427,
+   "weight_throughput": 0.003558427856401156
+  },
+  {
+   "basin": "san_juan",
+   "facility_type": "wp_gas",
+   "throughput_class": "t2",
+   "throughput_class_index": 1,
+   "n_classes": 3,
+   "weight_count": 0.003846612641715316,
+   "weight_throughput": 0.003574688190093363
+  },
+  {
+   "basin": "san_juan",
+   "facility_type": "wp_gas",
+   "throughput_class": "t3",
+   "throughput_class_index": 2,
+   "n_classes": 3,
+   "weight_count": 0.0008997684043104452,
+   "weight_throughput": 0.0029944404273895956
+  },
+  {
+   "basin": "uinta",
+   "facility_type": "wp_gas",
+   "throughput_class": "t1",
+   "throughput_class_index": 0,
+   "n_classes": 3,
+   "weight_count": 0.011937338350337893,
+   "weight_throughput": 0.0032755370915913584
+  },
+  {
+   "basin": "uinta",
+   "facility_type": "wp_gas",
+   "throughput_class": "t2",
+   "throughput_class_index": 1,
+   "n_classes": 3,
+   "weight_count": 0.0007980822490287852,
+   "weight_throughput": 0.003796291360776033
+  },
+  {
+   "basin": "uinta",
+   "facility_type": "wp_gas",
+   "throughput_class": "t3",
+   "throughput_class_index": 2,
+   "n_classes": 3,
+   "weight_count": 9.346909222859647e-05,
+   "weight_throughput": 0.0028779495492169908
+  },
+  {
+   "basin": "other",
+   "facility_type": "wp_oil",
+   "throughput_class": "t1",
+   "throughput_class_index": 0,
+   "n_classes": 3,
+   "weight_count": 0.07635294988906535,
+   "weight_throughput": 0.0002240636918860765
+  },
+  {
+   "basin": "other",
+   "facility_type": "wp_oil",
+   "throughput_class": "t2",
+   "throughput_class_index": 1,
+   "n_classes": 3,
+   "weight_count": 0.005580412945911699,
+   "weight_throughput": 0.00044496372661507317
+  },
+  {
+   "basin": "other",
+   "facility_type": "wp_oil",
+   "throughput_class": "t3",
+   "throughput_class_index": 2,
+   "n_classes": 3,
+   "weight_count": 0.0005669773506613764,
+   "weight_throughput": 0.0007934080012023905
+  },
+  {
+   "basin": "other",
+   "facility_type": "wp_mixed",
+   "throughput_class": "t1",
+   "throughput_class_index": 0,
+   "n_classes": 3,
+   "weight_count": 0.01595342791752264,
+   "weight_throughput": 0.004446017600131386
+  },
+  {
+   "basin": "other",
+   "facility_type": "wp_mixed",
+   "throughput_class": "t2",
+   "throughput_class_index": 1,
+   "n_classes": 3,
+   "weight_count": 0.00051562070657973,
+   "weight_throughput": 0.004230033993440771
+  },
+  {
+   "basin": "other",
+   "facility_type": "wp_mixed",
+   "throughput_class": "t3",
+   "throughput_class_index": 2,
+   "n_classes": 3,
+   "weight_count": 4.7248112555114696e-05,
+   "weight_throughput": 0.00472149688001162
+  },
+  {
+   "basin": "other",
+   "facility_type": "wp_gas",
+   "throughput_class": "t1",
+   "throughput_class_index": 0,
+   "n_classes": 3,
+   "weight_count": 0.12392974496630259,
+   "weight_throughput": 0.03913121928722983
+  },
+  {
+   "basin": "other",
+   "facility_type": "wp_gas",
+   "throughput_class": "t2",
+   "throughput_class_index": 1,
+   "n_classes": 3,
+   "weight_count": 0.002701359478694601,
+   "weight_throughput": 0.03842978441298995
+  },
+  {
+   "basin": "other",
+   "facility_type": "wp_gas",
+   "throughput_class": "t3",
+   "throughput_class_index": 2,
+   "n_classes": 3,
+   "weight_count": 8.01163647673684e-05,
+   "weight_throughput": 0.03671999643431963
+  },
+  {
+   "basin": "permian",
+   "facility_type": "gathering",
+   "throughput_class": "t1",
+   "throughput_class_index": 0,
+   "n_classes": 3,
+   "weight_count": 0.023644120709808595,
+   "weight_throughput": 0.02601155907695162
+  },
+  {
+   "basin": "permian",
+   "facility_type": "gathering",
+   "throughput_class": "t2",
+   "throughput_class_index": 1,
+   "n_classes": 3,
+   "weight_count": 0.023644120709808595,
+   "weight_throughput": 0.02601155907695162
+  },
+  {
+   "basin": "permian",
+   "facility_type": "gathering",
+   "throughput_class": "t3",
+   "throughput_class_index": 2,
+   "n_classes": 3,
+   "weight_count": 0.023644120709808595,
+   "weight_throughput": 0.02601155907695162
+  },
+  {
+   "basin": "appalachian",
+   "facility_type": "gathering",
+   "throughput_class": "t1",
+   "throughput_class_index": 0,
+   "n_classes": 3,
+   "weight_count": 0.01921084807671948,
+   "weight_throughput": 0.034337713439498894
+  },
+  {
+   "basin": "appalachian",
+   "facility_type": "gathering",
+   "throughput_class": "t2",
+   "throughput_class_index": 1,
+   "n_classes": 3,
+   "weight_count": 0.01921084807671948,
+   "weight_throughput": 0.034337713439498894
+  },
+  {
+   "basin": "appalachian",
+   "facility_type": "gathering",
+   "throughput_class": "t3",
+   "throughput_class_index": 2,
+   "n_classes": 3,
+   "weight_count": 0.01921084807671948,
+   "weight_throughput": 0.034337713439498894
+  },
+  {
+   "basin": "haynesville",
+   "facility_type": "gathering",
+   "throughput_class": "t1",
+   "throughput_class_index": 0,
+   "n_classes": 3,
+   "weight_count": 0.00960542403835974,
+   "weight_throughput": 0.012848888560884227
+  },
+  {
+   "basin": "haynesville",
+   "facility_type": "gathering",
+   "throughput_class": "t2",
+   "throughput_class_index": 1,
+   "n_classes": 3,
+   "weight_count": 0.00960542403835974,
+   "weight_throughput": 0.012848888560884227
+  },
+  {
+   "basin": "haynesville",
+   "facility_type": "gathering",
+   "throughput_class": "t3",
+   "throughput_class_index": 2,
+   "n_classes": 3,
+   "weight_count": 0.00960542403835974,
+   "weight_throughput": 0.012848888560884227
+  },
+  {
+   "basin": "other",
+   "facility_type": "gathering",
+   "throughput_class": "t1",
+   "throughput_class_index": 0,
+   "n_classes": 3,
+   "weight_count": 0.03842169615343896,
+   "weight_throughput": 0.017683927900992023
+  },
+  {
+   "basin": "other",
+   "facility_type": "gathering",
+   "throughput_class": "t2",
+   "throughput_class_index": 1,
+   "n_classes": 3,
+   "weight_count": 0.03842169615343896,
+   "weight_throughput": 0.017683927900992023
+  },
+  {
+   "basin": "other",
+   "facility_type": "gathering",
+   "throughput_class": "t3",
+   "throughput_class_index": 2,
+   "n_classes": 3,
+   "weight_count": 0.03842169615343896,
+   "weight_throughput": 0.017683927900992023
+  },
+  {
+   "basin": "other",
+   "facility_type": "processing",
+   "throughput_class": "t1",
+   "throughput_class_index": 0,
+   "n_classes": 3,
+   "weight_count": 0.017116653932803077,
+   "weight_throughput": 0.017116653932803077
+  },
+  {
+   "basin": "other",
+   "facility_type": "processing",
+   "throughput_class": "t2",
+   "throughput_class_index": 1,
+   "n_classes": 3,
+   "weight_count": 0.017116653932803077,
+   "weight_throughput": 0.017116653932803077
+  },
+  {
+   "basin": "other",
+   "facility_type": "processing",
+   "throughput_class": "t3",
+   "throughput_class_index": 2,
+   "n_classes": 3,
+   "weight_count": 0.017116653932803077,
+   "weight_throughput": 0.017116653932803077
+  },
+  {
+   "basin": "other",
+   "facility_type": "transmission",
+   "throughput_class": "t1",
+   "throughput_class_index": 0,
+   "n_classes": 3,
+   "weight_count": 0.02583703557893641,
+   "weight_throughput": 0.02583703557893641
+  },
+  {
+   "basin": "other",
+   "facility_type": "transmission",
+   "throughput_class": "t2",
+   "throughput_class_index": 1,
+   "n_classes": 3,
+   "weight_count": 0.02583703557893641,
+   "weight_throughput": 0.02583703557893641
+  },
+  {
+   "basin": "other",
+   "facility_type": "transmission",
+   "throughput_class": "t3",
+   "throughput_class_index": 2,
+   "n_classes": 3,
+   "weight_count": 0.02583703557893641,
+   "weight_throughput": 0.02583703557893641
+  },
+  {
+   "basin": "other",
+   "facility_type": "storage",
+   "throughput_class": "t1",
+   "throughput_class_index": 0,
+   "n_classes": 3,
+   "weight_count": 0.0019432672991434397,
+   "weight_throughput": 0.0019432672991434397
+  },
+  {
+   "basin": "other",
+   "facility_type": "storage",
+   "throughput_class": "t2",
+   "throughput_class_index": 1,
+   "n_classes": 3,
+   "weight_count": 0.0019432672991434397,
+   "weight_throughput": 0.0019432672991434397
+  },
+  {
+   "basin": "other",
+   "facility_type": "storage",
+   "throughput_class": "t3",
+   "throughput_class_index": 2,
+   "n_classes": 3,
+   "weight_count": 0.0019432672991434397,
+   "weight_throughput": 0.0019432672991434397
+  }
+ ]
+}

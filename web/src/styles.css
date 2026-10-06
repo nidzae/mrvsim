@@ -28,6 +28,7 @@ a { color: var(--accent); }
 .tabs { display: flex; gap: 2px; }
 .tab { background: none; border: 0; padding: 8px 10px; border-radius: 6px; color: var(--text-2); cursor: pointer; font: inherit; }
 .tab.active { background: var(--surface-2); color: var(--text); font-weight: 600; }
+.tab.disabled { color: var(--text-3); opacity: 0.55; cursor: not-allowed; text-decoration: line-through; }
 .spacer { flex: 1; }
 .barctl { display: flex; gap: 8px; align-items: center; color: var(--text-2); font-size: 13px; }
 .barctl input, .field input, .field select { font: inherit; padding: 4px 6px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text); width: 90px; }

@@ -3,7 +3,8 @@ __pycache__/
 *.pyc
 .pytest_cache/
 data/raw/
-runs/
+runs/*
+!runs/demo/
 web/node_modules/
 .DS_Store
 *.egg-info/

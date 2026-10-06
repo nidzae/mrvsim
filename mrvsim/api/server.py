@@ -31,6 +31,41 @@ from mrvsim.sensors import load_library
 _REPO = Path(__file__).resolve().parents[2]
 app = FastAPI(title="MRVSim API", version="0.1")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+
+# ----------------------------------------------------------------------------- hosting (docs/DEPLOY.md)
+# MRVSIM_PASSWORD: if set, every request needs HTTP Basic auth (any user name, this password).
+# MRVSIM_ONLINE=1: a shared server; runs are capped at quick-mode size, validation and full-resolution runs are refused.
+ONLINE = os.environ.get("MRVSIM_ONLINE", "") == "1"
+ONLINE_LIMITS = {"n_per_stratum": 30, "facilities_per_stratum": 10, "replications": 3, "n_draws": 2000, "n_trials": 8}
+
+
+@app.middleware("http")
+async def _basic_auth(request, call_next):
+    import base64
+    from fastapi.responses import Response
+
+    password = os.environ.get("MRVSIM_PASSWORD", "")
+    if password and request.url.path != "/api/health":
+        header = request.headers.get("authorization", "")
+        ok = False
+        if header.startswith("Basic "):
+            try:
+                ok = base64.b64decode(header[6:]).decode("utf-8").split(":", 1)[1] == password
+            except Exception:  # noqa: BLE001
+                ok = False
+        if not ok:
+            return Response("MRVSim: password required", status_code=401, headers={"WWW-Authenticate": 'Basic realm="MRVSim"'})
+    return await call_next(request)
+
+
+def _online_limits(req: "RunRequest") -> "RunRequest":
+    """On a shared server, keep every run within quick-mode size (PRD N3) so one user cannot occupy it for an hour."""
+    if not ONLINE:
+        return req
+    r = req.resolved()
+    if r.mode == "full":
+        raise HTTPException(400, "Full-resolution runs are not available on the hosted version (about 40 minutes of compute); run the tool locally for those.")
+    return r.model_copy(update={k: min(getattr(r, k) if getattr(r, k) is not None else v, v) for k, v in ONLINE_LIMITS.items() if hasattr(r, k)})
 JOBS = JobRegistry(workers=2)
 LIB = load_library()
 STRATA = load_strata()
@@ -171,7 +206,8 @@ def _tornado(run_id: str, req: RunRequest):
 # ----------------------------------------------------------------------------- endpoints
 @app.get("/api/health")
 def health() -> dict[str, Any]:
-    return {"ok": True, "runs_dir": str(store.RUNS_DIR), "anthropic_key_configured": bool(os.environ.get("ANTHROPIC_API_KEY"))}
+    return {"ok": True, "runs_dir": str(store.RUNS_DIR), "anthropic_key_configured": bool(os.environ.get("ANTHROPIC_API_KEY")), "online": ONLINE,
+            "gap_analysis_enabled": bool(os.environ.get("ANTHROPIC_API_KEY")) and os.environ.get("MRVSIM_DISABLE_GAP_ANALYSIS", "") != "1"}
 
 
 @app.get("/api/sensors")
@@ -189,12 +225,17 @@ def runs() -> dict[str, Any]:
 
 @app.post("/api/run")
 def post_run(req: RunRequest) -> dict[str, Any]:
+    req = _online_limits(req)
     job = JOBS.submit("run", _run_job(req))
     return {**job.to_dict(), "estimate": estimate_seconds(req)}
 
 
 @app.post("/api/estimate")
 def estimate(req: RunRequest) -> dict[str, Any]:
+    try:
+        req = _online_limits(req)
+    except HTTPException as e:
+        return {"error": e.detail, "estimated_seconds": None}
     return estimate_seconds(req)
 
 
@@ -252,7 +293,7 @@ def facility_budget(run_id: str, fid: int, n_draws: int = 2000) -> dict[str, Any
 
 @app.post("/api/run/{run_id}/tornado")
 def tornado(run_id: str, req: RunRequest) -> dict[str, Any]:
-    return JOBS.submit("tornado", _tornado(run_id, req)).to_dict()
+    return JOBS.submit("tornado", _tornado(run_id, _online_limits(req))).to_dict()
 
 
 @app.get("/api/run/{run_id}/attribution")
@@ -302,6 +343,9 @@ def _priors_placeholder() -> bool:
 def validation_run(quick: bool = True, allow_placeholder: bool = False) -> dict[str, Any]:
     from mrvsim.validate.runner import run_all
 
+    if ONLINE:
+        raise HTTPException(400, "Validation runs take about 35 minutes and are not available on the hosted version; the last results are shown from the repository.")
+
     def fn(job):
         if allow_placeholder:
             os.environ["MRVSIM_ALLOW_PLACEHOLDER_VALIDATION"] = "1"
@@ -314,6 +358,9 @@ def validation_run(quick: bool = True, allow_placeholder: bool = False) -> dict[
 @app.post("/api/optimize")
 def optimize(req: OptimizeRequest) -> dict[str, Any]:
     from mrvsim.policy import SearchSpace, SensorPolicy, optimize as run_opt
+
+    if ONLINE:
+        req = req.model_copy(update={"n_trials": min(req.n_trials, ONLINE_LIMITS["n_trials"]), "replications_trial": 1, "replications_full": min(req.replications_full, 2)})
 
     def fn(job):
         cfg = RunConfig.from_dict({"name": "optimize", "seed": req.seed, "replications": req.replications_full, "population": {"n_per_stratum": 30},

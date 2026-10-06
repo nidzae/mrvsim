@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 from dataclasses import dataclass
 from functools import lru_cache
@@ -23,7 +24,7 @@ from mrvsim.sensors import SensorLibrary, load_library
 from mrvsim.sensors.library import REFERENCES_PATH, reference_keys
 
 _REPO = Path(__file__).resolve().parents[2]
-RUNS_DIR = _REPO / "runs"
+RUNS_DIR = Path(os.environ.get("MRVSIM_RUNS_DIR", _REPO / "runs"))     # a mounted volume when hosted (docs/DEPLOY.md)
 STATES = ("certified", "fails", "indeterminate")
 
 

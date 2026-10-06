@@ -1,0 +1,46 @@
+{
+  "config_sha256": "67ae8f2d937dfe74461ce6c5cfe3c56eb711cd7496b5ab1a14a693f89290b1db",
+  "elapsed_s": 129.009,
+  "error": null,
+  "finished_utc": "2026-10-05T22:06:24+00:00",
+  "git": {
+    "dirty": true,
+    "sha": "a8c209ca4253b121405a1f2fa365ed0b9ef70cc4"
+  },
+  "name": "default mix [quick]",
+  "outputs": {
+    "evidence_counts": "evidence_counts.npy",
+    "observed_bounds": "observed_bounds.npy",
+    "posterior_intensity_pcts": "posterior_intensity_pcts.npy",
+    "posterior_intensity_quantiles": "posterior_intensity_quantiles.npy",
+    "posterior_mass_pcts": "posterior_mass_pcts.npy",
+    "posterior_mass_quantiles": "posterior_mass_quantiles.npy",
+    "prior_intensity_pcts": "prior_intensity_pcts.npy",
+    "prior_mass_pcts": "prior_mass_pcts.npy",
+    "state_intensity": "state_intensity.npy",
+    "state_mass": "state_mass.npy",
+    "summary": "summary.json",
+    "true_intensity": "true_intensity.npy",
+    "true_mass_kg_yr": "true_mass_kg_yr.npy"
+  },
+  "platform": "Darwin 25.5.0 arm64",
+  "run_id": "20261005T220415Z-67ae8f2d",
+  "seed": 20260930,
+  "stages": {
+    "replication_0": 43.386,
+    "replication_1": 41.181,
+    "replication_2": 42.561
+  },
+  "started_utc": "2026-10-05T22:04:16+00:00",
+  "status": "ok",
+  "versions": {
+    "mrvsim": "0.0.1",
+    "numpy": "2.4.6",
+    "optuna": "5.0.0",
+    "pandas": "3.0.6",
+    "pymc": "5.28.5",
+    "python": "3.11.5",
+    "scipy": "1.17.1",
+    "skyfield": "1.55"
+  }
+}

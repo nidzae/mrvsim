@@ -1,0 +1,15 @@
+.venv
+.git
+__pycache__
+*.pyc
+.pytest_cache
+data/raw
+data/cache
+runs/*
+!runs/demo
+web/node_modules
+web/src
+vendor
+tests
+mrvsim.egg-info
+.DS_Store

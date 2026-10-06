@@ -66,7 +66,8 @@ export default function Sensors({ policy, setPolicy, runSettings, setRunSettings
           {mode === "quick" && "Speed: 10 facilities per stratum, 2,000 draws, 3 replications. For exploring sensor mixes."}
           {mode === "full" && "Precision: every facility of the default sample (100 per stratum), 10,000 draws, 5 replications. For a mix you want to trust."}
           {mode === "custom" && "Uses the Advanced settings below."}
-          {est && <> Estimated {fmtTime(est.estimated_seconds)} for {est.facilities_estimated.toLocaleString()} facilities × {est.replications} replications.</>}
+          {est?.error && <span className="flagged"> {est.error}</span>}
+          {est && !est.error && <> Estimated {fmtTime(est.estimated_seconds)} for {est.facilities_estimated.toLocaleString()} facilities × {est.replications} replications.</>}
         </div>
       </div>
       <div style={{ marginTop: 10 }}><button className="primary" disabled={busy} onClick={run}>{busy ? `Running ${prog?.mode || mode}… ${prog?.stage || ""}` : `Run ${mode}`}</button></div>

@@ -1,0 +1,877 @@
+{
+  "generated_utc": "2026-10-05T18:02:15+00:00",
+  "results": [
+    {
+      "id": "V1",
+      "name": "Detected-rate distribution and persistence per basin",
+      "status": "fail",
+      "pass_rule": "Per basin: detected-site quantiles within the simulated 90 % bootstrap band (KS when a sample is given); site-level survival curve within a factor of 2 at every level with S > 1e-3; Cusworth-style persistence within the published band",
+      "compared": {
+        "permian": {
+          "n_sim": 141,
+          "sim_quantiles": {
+            "p25": 44.90973229308147,
+            "p50": 71.20771637469221,
+            "p75": 130.38226312492222,
+            "p90": 258.8214405238043
+          },
+          "p25_band": [
+            41.025967175083466,
+            51.96111803405203
+          ],
+          "p50_band": [
+            60.32735320952277,
+            82.86583079287462
+          ],
+          "p75_band": [
+            105.53475142559688,
+            172.90558605722083
+          ],
+          "p90_band": [
+            214.8573906835192,
+            320.95812434927353
+          ],
+          "method": "quantile_band",
+          "pass": false
+        },
+        "appalachian": {
+          "n_sim": 73,
+          "sim_quantiles": {
+            "p25": 126.36225773019136,
+            "p50": 209.2124388780527,
+            "p75": 297.4315237909259,
+            "p90": 408.66379263329816
+          },
+          "p25_band": [
+            111.77372255872521,
+            162.12166902354923
+          ],
+          "p50_band": [
+            182.40415143819155,
+            230.96611467684164
+          ],
+          "p75_band": [
+            248.63636781364738,
+            366.7202398538933
+          ],
+          "p90_band": [
+            359.7169269932061,
+            490.27398627217474
+          ],
+          "method": "quantile_band",
+          "pass": false
+        },
+        "haynesville": {
+          "n_sim": 140,
+          "sim_quantiles": {
+            "p25": 23.52334348331066,
+            "p50": 48.58598573581836,
+            "p75": 155.52090267094326,
+            "p90": 340.9695796604681
+          },
+          "method": "none",
+          "pass": null,
+          "note": "target missing"
+        },
+        "eagle_ford": {
+          "n_sim": 27,
+          "sim_quantiles": {
+            "p25": 27.59354205645584,
+            "p50": 52.24077383957396,
+            "p75": 75.39348750619244,
+            "p90": 236.90855252785826
+          },
+          "method": "none",
+          "pass": null,
+          "note": "target missing"
+        },
+        "bakken": {
+          "n_sim": 28,
+          "sim_quantiles": {
+            "p25": 35.70105747615635,
+            "p50": 63.21812972087614,
+            "p75": 100.04705715005518,
+            "p90": 134.22064954064075
+          },
+          "method": "none",
+          "pass": null,
+          "note": "target missing"
+        },
+        "dj": {
+          "n_sim": 53,
+          "sim_quantiles": {
+            "p25": 38.11329595939497,
+            "p50": 56.703053503151814,
+            "p75": 87.89214860935269,
+            "p90": 132.61300051102506
+          },
+          "p25_band": [
+            27.334636734218186,
+            49.792031868735435
+          ],
+          "p50_band": [
+            50.53695080414724,
+            63.48045483228763
+          ],
+          "p75_band": [
+            70.24106774671363,
+            110.51415889491636
+          ],
+          "p90_band": [
+            99.03408345557506,
+            160.2402224978183
+          ],
+          "method": "quantile_band",
+          "pass": false
+        },
+        "anadarko": {
+          "n_sim": 14,
+          "sim_quantiles": {
+            "p25": 22.86025412723225,
+            "p50": 39.430096866376175,
+            "p75": 74.38718193597782,
+            "p90": 101.85919726937355
+          },
+          "method": "none",
+          "pass": null,
+          "note": "target missing"
+        },
+        "san_juan": {
+          "n_sim": 5,
+          "sim_quantiles": {
+            "p25": 13.712553648486638,
+            "p50": 43.3421625488892,
+            "p75": 73.61976688427994,
+            "p90": 88.16259789757798
+          },
+          "method": "none",
+          "pass": null,
+          "note": "target missing"
+        },
+        "uinta": {
+          "n_sim": 37,
+          "sim_quantiles": {
+            "p25": 14.568086138932188,
+            "p50": 23.53375117562603,
+            "p75": 60.50849246821748,
+            "p90": 145.43000399537215
+          },
+          "p25_band": [
+            13.715406314344655,
+            19.24083424645839
+          ],
+          "p50_band": [
+            18.75325868654907,
+            36.99485586781449
+          ],
+          "p75_band": [
+            36.99485586781449,
+            128.62545040774094
+          ],
+          "p90_band": [
+            84.85743690902466,
+            247.95672106540184
+          ],
+          "method": "quantile_band",
+          "pass": false
+        },
+        "survival_permian": {
+          "levels_kg_h": [
+            0.1,
+            0.3,
+            1.0,
+            3.0,
+            10.0,
+            30.0,
+            100.0,
+            300.0,
+            1000.0
+          ],
+          "S_sim": [
+            0.72917,
+            0.58194,
+            0.4375,
+            0.33056,
+            0.25,
+            0.18472,
+            0.07222,
+            0.01806,
+            0.00139
+          ],
+          "S_target": [
+            0.68129,
+            0.54199,
+            0.35736,
+            0.2044,
+            0.08477,
+            0.02405,
+            0.00653,
+            0.00255,
+            0.00071
+          ],
+          "max_ratio_dev": 1.081511414677347,
+          "pass": false
+        },
+        "survival_appalachian": {
+          "levels_kg_h": [
+            0.1,
+            0.3,
+            1.0,
+            3.0,
+            10.0,
+            30.0,
+            100.0,
+            300.0,
+            1000.0
+          ],
+          "S_sim": [
+            0.62421,
+            0.54874,
+            0.47327,
+            0.37579,
+            0.2956,
+            0.20597,
+            0.11792,
+            0.02987,
+            0.00157
+          ],
+          "S_target": [
+            0.54085,
+            0.3563,
+            0.17145,
+            0.06545,
+            0.01732,
+            0.00561,
+            0.00218,
+            0.00186,
+            0.00117
+          ],
+          "max_ratio_dev": 1.7477211575798541,
+          "pass": false
+        },
+        "survival_dj": {
+          "levels_kg_h": [
+            0.1,
+            0.3,
+            1.0,
+            3.0,
+            10.0,
+            30.0,
+            100.0,
+            300.0,
+            1000.0
+          ],
+          "S_sim": [
+            0.72222,
+            0.63889,
+            0.51667,
+            0.42222,
+            0.3,
+            0.21667,
+            0.04444,
+            0.0,
+            0.0
+          ],
+          "S_target": [
+            0.64796,
+            0.50593,
+            0.31108,
+            0.14602,
+            0.03449,
+            0.006,
+            0.00074,
+            0.00035,
+            0.0
+          ],
+          "max_ratio_dev": 1.0617836898150812,
+          "pass": false
+        },
+        "survival_uinta": {
+          "levels_kg_h": [
+            0.1,
+            0.3,
+            1.0,
+            3.0,
+            10.0,
+            30.0,
+            100.0,
+            300.0,
+            1000.0
+          ],
+          "S_sim": [
+            0.77778,
+            0.65,
+            0.48889,
+            0.34444,
+            0.21111,
+            0.09444,
+            0.02778,
+            0.01111,
+            0.00556
+          ],
+          "S_target": [
+            0.77824,
+            0.62651,
+            0.39027,
+            0.18166,
+            0.04037,
+            0.006,
+            0.00231,
+            0.00124,
+            0.00028
+          ],
+          "max_ratio_dev": 0.6397934035105275,
+          "pass": true
+        },
+        "persistence": {
+          "sim_persistence_all": 0.8155537459283387,
+          "target": 0.26,
+          "target_ci": [
+            0.2,
+            0.35
+          ],
+          "by_basin": {
+            "permian": {
+              "sim": 0.7758620689655172,
+              "target": 0.26,
+              "pass": false
+            },
+            "appalachian": {
+              "sim": 0.9048780487804878,
+              "target": 0.6,
+              "pass": false
+            }
+          },
+          "pass": false
+        }
+      },
+      "reason": "",
+      "citations": [
+        "cusworth2022",
+        "sherwin2024"
+      ],
+      "target_status": "missing",
+      "diagnostic_only": false,
+      "elapsed_s": 0.6,
+      "run_utc": "2026-10-05T17:41:28+00:00"
+    },
+    {
+      "id": "V2",
+      "name": "Basin totals vs published and FEAST 3.1 cross-check",
+      "status": "fail",
+      "pass_rule": "Simulated true basin loss rate (sample emissions / sample marketed gas) inside the Sherwin 2024 campaign 95 % CI for basins with a target; FEAST and MRVSim within 15 %",
+      "compared": {
+        "loss_rate_permian": {
+          "published_production_only": 0.00974564168273876,
+          "sim_true_loss_rate": 0.012294852931657626,
+          "published": 0.0189,
+          "published_ci": [
+            0.0173,
+            0.0206
+          ],
+          "campaign": "Permian_fall2021",
+          "pass": false,
+          "estimator": "well pads, expanded to the basin's sites over the basin's gas [ogim]",
+          "note": "published value is production + midstream; the simulated value covers well pads only when the site table is used"
+        },
+        "loss_rate_appalachian": {
+          "published_production_only": 0.004732839401509359,
+          "sim_true_loss_rate": 0.0027231687029224227,
+          "published": 0.0070999999999999995,
+          "published_ci": [
+            0.0060999999999999995,
+            0.008100000000000001
+          ],
+          "campaign": "Pennsylvania_2021",
+          "pass": false,
+          "estimator": "well pads, expanded to the basin's sites over the basin's gas [ogim]",
+          "note": "published value is production + midstream; the simulated value covers well pads only when the site table is used"
+        },
+        "loss_rate_dj": {
+          "published_production_only": 0.007188339357337671,
+          "sim_true_loss_rate": 0.009818837917245212,
+          "published": 0.011000000000000001,
+          "published_ci": [
+            0.01,
+            0.0124
+          ],
+          "campaign": "Denver_fall2021",
+          "pass": false,
+          "estimator": "well pads, expanded to the basin's sites over the basin's gas [ogim]",
+          "note": "published value is production + midstream; the simulated value covers well pads only when the site table is used"
+        },
+        "loss_rate_uinta": {
+          "published_production_only": 0.04496869244398984,
+          "sim_true_loss_rate": 0.03564939143537552,
+          "published": 0.0555,
+          "published_ci": [
+            0.051500000000000004,
+            0.0599
+          ],
+          "campaign": "Uinta_2020",
+          "pass": false,
+          "estimator": "well pads, expanded to the basin's sites over the basin's gas [ogim]",
+          "note": "published value is production + midstream; the simulated value covers well pads only when the site table is used"
+        },
+        "permian": {
+          "sim_sample_total_t_h": 28.86156668609519,
+          "published": null,
+          "published_ci": [
+            null,
+            null
+          ],
+          "note": "sample total; national scaling needs a facility count per stratum",
+          "pass": null
+        },
+        "appalachian": {
+          "sim_sample_total_t_h": 15.199138635691142,
+          "published": null,
+          "published_ci": [
+            null,
+            null
+          ],
+          "note": "sample total; national scaling needs a facility count per stratum",
+          "pass": null
+        },
+        "haynesville": {
+          "sim_sample_total_t_h": 21.233409324687415,
+          "published": null,
+          "published_ci": [
+            null,
+            null
+          ],
+          "note": "sample total; national scaling needs a facility count per stratum",
+          "pass": null
+        },
+        "eagle_ford": {
+          "sim_sample_total_t_h": 0.9394221691473792,
+          "published": null,
+          "published_ci": [
+            null,
+            null
+          ],
+          "note": "sample total; national scaling needs a facility count per stratum",
+          "pass": null
+        },
+        "bakken": {
+          "sim_sample_total_t_h": 0.5398917361671726,
+          "published": null,
+          "published_ci": [
+            null,
+            null
+          ],
+          "note": "sample total; national scaling needs a facility count per stratum",
+          "pass": null
+        },
+        "dj": {
+          "sim_sample_total_t_h": 0.6497425447481192,
+          "published": null,
+          "published_ci": [
+            null,
+            null
+          ],
+          "note": "sample total; national scaling needs a facility count per stratum",
+          "pass": null
+        },
+        "anadarko": {
+          "sim_sample_total_t_h": 0.7322534817963722,
+          "published": null,
+          "published_ci": [
+            null,
+            null
+          ],
+          "note": "sample total; national scaling needs a facility count per stratum",
+          "pass": null
+        },
+        "san_juan": {
+          "sim_sample_total_t_h": 0.18106466092052362,
+          "published": null,
+          "published_ci": [
+            null,
+            null
+          ],
+          "note": "sample total; national scaling needs a facility count per stratum",
+          "pass": null
+        },
+        "uinta": {
+          "sim_sample_total_t_h": 0.7164615950039438,
+          "published": null,
+          "published_ci": [
+            null,
+            null
+          ],
+          "note": "sample total; national scaling needs a facility count per stratum",
+          "pass": null
+        },
+        "feast_cross_check": {
+          "feast_total_kg": 68722672.52698356,
+          "mrvsim_expected_kg": 68281375.92161264,
+          "mrvsim_realised_kg": 68254287.93164445,
+          "ratio_feast_over_expected": 1.006462913194332,
+          "ratio_feast_over_realised": 1.0068623468141398,
+          "n_facilities": 400,
+          "n_sources": 1327,
+          "n_timesteps": 365,
+          "tolerance": 0.15,
+          "pass": true
+        }
+      },
+      "reason": "published basin totals missing for: permian, appalachian, haynesville, eagle_ford, bakken, dj, anadarko, san_juan, uinta",
+      "citations": [
+        "sherwin2024",
+        "kemp2016",
+        "feast-repo"
+      ],
+      "target_status": "missing",
+      "diagnostic_only": false,
+      "elapsed_s": 3.4,
+      "run_utc": "2026-10-05T17:41:31+00:00"
+    },
+    {
+      "id": "V3",
+      "name": "Published basin intensities reproduced with the studies' sensor mix",
+      "status": "fail",
+      "pass_rule": "Published estimate inside MRVSim's throughput-weighted basin interval; boundary-sensitivity factor within +/-30 %",
+      "compared": {
+        "haynesville": {
+          "sim_interval": [
+            0.004599886549748636,
+            0.007770158879425531,
+            0.01331441706878638
+          ],
+          "sim_truth": 0.0084826962057837,
+          "published": 0.0079,
+          "published_ci": [
+            0.0063,
+            0.0098
+          ],
+          "pass": true
+        },
+        "permian": {
+          "sim_interval": [
+            0.0033858256154903027,
+            0.005748867272053652,
+            0.00987901743932294
+          ],
+          "sim_truth": 0.0061332284990848855,
+          "published": 0.046,
+          "published_ci": [
+            0.044,
+            0.049
+          ],
+          "pass": null
+        },
+        "permian_sherwin2024": {
+          "sim_interval": [
+            0.0033858256154903027,
+            0.005748867272053652,
+            0.00987901743932294
+          ],
+          "sim_truth": 0.0061332284990848855,
+          "published": 0.0189,
+          "published_ci": [
+            0.0173,
+            0.0206
+          ],
+          "pass": false
+        },
+        "appalachian_sherwin2024": {
+          "sim_interval": [
+            0.005347873601868541,
+            0.009792284800864809,
+            0.018560042355574544
+          ],
+          "sim_truth": 0.009618777836732416,
+          "published": 0.0070999999999999995,
+          "published_ci": [
+            0.0060999999999999995,
+            0.008100000000000001
+          ],
+          "pass": true
+        },
+        "dj_sherwin2024": {
+          "sim_interval": [
+            0.0012002357714340213,
+            0.002828892117184097,
+            0.012006422190142488
+          ],
+          "sim_truth": 0.0064495750109409035,
+          "published": 0.011000000000000001,
+          "published_ci": [
+            0.01,
+            0.0124
+          ],
+          "pass": true
+        },
+        "uinta_sherwin2024": {
+          "sim_interval": [
+            0.012452296013109064,
+            0.026704979928197606,
+            0.07209490312429605
+          ],
+          "sim_truth": 0.03121492153866433,
+          "published": 0.0555,
+          "published_ci": [
+            0.051500000000000004,
+            0.0599
+          ],
+          "pass": true
+        },
+        "boundary_sensitivity": {
+          "published": null,
+          "pass": null,
+          "note": "not computed: published factor missing"
+        }
+      },
+      "reason": "",
+      "citations": [
+        "haynesville-2025"
+      ],
+      "target_status": "missing",
+      "diagnostic_only": false,
+      "elapsed_s": 40.1,
+      "run_utc": "2026-10-05T17:42:12+00:00"
+    },
+    {
+      "id": "V4",
+      "name": "Stratum stability (terciles vs quintiles)",
+      "status": "pass",
+      "pass_rule": "All headline metrics change by less than 2x Monte Carlo SE",
+      "compared": {
+        "mass.calibration": {
+          "terciles": 0.9007407407407407,
+          "quintiles": 0.8918558077436582,
+          "diff": 0.008884932997082484,
+          "k_se": 0.03986797293524658,
+          "pass": true
+        },
+        "mass.width_median": {
+          "terciles": 2.622788417915079,
+          "quintiles": 2.6290876319731296,
+          "diff": 0.006299214058050673,
+          "k_se": 1.4344505991826548,
+          "pass": true
+        },
+        "mass.bias_median": {
+          "terciles": -0.015604171139261715,
+          "quintiles": -0.011425583274246096,
+          "diff": 0.004178587865015619,
+          "k_se": 0.0756224399443204,
+          "pass": true
+        },
+        "mass.certified_share_weighted_throughput": {
+          "terciles": 0.31534894816543296,
+          "quintiles": 0.3154722221139329,
+          "diff": 0.00012327394849992457,
+          "k_se": 0.02996227260542443,
+          "pass": true
+        },
+        "mass.decided_share_emitted_mass": {
+          "terciles": 0.976561279871936,
+          "quintiles": 0.9638558498836737,
+          "diff": 0.012705429988262296,
+          "k_se": 0.03740183253895716,
+          "pass": true
+        },
+        "intensity.calibration": {
+          "terciles": 0.8940740740740741,
+          "quintiles": 0.8909657320872274,
+          "diff": 0.00310834198684673,
+          "k_se": 0.04103237185825328,
+          "pass": true
+        },
+        "intensity.width_median": {
+          "terciles": 2.6387350789893036,
+          "quintiles": 2.7048170591526115,
+          "diff": 0.06608198016330791,
+          "k_se": 1.346411144424308,
+          "pass": true
+        },
+        "intensity.bias_median": {
+          "terciles": -0.045181232226001435,
+          "quintiles": -0.01903482672822953,
+          "diff": 0.026146405497771905,
+          "k_se": 0.0492465996017179,
+          "pass": true
+        },
+        "intensity.certified_share_weighted_throughput": {
+          "terciles": 0.41305589029302214,
+          "quintiles": 0.41672532648476085,
+          "diff": 0.0036694361917387064,
+          "k_se": 0.02856723328307235,
+          "pass": true
+        },
+        "intensity.decided_share_emitted_mass": {
+          "terciles": 0.9210613198735734,
+          "quintiles": 0.9007763317945378,
+          "diff": 0.02028498807903567,
+          "k_se": 0.03387369686671209,
+          "pass": true
+        }
+      },
+      "reason": "",
+      "citations": [],
+      "target_status": "ok",
+      "diagnostic_only": false,
+      "elapsed_s": 280.5,
+      "run_utc": "2026-10-05T17:46:52+00:00"
+    },
+    {
+      "id": "V5",
+      "name": "Prior misspecification robustness",
+      "status": "pass",
+      "pass_rule": "kappa >= 0.80 under every single perturbation; report kappa under joint perturbation",
+      "compared": {
+        "alpha+": {
+          "kappa_mass": 0.8878923766816144,
+          "kappa_intensity": 0.874439461883408,
+          "bias_mass": -0.02760895887643385,
+          "n": 223,
+          "perturbation": {
+            "alpha": 0.3
+          },
+          "pass": true
+        },
+        "alpha-": {
+          "kappa_mass": 0.8878923766816144,
+          "kappa_intensity": 0.874439461883408,
+          "bias_mass": -0.02760895887643385,
+          "n": 223,
+          "perturbation": {
+            "alpha": -0.3
+          },
+          "pass": true
+        },
+        "mu+": {
+          "kappa_mass": 0.8834080717488789,
+          "kappa_intensity": 0.874439461883408,
+          "bias_mass": -0.024679492729756766,
+          "n": 223,
+          "perturbation": {
+            "mu": 0.3
+          },
+          "pass": true
+        },
+        "mu-": {
+          "kappa_mass": 0.8878923766816144,
+          "kappa_intensity": 0.8789237668161435,
+          "bias_mass": -0.001366106949762323,
+          "n": 223,
+          "perturbation": {
+            "mu": -0.3
+          },
+          "pass": true
+        },
+        "nu_on+": {
+          "kappa_mass": 0.8654708520179372,
+          "kappa_intensity": 0.8654708520179372,
+          "bias_mass": -0.017611817394492166,
+          "n": 223,
+          "perturbation": {
+            "nu_on": 0.5
+          },
+          "pass": true
+        },
+        "nu_on-": {
+          "kappa_mass": 0.9103139013452914,
+          "kappa_intensity": 0.905829596412556,
+          "bias_mass": -0.0005784862003113187,
+          "n": 223,
+          "perturbation": {
+            "nu_on": -0.5
+          },
+          "pass": true
+        },
+        "joint": {
+          "kappa_mass": 0.8699551569506726,
+          "kappa_intensity": 0.874439461883408,
+          "bias_mass": -0.04731208952051955,
+          "n": 223,
+          "perturbation": {
+            "alpha": 0.3,
+            "mu": 0.3,
+            "nu_on": 0.5
+          },
+          "pass": null,
+          "note": "reported, not scored"
+        }
+      },
+      "reason": "",
+      "citations": [],
+      "target_status": "ok",
+      "diagnostic_only": false,
+      "elapsed_s": 84.2,
+      "run_utc": "2026-10-05T17:48:16+00:00"
+    },
+    {
+      "id": "V6",
+      "name": "Transient-event underestimation by LEO satellites",
+      "status": "pass",
+      "pass_rule": "Satellite-only mass estimate underestimates the released mass (ratio < 1) by the published order of magnitude",
+      "compared": {
+        "event": {
+          "rate_t_h": 5.0,
+          "duration_h": 6,
+          "status": "verify",
+          "citation": "vlmr-2026",
+          "note": "Representative blowdown; replace with the VLMR release schedule (paper not fetched on 2026-09-30)"
+        },
+        "n_events": 60,
+        "share_of_events_with_any_detection": 0.15,
+        "mean_passes_during_event": 0.3333333333333333,
+        "mean_ratio_estimate_over_truth": 0.161227748484634,
+        "median_ratio_when_detected": 0.9090275424550401,
+        "published_range": [
+          0.05,
+          0.8
+        ],
+        "pass_direction": true,
+        "pass_magnitude": true
+      },
+      "reason": "",
+      "citations": [
+        "vlmr-2026"
+      ],
+      "target_status": "verify",
+      "diagnostic_only": false,
+      "elapsed_s": 106.3,
+      "run_utc": "2026-10-05T17:50:03+00:00"
+    },
+    {
+      "id": "V7",
+      "name": "Calibration on the default configuration",
+      "status": "pass",
+      "pass_rule": "0.85 <= kappa <= 0.95 for both KPIs",
+      "compared": {
+        "run_id": "20261005T175003Z-ae4809b5",
+        "replications": 3,
+        "mass": {
+          "kappa": 0.9031111111111111,
+          "se": 0.005406900026931768,
+          "range": [
+            0.85,
+            0.95
+          ],
+          "pass": true,
+          "width_median": 3.1201732756875002
+        },
+        "intensity": {
+          "kappa": 0.9022222222222221,
+          "se": 0.0023517789431685247,
+          "range": [
+            0.85,
+            0.95
+          ],
+          "pass": true,
+          "width_median": 3.1777099975806222
+        }
+      },
+      "reason": "",
+      "citations": [],
+      "target_status": "ok",
+      "diagnostic_only": false,
+      "elapsed_s": 732.4,
+      "run_utc": "2026-10-05T18:02:15+00:00"
+    }
+  ]
+}

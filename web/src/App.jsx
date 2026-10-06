@@ -48,7 +48,8 @@ export default function App() {
     <div className="app">
       <div className="topbar">
         <h1>MRVSim</h1>
-        <div className="tabs">{TABS.map((t) => <button key={t} className={`tab${tab === t ? " active" : ""}`} onClick={() => setTab(t)}>{t}</button>)}</div>
+        <div className="tabs">{TABS.map((t) => { const off = t === "Gap analysis" && !(health?.gap_analysis_enabled);
+          return <button key={t} className={`tab${tab === t ? " active" : ""}${off ? " disabled" : ""}`} disabled={off} title={off ? "Ask-AI gap analysis is switched off on this server (no Anthropic key configured)" : undefined} onClick={() => !off && setTab(t)}>{t}{off ? " (off)" : ""}</button>; })}</div>
         <div className="spacer" />
         <div className="barctl">
           <select value={basis} onChange={(e) => setBasis(e.target.value)} title="Observations only: a verdict needs measurements; nothing is assumed about time nobody observed, so a site is certified only if it was measured all year. Estimate: measurements combined with published statistics for sites like this one.">
@@ -62,7 +63,8 @@ export default function App() {
       </div>
       <div className={`main${wide ? " wide" : ""}`}>
         {!wide && <div className="side"><Sensors policy={policy} setPolicy={setPolicy} runSettings={{ ...runSettings, scoring }} setRunSettings={setRunSettings} onRunDone={onRunDone} busy={busy} setBusy={setBusy} />
-          {health && !health.anthropic_key_configured && <p className="muted" style={{ marginTop: 10 }}>Gap analysis: the API server has no Anthropic credentials (set ANTHROPIC_API_KEY or run `ant auth login` where the server runs).</p>}</div>}
+          {health && !health.gap_analysis_enabled && <p className="muted" style={{ marginTop: 10 }}>Ask-AI gap analysis is switched off on this server.{!health.online && " To enable it locally, set ANTHROPIC_API_KEY where the server runs."}</p>}
+          {health?.online && <p className="muted" style={{ marginTop: 6 }}>Hosted version: runs are capped at quick-mode size; full-resolution runs and validation re-runs need a local install.</p>}</div>}
         <div className="content">
           {tab === "Map" && <MapView runId={runId} kpi={kpi} bar={kpi === "intensity" ? bar : barMass} barIntensity={bar} barMass={barMass} wMax={wMax} basis={basis} />}
           {tab === "Dashboard" && <Dashboard runId={runId} kpi={kpi} basis={basis} runSettings={{ ...runSettings, mode: "quick", policy, scoring }} pareto={pareto} onRerunFull={rerunFull} />}
