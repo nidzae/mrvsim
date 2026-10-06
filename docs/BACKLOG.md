@@ -2,7 +2,7 @@
 
 Leftover work and open decisions as of 2026-10-05 (pencils down). Scope exclusions for version 1 are in PRD §3.2 and are not repeated here. Each item says what it is, why it matters, and what it needs. Update this file when an item is started or closed; record the outcome in `DECISION_LOG.md`.
 
-State at this point: all eight build phases exist; 157 unit tests pass; validation V4–V7 pass and V1–V3 fail on population realism (`docs/status/2026-10-05-sampling-and-headline.md`).
+State at this point (updated end of 2026-10-05): all eight build phases exist; 162 unit tests pass; validation V4–V7 pass and V1–V3 fail on population realism (`docs/status/2026-10-05-sampling-and-headline.md`); the observation-only verdict and monitor redundancy are in (`docs/status/2026-10-05-observation-only.md`).
 
 ## A. Decisions waiting on Nidhi
 
@@ -69,6 +69,8 @@ State at this point: all eight build phases exist; 157 unit tests pass; validati
 | D5 | **Gap-analysis prompt** does not yet describe the equipment model, the aerial tail, the weighted sample or the new headline metric. | `mrvsim/api/server.py` |
 | D6 | **Full-resolution reference run** on the current model has not been made (about 40 minutes or more). | |
 | D7 | **Optimizer and tornado** have not been re-run since costs and coverage became population-weighted. | |
+| D9 | **Delete branch `observation-only-wip`** once nobody needs the parked vague-prior attempt. | Avoids confusion. | |
+| D10 | **Validation V1–V7 not re-run** since the observation view and monitor redundancy were added (they do not change the estimator, so results should be unchanged; confirm). | | |
 | D8 | **`web/dist` is committed**: rebuild and commit it after every front-end change. | README, Development |
 
 ## Where to look
