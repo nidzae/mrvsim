@@ -55,7 +55,9 @@ def _map_data(res: RunResult) -> dict:
 MAP_JS = """
 const D = __DATA__;
 const map = L.map('map');
-L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom: 19, attribution: '&copy; OpenStreetMap contributors'}).addTo(map);
+// OpenStreetMap's and CARTO's tile servers refuse requests from a page opened as a local file; Esri's allow it.
+const streets = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {maxZoom: 19, attribution: 'Map &copy; Esri'}).addTo(map);
+const imagery = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {maxZoom: 19, attribution: 'Imagery &copy; Esri'});
 const sceneLayer = L.layerGroup(D.scenes.map(b => L.rectangle(b, {color: '#3498db', weight: 0.5, fill: false, opacity: 0.25})));
 const areaLayer = L.geoJSON({type: 'FeatureCollection', features: D.areas}, {style: f => ({color: f.properties.customer ? '#8e44ad' : '#2c3e50', weight: 1.5, fillOpacity: 0.05, dashArray: '4 3'}),
   onEachFeature: (f, l) => l.bindTooltip(f.properties.name)}).addTo(map);
@@ -67,7 +69,7 @@ const plumeLayer = L.geoJSON({type: 'FeatureCollection', features: D.plumes}, {
   pointToLayer: (f, ll) => L.marker(ll, {icon: L.divIcon({className: '', html: '<div style="width:10px;height:10px;background:#c0392b;transform:rotate(45deg);border:1px solid #fff"></div>', iconSize: [10, 10]})}),
   onEachFeature: (f, l) => { const p = f.properties; l.bindPopup(`Plume ${p.id}<br>${p.sensor} · ${p.when}<br>${p.rate == null ? 'no rate published' : p.rate.toFixed(0) + ' kg/h'}<br>attributed to ${p.asset} (p = ${p.prob.toFixed(2)})`); }}).addTo(map);
 if (D.customer) L.marker([D.customer.geometry.coordinates[1], D.customer.geometry.coordinates[0]], {icon: L.divIcon({className: '', html: '<div style="font-size:22px;line-height:22px">&#9733;</div>', iconSize: [22, 22]})}).bindTooltip('Customer: ' + D.customer.properties.name).addTo(map);
-L.control.layers(null, {'Search areas': areaLayer, 'Assets': assetLayer, 'Attributed plumes': plumeLayer, 'Scene footprints (bounding boxes)': sceneLayer}, {collapsed: false}).addTo(map);
+L.control.layers({'Streets': streets, 'Satellite': imagery}, {'Search areas': areaLayer, 'Assets': assetLayer, 'Attributed plumes': plumeLayer, 'Scene footprints (bounding boxes)': sceneLayer}, {collapsed: false}).addTo(map);
 const b = areaLayer.getBounds(); if (b.isValid()) map.fitBounds(b.pad(0.15)); else map.setView([31.5, -103.5], 8);
 """
 
