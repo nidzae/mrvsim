@@ -15,7 +15,7 @@ cd methane-dd
 
 The area can be a KML/KMZ (drawn in Google Earth; folder names are segment hints; a placemark named "customer" is the delivery point), GeoJSON, or a CSV of `lat, lon, label[, radius_m]`. Points are search areas (500 m default radius) unless labelled "asset"; lines are pipeline assets with a 250 m corridor. `--volume` is the customer's annual volume in MMBtu.
 
-Each run writes `runs/<timestamp>-<name>/` with `assets`, `plumes`, `scenes`, `looks`, `attributed` and `per_asset` tables (Parquet), `scorecard.json`, `meta.json` and `report.html`. Raw API responses are cached with their retrieval date under `cache/` so a score can be reproduced.
+Each run writes `runs/<timestamp>-<name>/` with `assets`, `plumes`, `scenes`, `looks`, `attributed` and `per_asset` tables (Parquet), `scorecard.json`, `meta.json` and `report.html` (which opens with a map of the search areas, assets, attributed plumes and scene footprints; needs internet for the base map). Raw API responses are cached with their retrieval date under `cache/` so a score can be reproduced.
 
 ## What the number means
 
