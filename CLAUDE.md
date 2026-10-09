@@ -121,3 +121,8 @@ Work in this order. Each phase ends with passing tests and a short note to the u
 ## Reporting to the user
 
 At the end of each phase, write `docs/status/<date>-phase-<n>.md` with: what was built, tests passing, doc sections changed (with decision-log entry IDs), open questions resolved or added, and what is blocked.
+
+## Second tool: methane-dd (added 2026-10-09)
+
+`methane-dd/` is the supply-chain methane due-diligence tool (spec: `methane-dd/docs/SPEC.md`). It shares the sensor detection models and OGIM data with MRVSim and runs them on real Carbon Mapper observation records. Same documentation rules apply, with its own `docs/DECISION_LOG.md`, `docs/BACKLOG.md` and `docs/REFERENCES.md`. Tests: `cd methane-dd && ../.venv/bin/python -m pytest tests -q`.
+

@@ -8,6 +8,7 @@ An Observing System Simulation Experiment for US onshore oil and gas: synthetic 
 - Build log: `docs/status/`
 - Leftover work and open decisions: `docs/BACKLOG.md`
 - Hosting it online (Docker, Google Cloud Run): `docs/DEPLOY.md`
+- Second tool, supply-chain methane due diligence on real observation records: `methane-dd/README.md`
 
 ## Run it in 5 minutes
 

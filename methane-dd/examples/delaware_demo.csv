@@ -1,0 +1,5 @@
+lat,lon,label,radius_m
+32.20,-103.69,production pad cluster A,1500
+32.24,-103.71,production pad cluster B,1500
+32.28,-103.74,gathering compressor,800
+31.95,-103.60,customer site (direct connection),300

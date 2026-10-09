@@ -1,0 +1,70 @@
+# Sensor models for the due-diligence tool (SPEC section 2a, 6a). The functional form is the MRVSim POD curve
+# (mrvsim/sensors/pod.py): logistic in ln(Q / u-adjusted), with POD50 and POD90 at the reference wind.
+# Every number carries a citation key resolved against ../docs/REFERENCES.md; `verify` means not yet checked
+# against the primary source. Keys are Carbon Mapper instrument codes where the data come from its API.
+sensors:
+  tan:
+    name: Tanager-1 (Carbon Mapper)
+    platform: satellite
+    pod50_kg_h: 60.0               # Duren et al. 2025: 90 % detection near 100 kg/h, minimum 64-144 kg/h by mode; POD50 set at 0.6 x POD90 [duren2025] verify
+    pod90_kg_h: 100.0
+    gamma: 1.0                     # plume visibility scales with Q/u (MRVSim TDD section 4.1 convention)
+    u_ref_m_s: 3.0
+    quantification_ratio_95: [0.40, 1.90]   # as MRVSim tanager1 [carbon-mapper] verify
+    provenance: verify
+  emi:
+    name: EMIT (NASA, on the ISS; Carbon Mapper catalogue)
+    platform: satellite
+    pod50_kg_h: 150.0              # spec: "hundreds of kg/h" for the L2B product; assumption pending a blind-test source [emit-l2b] verify
+    pod90_kg_h: 300.0
+    gamma: 1.0
+    u_ref_m_s: 3.0
+    quantification_ratio_95: [0.40, 2.00]
+    provenance: assumption
+  ang:
+    name: AVIRIS-NG (aircraft)
+    platform: aircraft
+    pod50_kg_h: 8.5                # El Abbadi et al. 2024 blind test [elabbadi2024]
+    pod90_kg_h: 12.0
+    gamma: 1.0
+    u_ref_m_s: 3.0
+    quantification_ratio_95: [0.45, 1.70]
+    provenance: summary
+  gao:
+    name: Global Airborne Observatory (aircraft)
+    platform: aircraft
+    pod50_kg_h: 8.5                # treated as AVIRIS-NG class [elabbadi2024]
+    pod90_kg_h: 12.0
+    gamma: 1.0
+    u_ref_m_s: 3.0
+    quantification_ratio_95: [0.45, 1.70]
+    provenance: summary
+  av3:
+    name: AVIRIS-3 (aircraft)
+    platform: aircraft
+    pod50_kg_h: 8.5                # treated as AVIRIS-NG class pending a blind test [elabbadi2024] verify
+    pod90_kg_h: 12.0
+    gamma: 1.0
+    u_ref_m_s: 3.0
+    quantification_ratio_95: [0.45, 1.70]
+    provenance: verify
+  GAO:
+    name: Global Airborne Observatory (aircraft; Carbon Mapper code GAO)
+    platform: aircraft
+    pod50_kg_h: 8.5                # [elabbadi2024]
+    pod90_kg_h: 12.0
+    gamma: 1.0
+    u_ref_m_s: 3.0
+    quantification_ratio_95: [0.45, 1.70]
+    provenance: summary
+  aemis:
+    name: AEMIS (Carbon Mapper aircraft, 2026)
+    platform: aircraft
+    pod50_kg_h: 2.0                # spec: 1-5 kg/h [duren-iwggms2026] verify
+    pod90_kg_h: 5.0
+    gamma: 1.0
+    u_ref_m_s: 3.0
+    quantification_ratio_95: [0.45, 1.70]
+    provenance: verify
+default_wind_m_s: 3.0              # used when no reanalysis wind is attached to a look (flagged in the report)
+clear_sky_max_cloud_pct: 30        # a scene counts as a clear look at an asset below this cloud cover
